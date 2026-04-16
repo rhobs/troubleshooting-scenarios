@@ -8,15 +8,15 @@ fi
 REGISTRY="$1"
 
 echo "=== Building images ==="
-podman build -t ${REGISTRY}/scenario1-reporting-service:v1.0.1 reporting-service/v1.0.1/
-podman build -t ${REGISTRY}/scenario1-reporting-service:v1.0.2 reporting-service/v1.0.2/
-podman build -t ${REGISTRY}/scenario1-payments-api:v1.0.1 payments-api/
+podman build -t ${REGISTRY}/ts01-reporting-service:v1.0.1 reporting-service/v1.0.1/
+podman build -t ${REGISTRY}/ts01-reporting-service:v1.0.2 reporting-service/v1.0.2/
+podman build -t ${REGISTRY}/ts01-payments-api:v1.0.1 payments-api/
 
 echo ""
 echo "=== Pushing images ==="
-podman push ${REGISTRY}/scenario1-reporting-service:v1.0.1
-podman push ${REGISTRY}/scenario1-reporting-service:v1.0.2
-podman push ${REGISTRY}/scenario1-payments-api:v1.0.1
+podman push ${REGISTRY}/ts01-reporting-service:v1.0.1
+podman push ${REGISTRY}/ts01-reporting-service:v1.0.2
+podman push ${REGISTRY}/ts01-payments-api:v1.0.1
 
 echo ""
 echo "Done."

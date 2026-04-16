@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: payments-api
-          image: quay.io/afalossi/scenario1-payments-api:v1.0.1
+          image: quay.io/afalossi/ts01-payments-api:v1.0.1
           imagePullPolicy: Always
           ports:
             - containerPort: 8080

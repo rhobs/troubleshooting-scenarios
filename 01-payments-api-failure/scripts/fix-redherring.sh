@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+echo "Scenario 01 — Payments API Failure"
+echo ""
 echo "=== Fixing probes on reconciliation-service ==="
 oc set probe deployment/reconciliation-service -n shared-services \
   --readiness --open-tcp=8080 --initial-delay-seconds=3 --period-seconds=5 --failure-threshold=3

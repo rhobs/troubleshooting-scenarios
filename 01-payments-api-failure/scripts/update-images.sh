@@ -7,6 +7,8 @@ if [ -z "$1" ]; then
 fi
 REGISTRY="$1"
 
+echo "Scenario 01 — Payments API Failure"
+echo ""
 echo "=== Building images ==="
 podman build -t ${REGISTRY}/ts01-reporting-service:v1.0.1 reporting-service/v1.0.1/
 podman build -t ${REGISTRY}/ts01-reporting-service:v1.0.2 reporting-service/v1.0.2/

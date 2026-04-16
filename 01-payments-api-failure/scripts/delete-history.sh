@@ -1,6 +1,9 @@
 #!/bin/bash
 set -euo pipefail
 
+echo "Scenario 01 — Payments API Failure"
+echo ""
+
 PLATFORM_NS="openshift-monitoring"
 USER_NS="openshift-user-workload-monitoring"
 

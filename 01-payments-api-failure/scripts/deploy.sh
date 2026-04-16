@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+echo "Scenario 01 — Payments API Failure"
+echo ""
+
 SCRIPT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$SCRIPT_DIR"
 

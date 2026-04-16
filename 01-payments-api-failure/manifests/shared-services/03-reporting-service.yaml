@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reporting-service
+  namespace: shared-services
+  labels:
+    app: reporting-service
+    app.kubernetes.io/part-of: payment-processor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: reporting-service
+  template:
+    metadata:
+      labels:
+        app: reporting-service
+        app.kubernetes.io/part-of: payment-processor
+    spec:
+      containers:
+        - name: reporting-service
+          image: quay.io/afalossi/scenario1-reporting-service:v1.0.1
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8081
+              name: metrics
+          env:
+            - name: PGUSER
+              valueFrom:
+                secretKeyRef:
+                  name: reporting-db
+                  key: PGUSER
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: reporting-db
+                  key: PGPASSWORD
+            - name: PGHOST
+              value: postgres
+            - name: PGPORT
+              value: "5432"
+            - name: PGDATABASE
+              value: demo
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: reporting-service
+  namespace: shared-services
+  labels:
+    app: reporting-service
+    app.kubernetes.io/part-of: payment-processor
+spec:
+  selector:
+    app: reporting-service
+  ports:
+    - port: 8081
+      targetPort: 8081
+      name: metrics

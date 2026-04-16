@@ -1,0 +1,9 @@
+#!/bin/bash
+set -e
+
+echo "=== Rolling back reporting-service to v1.0.1 ==="
+oc -n shared-services set image deployment/reporting-service reporting-service=quay.io/afalossi/scenario1-reporting-service:v1.0.1
+oc -n shared-services rollout status deployment/reporting-service --timeout=120s
+
+echo ""
+echo "Done. reporting-service is now running v1.0.1."

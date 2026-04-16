@@ -1,0 +1,7 @@
+fastapi==0.115.0
+uvicorn==0.30.0
+psycopg2-binary==2.9.10
+prometheus_client==0.21.0
+prometheus-fastapi-instrumentator==7.0.0
+requests==2.32.3
+pyyaml==6.0.2

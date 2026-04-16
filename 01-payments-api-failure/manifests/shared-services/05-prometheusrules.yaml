@@ -1,0 +1,78 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: postgres
+  namespace: shared-services
+spec:
+  selector:
+    matchLabels:
+      app: postgres
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 30s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: reporting-service
+  namespace: shared-services
+spec:
+  selector:
+    matchLabels:
+      app: reporting-service
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 15s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: shared-services-alerts
+  namespace: shared-services
+spec:
+  groups:
+    - name: shared-services.workloads
+      rules:
+        - alert: SharedServicesPodCrashLooping
+          expr: |
+            max_over_time(kube_pod_container_status_waiting_reason{namespace="shared-services", reason="CrashLoopBackOff"}[5m]) >= 1
+          for: 1m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Pod {{ $labels.pod }} is crash looping"
+            description: "Pod {{ $labels.namespace }}/{{ $labels.pod }} ({{ $labels.container }}) is in CrashLoopBackOff."
+
+        - alert: SharedServicesDeploymentReplicasMismatch
+          expr: |
+            kube_deployment_spec_replicas{namespace="shared-services"}
+            != kube_deployment_status_replicas_ready{namespace="shared-services"}
+          for: 2m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Deployment {{ $labels.deployment }} has replica mismatch"
+            description: "Deployment {{ $labels.namespace }}/{{ $labels.deployment }} does not have the expected number of ready replicas."
+
+    - name: shared-services.database
+      rules:
+        - alert: PostgresqlConnectionsHigh
+          expr: |
+            sum(pg_stat_activity_count) > 9
+          for: 30s
+          labels:
+            severity: warning
+          annotations:
+            summary: "Database connections usage high"
+            description: "Database is using {{ $value }} connections. Monitor for potential connection leaks."
+        - alert: PostgresqlTooManyConnections
+          expr: |
+            sum(pg_stat_activity_count) > 13
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Too many database connections"
+            description: "{{ $value }} active connections detected. This may indicate connection leaks."

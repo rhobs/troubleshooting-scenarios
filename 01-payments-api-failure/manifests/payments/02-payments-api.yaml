@@ -1,0 +1,75 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payments-api
+  namespace: payments
+  labels:
+    app: payments-api
+    app.kubernetes.io/part-of: payment-processor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: payments-api
+  template:
+    metadata:
+      labels:
+        app: payments-api
+        app.kubernetes.io/part-of: payment-processor
+    spec:
+      containers:
+        - name: payments-api
+          image: quay.io/afalossi/scenario1-payments-api:v1.0.1
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+            - containerPort: 8081
+              name: metrics
+          env:
+            - name: PGUSER
+              valueFrom:
+                secretKeyRef:
+                  name: payments-db
+                  key: PGUSER
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: payments-db
+                  key: PGPASSWORD
+            - name: PGHOST
+              value: postgres.shared-services.svc.cluster.local
+            - name: PGPORT
+              value: "5432"
+            - name: PGDATABASE
+              value: demo
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: payments-api
+  namespace: payments
+  labels:
+    app: payments-api
+    app.kubernetes.io/part-of: payment-processor
+spec:
+  selector:
+    app: payments-api
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: http
+    - port: 8081
+      targetPort: 8081
+      name: metrics
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: payments-api
+  namespace: payments
+spec:
+  to:
+    kind: Service
+    name: payments-api
+  port:
+    targetPort: 8080

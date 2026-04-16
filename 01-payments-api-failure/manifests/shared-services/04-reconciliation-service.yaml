@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reconciliation-service
+  namespace: shared-services
+  labels:
+    app: reconciliation-service
+    app.kubernetes.io/part-of: payment-processor
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: reconciliation-service
+  template:
+    metadata:
+      labels:
+        app: reconciliation-service
+        app.kubernetes.io/part-of: payment-processor
+    spec:
+      containers:
+        - name: reconciliation-service
+          image: registry.redhat.io/rhel9/httpd-24:latest
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8443
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8443
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: reconciliation-service
+  namespace: shared-services
+  labels:
+    app: reconciliation-service
+    app.kubernetes.io/part-of: payment-processor
+spec:
+  selector:
+    app: reconciliation-service
+  ports:
+    - port: 8080
+      targetPort: 8080

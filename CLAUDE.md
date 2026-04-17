@@ -29,6 +29,8 @@ make cleanup         # Delete all demo resources
 make delete-history  # Reset Prometheus TSDB and restart pods
 make break-redherring  # Add a red herring (CrashLoopBackOff)
 make fix-redherring    # Remove the red herring
+make break-network     # Block egress from payments-api via NetworkPolicy
+make fix-network       # Remove the deny-all-egress NetworkPolicy
 make update-images     # Rebuild and push container images to Quay.io
 ```
 

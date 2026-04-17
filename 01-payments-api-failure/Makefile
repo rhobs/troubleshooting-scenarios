@@ -1,4 +1,4 @@
-.PHONY: help update-images deploy deploy-easy break fix cleanup delete-history break-redherring fix-redherring
+.PHONY: help update-images deploy deploy-easy break fix cleanup delete-history break-redherring fix-redherring break-network fix-network
 
 help:
 	@echo "Payments API Failure Scenario"
@@ -13,6 +13,8 @@ help:
 	@echo "  cleanup           Delete all demo resources"
 	@echo "  break-redherring  Introduce red herring (CrashLoopBackOff)"
 	@echo "  fix-redherring    Fix red herring"
+	@echo "  break-network     Block egress from payments-api via NetworkPolicy"
+	@echo "  fix-network       Remove the deny-all-egress NetworkPolicy"
 
 update-images:
 	@./scripts/update-images.sh $(REGISTRY)
@@ -40,3 +42,9 @@ break-redherring:
 
 fix-redherring:
 	@./scripts/fix-redherring.sh
+
+break-network:
+	@./scripts/break-network.sh
+
+fix-network:
+	@./scripts/fix-network.sh

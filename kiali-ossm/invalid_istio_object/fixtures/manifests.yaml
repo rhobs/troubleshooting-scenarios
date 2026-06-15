@@ -1,0 +1,27 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: reviews-bad-config
+  namespace: bookinfo
+spec:
+  hosts:
+  - reviews
+  gateways:
+  - bookinfo-missing-gateway # <-- ERROR 1
+  http:
+  - match:
+    - headers:
+        end-user:
+          exact: jason
+    route:
+    - destination:
+        host: reviews
+        subset: v99          # <-- ERROR 2
+      weight: 80
+    - destination:
+        host: fake-service   # <-- ERROR 3
+      weight: 10             # <-- ERROR 4
+  - route:
+    - destination:
+        host: reviews
+        subset: v1

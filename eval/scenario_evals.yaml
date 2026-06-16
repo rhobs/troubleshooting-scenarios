@@ -1,0 +1,656 @@
+# Agentic troubleshooting scenario evaluations.
+#
+# Each scenario injects a broken cluster state via setup_script, creates a
+# Proposal CR that triggers the agentic workflow (analysis → execution →
+# verification), then validates the outcome via expected_proposal_status
+# assertions and LLM-as-judge scoring.
+
+# --- oom: OOMKill diagnosis — full lifecycle ---
+- conversation_group_id: oom
+  tag: oom
+  description: OOMKill diagnosis — analysis, execution, and verification of a memory-leaking deployment
+  agent: proposal_agent
+  agent_config:
+    namespace: oom-scenario
+  setup_script: scenarios/oom/setup.sh
+  cleanup_script: scenarios/oom/cleanup.sh
+  conversation_metrics: []
+  conversation_metrics_metadata: {}
+  turns:
+    - turn_id: turn_1
+      proposal_spec:
+        request: >-
+          A deployment named awesome-application in namespace oom-scenario
+          is in CrashLoopBackOff. Pods are being OOMKilled. Analyze the
+          root cause, fix the memory configuration, and verify the fix.
+        targetNamespaces:
+          - oom-scenario
+        tools:
+          skills:
+            - image: quay.io/harpatil/agentic-skills:latest
+              paths:
+                - /skills/find-token
+        analysis:
+          agent: eval-default
+        execution:
+          agent: eval-default
+        verification:
+          agent: eval-default
+      expected_proposal_status:
+        phase: Completed
+        max_duration: "15m"
+        max_attempts: 5
+        analysis:
+          min_options: 1
+        execution:
+          phase: Succeeded
+        verification:
+          passed: true
+      expected_outcome: >-
+        Root cause: the app container is being OOMKilled due to a deliberate
+        memory leak in the pod command, while the container has a 60Mi memory
+        limit. The deployment runs Python that appends ~1MB/sec forever.
+        Remediation: increase the memory limit and verify the pod runs
+        without further OOMKill events.
+      expected_analysis_outcome: >-
+        The agent should identify that awesome-application pods are being
+        OOMKilled because the container runs a Python script that appends
+        ~1MB per second indefinitely, while the memory limit is only 60Mi.
+      expected_execution_outcome: >-
+        The agent should increase the container memory limit by patching
+        the deployment resource.
+      expected_verification_outcome: >-
+        The agent should verify the pods reach Running state without
+        further OOMKill events after the memory limit increase.
+      turn_metrics:
+        - custom:proposal_status
+        - custom:proposal_evaluation_correctness
+      turn_metrics_metadata:
+        "custom:proposal_evaluation_correctness":
+          threshold: 0.75
+
+# --- envvar_missing: CrashLoopBackOff due to missing environment variable ---
+- conversation_group_id: envvar_missing
+  tag: envvar_missing
+  description: CrashLoop detection — order-fulfillment-daemon fails because DEPLOY_ENV is undefined
+  agent: proposal_agent
+  agent_config:
+    namespace: warehouse-ops
+  setup_script: scenarios/envvar_missing/setup.sh
+  cleanup_script: scenarios/envvar_missing/cleanup.sh
+  conversation_metrics: []
+  conversation_metrics_metadata: {}
+  turns:
+    - turn_id: turn_1
+      proposal_spec:
+        request: >-
+          A deployment named order-fulfillment-daemon in namespace warehouse-ops
+          is in CrashLoopBackOff. Analyze the root cause, fix the issue,
+          and verify the fix.
+        targetNamespaces:
+          - warehouse-ops
+        tools:
+          skills:
+            - image: quay.io/harpatil/agentic-skills:latest
+              paths:
+                - /skills/find-token
+        analysis:
+          agent: eval-default
+        execution:
+          agent: eval-default
+        verification:
+          agent: eval-default
+      expected_proposal_status:
+        phase: Completed
+        max_duration: "10m"
+        max_attempts: 5
+        analysis:
+          min_options: 1
+        execution:
+          phase: Succeeded
+        verification:
+          passed: true
+      expected_outcome: >-
+        Root cause: the order-fulfillment-daemon container exits because the
+        DEPLOY_ENV environment variable is undefined. The entrypoint script
+        checks for DEPLOY_ENV and exits 1 if it is missing.
+        Remediation: define the DEPLOY_ENV environment variable on the
+        deployment and verify the pod reaches Running state.
+      expected_analysis_outcome: >-
+        The agent should identify that the container logs show
+        "Environment variable DEPLOY_ENV is undefined" and that the
+        entrypoint exits with code 1 when DEPLOY_ENV is not set.
+      expected_execution_outcome: >-
+        The agent should add the DEPLOY_ENV environment variable to the
+        deployment spec (e.g. via oc set env or patching the container spec).
+      expected_verification_outcome: >-
+        The agent should verify the pod reaches Running state without
+        further CrashLoopBackOff after the environment variable is set.
+      turn_metrics:
+        - custom:proposal_status
+        - custom:proposal_evaluation_correctness
+      turn_metrics_metadata:
+        "custom:proposal_evaluation_correctness":
+          threshold: 0.75
+
+# --- batch_failure: Job failure due to unreachable database ---
+- conversation_group_id: batch_failure
+  tag: batch_failure
+  description: Job crash detection — inventory-sync-validator cannot connect to database at prod-db:3333
+  agent: proposal_agent
+  agent_config:
+    namespace: catalog-mgmt
+  setup_script: scenarios/batch_failure/setup.sh
+  cleanup_script: scenarios/batch_failure/cleanup.sh
+  conversation_metrics: []
+  conversation_metrics_metadata: {}
+  turns:
+    - turn_id: turn_1
+      proposal_spec:
+        request: >-
+          A job named inventory-sync-validator in namespace catalog-mgmt is
+          failing. Analyze the root cause, fix the issue, and verify the fix.
+        targetNamespaces:
+          - catalog-mgmt
+        tools:
+          skills:
+            - image: quay.io/harpatil/agentic-skills:latest
+              paths:
+                - /skills/find-token
+        analysis:
+          agent: eval-default
+        execution:
+          agent: eval-default
+        verification:
+          agent: eval-default
+      expected_proposal_status:
+        phase: Completed
+        max_duration: "10m"
+        max_attempts: 5
+        analysis:
+          min_options: 1
+        execution:
+          phase: Succeeded
+        verification:
+          passed: true
+      expected_outcome: >-
+        Root cause: the inventory-sync-validator job fails because it cannot
+        connect to the database at prod-db:3333. The pod logs show repeated
+        connection refused errors (errno 111) and ultimately a fatal error
+        after exhausting all retry attempts.
+      expected_analysis_outcome: >-
+        The agent should identify from the job pod logs that the database
+        connection to prod-db:3333 is being refused and all retry attempts
+        are exhausted.
+      expected_execution_outcome: >-
+        The agent should fix the database connectivity issue (e.g. correct
+        the host/port, create the missing service, or adjust network policy)
+        and re-run the job.
+      expected_verification_outcome: >-
+        The agent should verify the job completes successfully or that
+        the connectivity issue is resolved.
+      turn_metrics:
+        - custom:proposal_status
+        - custom:proposal_evaluation_correctness
+      turn_metrics_metadata:
+        "custom:proposal_evaluation_correctness":
+          threshold: 0.75
+
+# --- storage_binding: PVC misconfiguration blocking memcached ---
+- conversation_group_id: storage_binding
+  tag: storage_binding
+  description: PVC misconfiguration — memcached stuck pending due to invalid storageClassName
+  agent: proposal_agent
+  agent_config:
+    namespace: cache-tier
+    auto_approve: false
+  setup_script: scenarios/storage_binding/setup.sh
+  cleanup_script: scenarios/storage_binding/cleanup.sh
+  conversation_metrics: []
+  conversation_metrics_metadata: {}
+  turns:
+    - turn_id: turn_1
+      proposal_spec:
+        request: >-
+          A memcached deployment in namespace cache-tier is not starting.
+          The pod is stuck in Pending state. Analyze the root cause, fix
+          the issue, and verify the fix.
+        targetNamespaces:
+          - cache-tier
+        tools:
+          skills:
+            - image: quay.io/harpatil/agentic-skills:latest
+              paths:
+                - /skills/find-token
+        analysis:
+          agent: eval-default
+        execution:
+          agent: eval-default
+        verification:
+          agent: eval-default
+      expected_proposal_status:
+        phase: Completed
+        max_duration: "10m"
+        max_attempts: 5
+        analysis:
+          min_options: 1
+        execution:
+          phase: Succeeded
+        verification:
+          passed: true
+      expected_outcome: >-
+        Root cause: the PersistentVolumeClaim memcached-data-pvc references
+        storageClassName "standard-v2" which does not exist on the cluster,
+        causing a ProvisioningFailed event. The memcached pod is stuck in
+        Pending because the PVC cannot be bound.
+        Remediation: fix the storageClassName to a valid StorageClass and
+        verify the PVC binds and the pod starts.
+      expected_analysis_outcome: >-
+        The agent should identify that the PVC memcached-data-pvc has a
+        ProvisioningFailed event because the storageClassName "standard-v2"
+        does not exist, and this is blocking the memcached pod from starting.
+      expected_execution_outcome: >-
+        The agent should update the PVC storageClassName to a valid
+        StorageClass available on the cluster (e.g. by deleting and
+        recreating the PVC with the correct class).
+      expected_verification_outcome: >-
+        The agent should verify the PVC is bound and the memcached pod
+        reaches Running state.
+      turn_metrics:
+        - custom:proposal_status
+        - custom:proposal_evaluation_correctness
+      turn_metrics_metadata:
+        "custom:proposal_evaluation_correctness":
+          threshold: 0.75
+
+# --- readiness_probe_diagnosis: Pod not ready due to failing readiness probe ---
+- conversation_group_id: readiness_probe_diagnosis
+  tag: readiness_probe_diagnosis
+  description: Pod readiness probe failure — catalog-index-service not ready because no process listens on the probe port
+  agent: proposal_agent
+  agent_config:
+    namespace: discovery-hub
+  setup_script: scenarios/readiness_probe_diagnosis/setup.sh
+  cleanup_script: scenarios/readiness_probe_diagnosis/cleanup.sh
+  conversation_metrics: []
+  conversation_metrics_metadata: {}
+  turns:
+    - turn_id: turn_1
+      proposal_spec:
+        request: >-
+          A pod named catalog-index-service in namespace discovery-hub is
+          not ready. Analyze the root cause, fix the issue, and verify
+          the fix.
+        targetNamespaces:
+          - discovery-hub
+        tools:
+          skills:
+            - image: quay.io/harpatil/agentic-skills:latest
+              paths:
+                - /skills/find-token
+        analysis:
+          agent: eval-default
+        execution:
+          agent: eval-default
+        verification:
+          agent: eval-default
+      expected_proposal_status:
+        phase: Completed
+        max_duration: "10m"
+        max_attempts: 5
+        analysis:
+          min_options: 1
+        execution:
+          phase: Succeeded
+        verification:
+          passed: true
+      expected_outcome: >-
+        Root cause: the catalog-index-service pod is not ready because its
+        readiness probe (HTTP GET /healthz on port 9200) fails — the
+        container runs a simple shell loop and does not serve HTTP on that
+        port. Remediation: fix the readiness probe configuration or add
+        an HTTP listener, then verify the pod becomes ready.
+      expected_analysis_outcome: >-
+        The agent should identify that the pod has a failing readiness probe
+        configured to check /healthz on port 9200, but no process in the
+        container listens on that port.
+      expected_execution_outcome: >-
+        The agent should fix the readiness probe (e.g. remove it, change it
+        to an exec probe, or correct the port/path) so the pod can pass
+        the readiness check.
+      expected_verification_outcome: >-
+        The agent should verify the pod reaches Ready state after the
+        probe is fixed.
+      turn_metrics:
+        - custom:proposal_status
+        - custom:proposal_evaluation_correctness
+      turn_metrics_metadata:
+        "custom:proposal_evaluation_correctness":
+          threshold: 0.75
+
+# --- namespace_pod_count: Exact namespace matching (analysis-only) ---
+- conversation_group_id: namespace_pod_count
+  tag: namespace_pod_count
+  description: Exact namespace matching — count pods in fleet-alpha without including fleet-alpha1
+  agent: proposal_agent
+  agent_config:
+    namespace: fleet-alpha
+  setup_script: scenarios/namespace_pod_count/setup.sh
+  cleanup_script: scenarios/namespace_pod_count/cleanup.sh
+  conversation_metrics: []
+  conversation_metrics_metadata: {}
+  turns:
+    - turn_id: turn_1
+      proposal_spec:
+        request: >-
+          How many pods are running in the fleet-alpha namespace? Report
+          the exact count. Be careful not to include pods from other
+          namespaces with similar names.
+        targetNamespaces:
+          - fleet-alpha
+          - fleet-alpha1
+        tools:
+          skills:
+            - image: quay.io/harpatil/agentic-skills:latest
+              paths:
+                - /skills/find-token
+        analysis:
+          agent: eval-default
+      expected_proposal_status:
+        phase: Completed
+        max_duration: "10m"
+        analysis:
+          min_options: 1
+      expected_outcome: >-
+        There are exactly 6 pods running in the fleet-alpha namespace.
+        The agent must not confuse fleet-alpha with fleet-alpha1 which
+        has 9 pods.
+      expected_analysis_outcome: >-
+        The agent should correctly count 6 running pods in fleet-alpha
+        (2 from deployments + 4 standalone pods) and not include the 9
+        pods from fleet-alpha1.
+      turn_metrics:
+        - custom:proposal_status
+        - custom:proposal_evaluation_correctness
+      turn_metrics_metadata:
+        "custom:proposal_evaluation_correctness":
+          threshold: 0.75
+
+# --- scheduled_outage_detection: Time-window anomaly in logs (analysis-only) ---
+- conversation_group_id: scheduled_outage_detection
+  tag: scheduled_outage_detection
+  description: Time-window anomaly detection — report-generator API connection failures during 03:00-04:00
+  agent: proposal_agent
+  agent_config:
+    namespace: analytics-platform
+  setup_script: scenarios/scheduled_outage_detection/setup.sh
+  cleanup_script: scenarios/scheduled_outage_detection/cleanup.sh
+  conversation_metrics: []
+  conversation_metrics_metadata: {}
+  turns:
+    - turn_id: turn_1
+      proposal_spec:
+        request: >-
+          The report-generator in namespace analytics-platform is processing
+          historical records. Analyze the pod logs to identify any issues
+          that occurred between 03:00 and 04:00.
+        targetNamespaces:
+          - analytics-platform
+        tools:
+          skills:
+            - image: quay.io/harpatil/agentic-skills:latest
+              paths:
+                - /skills/find-token
+        analysis:
+          agent: eval-default
+      expected_proposal_status:
+        phase: Completed
+        max_duration: "10m"
+        analysis:
+          min_options: 1
+      expected_outcome: >-
+        The report-generator pod experienced temporary issues between
+        03:00 and 03:05 when it could not connect to an external API
+        (reports-upstream.internal), possibly due to a scheduled
+        maintenance window upstream.
+      expected_analysis_outcome: >-
+        The agent should identify ERROR logs showing upstream unreachable
+        and timeout errors concentrated in the 03:00-03:05 window, and
+        recognize this as a possible scheduled maintenance outage.
+      turn_metrics:
+        - custom:proposal_status
+        - custom:proposal_evaluation_correctness
+      turn_metrics_metadata:
+        "custom:proposal_evaluation_correctness":
+          threshold: 0.75
+
+# --- periodic_failure_window: Time-window anomaly with exact time requirement (analysis-only) ---
+- conversation_group_id: periodic_failure_window
+  tag: periodic_failure_window
+  description: Time-window anomaly detection — batch-processor failures with exact 03:00-03:05 window required
+  agent: proposal_agent
+  agent_config:
+    namespace: data-pipeline
+  setup_script: scenarios/periodic_failure_window/setup.sh
+  cleanup_script: scenarios/periodic_failure_window/cleanup.sh
+  conversation_metrics: []
+  conversation_metrics_metadata: {}
+  turns:
+    - turn_id: turn_1
+      proposal_spec:
+        request: >-
+          The batch-processor in namespace data-pipeline is processing
+          historical records. Some pod ERROR logs reported issues.
+          Analyze the logs and tell me exactly when the issues occurred.
+        targetNamespaces:
+          - data-pipeline
+        tools:
+          skills:
+            - image: quay.io/harpatil/agentic-skills:latest
+              paths:
+                - /skills/find-token
+        analysis:
+          agent: eval-default
+      expected_proposal_status:
+        phase: Completed
+        max_duration: "10m"
+        analysis:
+          min_options: 1
+      expected_outcome: >-
+        The batch-processor pod reported issues between 03:00-03:05 when
+        it could not connect to an external API (pipeline-intake.corp.net),
+        possibly due to a scheduled maintenance window upstream. The agent
+        must specify the exact time window (03:00-03:05).
+      expected_analysis_outcome: >-
+        The agent should identify the exact failure window as 03:00-03:05
+        from the ERROR logs showing batch submission failures with connect
+        timeout errors to the upstream API.
+      turn_metrics:
+        - custom:proposal_status
+        - custom:proposal_evaluation_correctness
+      turn_metrics_metadata:
+        "custom:proposal_evaluation_correctness":
+          threshold: 0.75
+
+# --- config_drift_analysis: Connection refused after config reload (analysis-only) ---
+- conversation_group_id: config_drift_analysis
+  tag: config_drift_analysis
+  description: Log context analysis — connection refused errors caused by config reload loading staging settings in production
+  agent: proposal_agent
+  agent_config:
+    namespace: ingress-layer
+  setup_script: scenarios/config_drift_analysis/setup.sh
+  cleanup_script: scenarios/config_drift_analysis/cleanup.sh
+  conversation_metrics: []
+  conversation_metrics_metadata: {}
+  turns:
+    - turn_id: turn_1
+      proposal_spec:
+        request: >-
+          What is causing connection refused errors in gateway-proxy in
+          namespace ingress-layer? Analyze the pod logs to identify the
+          root cause.
+        targetNamespaces:
+          - ingress-layer
+        tools:
+          skills:
+            - image: quay.io/harpatil/agentic-skills:latest
+              paths:
+                - /skills/find-token
+        analysis:
+          agent: eval-default
+      expected_proposal_status:
+        phase: Completed
+        max_duration: "10m"
+        analysis:
+          min_options: 1
+      expected_outcome: >-
+        The connection refused errors started after a config reload that
+        loaded staging database settings (db-staging.internal,
+        redis-staging.internal) in a production environment. The gateway-proxy
+        hot-reloaded /config/app.yaml which pointed upstreams to staging
+        hosts unreachable from the production VPC.
+      expected_analysis_outcome: >-
+        The agent should identify the config reload event as the root cause,
+        noting that the new config references staging hosts
+        (db-staging.internal, redis-staging.internal) while the environment
+        is PRODUCTION, and these staging hosts are unreachable causing
+        connection refused errors.
+      turn_metrics:
+        - custom:proposal_status
+        - custom:proposal_evaluation_correctness
+      turn_metrics_metadata:
+        "custom:proposal_evaluation_correctness":
+          threshold: 0.75
+
+# --- ingress_rule_mismatch: NetworkPolicy blocking frontend-to-backend traffic ---
+- conversation_group_id: ingress_rule_mismatch
+  tag: ingress_rule_mismatch
+  description: Network policy diagnosis — web-portal timeouts due to NetworkPolicy only allowing tier=backend ingress
+  agent: proposal_agent
+  agent_config:
+    namespace: platform-core
+  setup_script: scenarios/ingress_rule_mismatch/setup.sh
+  cleanup_script: scenarios/ingress_rule_mismatch/cleanup.sh
+  conversation_metrics: []
+  conversation_metrics_metadata: {}
+  turns:
+    - turn_id: turn_1
+      proposal_spec:
+        request: >-
+          The web-portal in namespace platform-core is getting timeouts
+          connecting to api-gateway. Analyze the root cause, fix the
+          issue, and verify the fix.
+        targetNamespaces:
+          - platform-core
+        tools:
+          skills:
+            - image: quay.io/harpatil/agentic-skills:latest
+              paths:
+                - /skills/find-token
+        analysis:
+          agent: eval-default
+        execution:
+          agent: eval-default
+        verification:
+          agent: eval-default
+      expected_proposal_status:
+        phase: Completed
+        max_duration: "10m"
+        max_attempts: 5
+        analysis:
+          min_options: 1
+        execution:
+          phase: Succeeded
+        verification:
+          passed: true
+      expected_outcome: >-
+        Root cause: the NetworkPolicy restrict-api-gateway-ingress only
+        allows ingress from pods with label tier=backend, but web-portal
+        has tier=frontend. Remediation: update the NetworkPolicy ingress
+        rules to also allow pods with tier=frontend, then verify
+        web-portal can reach api-gateway.
+      expected_analysis_outcome: >-
+        The agent should identify that the NetworkPolicy on api-gateway
+        restricts ingress to pods with tier=backend, which excludes
+        the web-portal pod that has tier=frontend.
+      expected_execution_outcome: >-
+        The agent should update the NetworkPolicy to add a from selector
+        allowing pods with tier=frontend to reach api-gateway on port 8080.
+      expected_verification_outcome: >-
+        The agent should verify that web-portal can successfully connect
+        to api-gateway-svc without timeouts.
+      turn_metrics:
+        - custom:proposal_status
+        - custom:proposal_evaluation_correctness
+      turn_metrics_metadata:
+        "custom:proposal_evaluation_correctness":
+          threshold: 0.75
+
+# --- wrong_networkpolicy: NetworkPolicy blocking frontend-backend traffic — full lifecycle ---
+- conversation_group_id: wrong_networkpolicy
+  tag: wrong_networkpolicy
+  description: NetworkPolicy misconfiguration — backend-network-policy only allows ingress from tier=backend, blocking frontend
+  agent: proposal_agent
+  agent_config:
+    namespace: service-mesh
+  setup_script: scenarios/wrong_networkpolicy/setup.sh
+  cleanup_script: scenarios/wrong_networkpolicy/cleanup.sh
+  conversation_metrics: []
+  conversation_metrics_metadata: {}
+  turns:
+    - turn_id: turn_1
+      proposal_spec:
+        request: >-
+          The frontend deployment in namespace service-mesh cannot connect
+          to the backend-service. Frontend logs show repeated
+          "ERROR: Connection timeout to backend-service!" messages. The
+          backend pod is running and healthy. Analyze the root cause,
+          fix the connectivity issue, and verify frontend can reach
+          the backend.
+        targetNamespaces:
+          - service-mesh
+        tools:
+          skills:
+            - image: quay.io/harpatil/agentic-skills:latest
+              paths:
+                - /skills/find-token
+        analysis:
+          agent: eval-default
+        execution:
+          agent: eval-default
+        verification:
+          agent: eval-default
+      expected_proposal_status:
+        phase: Completed
+        max_duration: "15m"
+        max_attempts: 5
+        analysis:
+          min_options: 1
+        execution:
+          phase: Succeeded
+        verification:
+          passed: true
+      expected_outcome: >-
+        Root cause: the backend-network-policy NetworkPolicy only allows
+        ingress from pods with label tier=backend. The frontend pods
+        have label tier=frontend and are therefore blocked. Remediation:
+        update the NetworkPolicy ingress rules to allow pods with
+        tier=frontend, then verify frontend can reach backend-service.
+      expected_analysis_outcome: >-
+        The agent should identify that the backend-network-policy
+        restricts ingress to the backend pods, only allowing traffic
+        from pods with tier=backend. The frontend pod has tier=frontend
+        and is blocked by this rule.
+      expected_execution_outcome: >-
+        The agent should update the NetworkPolicy to add a from selector
+        allowing pods with tier=frontend to reach the backend on port 8080.
+      expected_verification_outcome: >-
+        The agent should verify that the frontend pod can successfully
+        connect to backend-service without timeouts.
+      turn_metrics:
+        - custom:proposal_status
+        - custom:proposal_evaluation_correctness
+      turn_metrics_metadata:
+        "custom:proposal_evaluation_correctness":
+          threshold: 0.75

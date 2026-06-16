@@ -1,0 +1,70 @@
+# Agentic Lightspeed Evaluation — System Configuration
+#
+# Uses proposal agent type: evaluations create Kubernetes Proposal CRDs
+# that trigger analysis → execution → verification workflows on the cluster.
+#
+# Requires:
+#   - OpenShift cluster with the agentic operator installed
+#   - OPENAI_API_KEY for the judge LLM
+#   - oc login to the target cluster
+
+logging:
+  source_level: INFO
+  package_level: ERROR
+  log_format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  show_timestamps: true
+  package_overrides:
+    httpx: ERROR
+    urllib3: ERROR
+    requests: ERROR
+    LiteLLM: WARNING
+
+core:
+  max_threads: 1
+  fail_on_invalid_data: true
+  skip_on_failure: false
+
+# Agent definitions — proposal-based evaluation
+agents:
+  enabled: true
+  default:
+    agent: proposal_agent
+  proposal_agent:
+    type: proposal
+    namespace: default
+    auto_approve: true
+    cleanup_proposals: false
+    timeout: 1200
+    cli_timeout: 30
+    poll_interval: 5
+
+# Judge LLM — scores proposal outcomes against expected results
+llm:
+  provider: openai
+  model: gpt-5-mini
+  temperature: 0.0
+  max_tokens: 5000
+  timeout: 300
+  num_retries: 3
+  cache_enabled: false
+
+# Metrics metadata
+metrics_metadata:
+  turn_level:
+    "custom:proposal_status":
+      description: "Validates CRD final state against expected_proposal_status assertions"
+      default: false
+
+    "custom:proposal_evaluation_correctness":
+      description: "LLM-as-judge scoring of analysis, execution, and verification quality"
+      default: false
+
+# Output configuration
+storage:
+  - type: file
+    output_dir: ./eval_output
+    enabled_outputs: [csv, json]
+
+environment:
+  DEEPEVAL_TELEMETRY_OPT_OUT: "YES"
+  LITELLM_LOG: ERROR

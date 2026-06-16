@@ -1,9 +1,9 @@
 # Evaluation conversations for OSSM + LightSpeed troubleshooting evaluation.
-# Simplified version of scenarios/conversations.yaml — no tool_calls or expected_tool_calls.
+# Evaluation conversations for OSSM + LightSpeed troubleshooting evaluation.
 
 # ── check_mesh_status ─────────────────────────────────────────────────────────
 - conversation_group_id: check_mesh_status
-  tag: check_mesh_Status
+  tag: check_mesh_status
   description: "Check the status of the mesh and identify any issues."
 
   turns:
@@ -24,9 +24,9 @@
       turn_metrics:
         - custom:answer_correctness
 
-# ── check_istioObjects_status ─────────────────────────────────────────────────────────
+# ── check_istio_objects_status ─────────────────────────────────────────────────────────
 - conversation_group_id: check_istioObject_status
-  tag: check_istioObjects_status
+  tag: check_istio_objects_status
   description: "A misconfigured VirtualService (reviews-bad-config) is deployed in bookinfo with four Kiali validation errors: missing gateway, undefined subset, non-existent destination host, and route weights not summing to 100."
 
   turns:
@@ -63,8 +63,8 @@
       turn_metrics:
         - custom:answer_correctness
 
-  setup_script: ../scenarios/invalid_istio_object/setup.sh
-  cleanup_script: ../scenarios/invalid_istio_object/cleanup.sh
+  setup_script: ./invalid_istio_object/setup.sh
+  cleanup_script: ./invalid_istio_object/cleanup.sh
 
 # ── fix_bookinfo_routing ──────────────────────────────────────────────────────
 - conversation_group_id: fix_bookinfo_routing
@@ -88,8 +88,8 @@
       turn_metrics:
         - custom:answer_correctness
 
-  setup_script: ../scenarios/fix_bookinfo_routing/setup.sh
-  cleanup_script: ../scenarios/fix_bookinfo_routing/cleanup.sh
+  setup_script: ./fix_bookinfo_routing/setup.sh
+  cleanup_script: ./fix_bookinfo_routing/cleanup.sh
 
 
 
@@ -119,8 +119,8 @@
       turn_metrics:
         - custom:answer_correctness
 
-  setup_script: ../scenarios/fix_bookinfo_fault_injection/setup.sh
-  cleanup_script: ../scenarios/fix_bookinfo_fault_injection/cleanup.sh
+  setup_script: ./fix_bookinfo_fault_injection/setup.sh
+  cleanup_script: ./fix_bookinfo_fault_injection/cleanup.sh
 
 
 
@@ -159,8 +159,8 @@
       turn_metrics:
         - custom:answer_correctness
 
-  setup_script: ../scenarios/troubleshoot_latency_trace/setup.sh
-  cleanup_script: ../scenarios/troubleshoot_latency_trace/cleanup.sh
+  setup_script: ./troubleshoot_latency_trace/setup.sh
+  cleanup_script: ./troubleshoot_latency_trace/cleanup.sh
 
 
 # ── check_latency_bookinfo_issue ──────────────────────────────────────────────

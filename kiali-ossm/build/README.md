@@ -1,38 +1,10 @@
 # Kiali Installation
 
-Two installation paths are supported: **upstream** (vanilla Kubernetes/Kind via `istioctl`) and **OpenShift Service Mesh** (OSSM/Sail on OpenShift). Both require an active cluster login before running any `make` target.
+Installs Kiali on OpenShift via OpenShift Service Mesh (OSSM/Sail). Requires an active cluster login before running any `make` target.
 
 ## Prerequisites
 
-- `kubectl` / `oc` configured and logged in to the target cluster
-  - Upstream: `kubectl cluster-info`
-  - OpenShift: `oc login <cluster-api-url>`
-
----
-
-## Upstream (istioctl + vanilla Istio)
-
-Installs Istio (demo profile) with Prometheus, Jaeger, and Kiali add-ons, then deploys the Bookinfo sample application and exposes both services locally via port-forward.
-
-```bash
-make setup-kiali
-```
-
-What this does, step by step:
-
-1. **Downloads `istioctl`** (`ISTIO_VERSION=1.30.1`) into `_output/tools/bin/`.
-2. **Installs Istio** (demo profile) and enables sidecar injection in the `default` namespace.
-3. **Applies add-ons** — Prometheus, Kiali (`KIALI_VERSION=v2.27.0`), and Jaeger — into `istio-system`.
-4. **Installs the Bookinfo demo** into a dedicated `bookinfo` namespace with the Istio ingress gateway.
-5. **Exposes Kiali** on `http://localhost:20001`.
-6. **Exposes Bookinfo** on `http://localhost:20002/productpage` and starts a background traffic generator.
-
-### Customisation
-
-| Variable | Default | Description |
-|---|---|---|
-| `ISTIO_VERSION` | `1.30.1` | Istio release to download and install |
-| `KIALI_VERSION` | `v2.27.0` | Kiali image tag applied after operator install |
+- `oc` configured and logged in to the target cluster: `oc login <cluster-api-url>`
 
 ---
 
@@ -82,8 +54,8 @@ This deletes the Bookinfo namespace, OSSM Console namespace, control-plane names
 The full `setup-kiali-openshift` flow can also be run in stages:
 
 ```bash
-make ossm-install-operators   # Install Sail + Kiali operators only
-make ossm-install-istio       # Install Istio CR + addons + Kiali CR only
-make install-bookinfo-openshift  # Install Bookinfo only
+make ossm-install-operators          # Install Sail + Kiali operators only
+make ossm-install-istio              # Install Istio CR + addons + Kiali CR only
+make install-bookinfo-openshift      # Install Bookinfo only
 make validate-bookinfo-kiali-health  # Run Kiali API health check only
 ```

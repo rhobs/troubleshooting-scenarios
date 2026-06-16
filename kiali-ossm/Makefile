@@ -5,15 +5,14 @@
 # GEMINI_KEY_FILE, …) are available here because include merges both files
 # at parse time.
 #
-# All conversations are defined in scenarios/conversations.yaml.
+# All conversations are defined in scenarios/evals.yaml.
 # Add a new conversation there, then optionally add an individual target below.
 # ──────────────────────────────────────────────────────────────────────────────
 
-include build/upstream.mk
 include build/ossm.mk
 
 SYSTEM_CONFIG = ./system.yaml
-CONVERSATIONS = ./conversations.yaml
+EVALS = ./evals.yaml
 RESULTS_DIR = ./results
 
 CLUSTER ?= openshift
@@ -35,13 +34,13 @@ EVAL_BASE = KUBECTL=$(KUBECTL) \
             ../venv/bin/lightspeed-eval \
             --system-config $(SYSTEM_CONFIG) \
             --output-dir $(RESULTS_DIR) \
-            --eval-data $(CONVERSATIONS)
+            --eval-data $(EVALS)
 
 .PHONY: test test-without-mcp check_mesh_status-test
 
-# ── all / test: run every conversation in conversations.yaml ──────────────────
+# ── all / test: run every conversation in evals.yaml ─────────────────────────
 test:   check_mesh_status-test \
-		check_istioObjects_status-test \
+		check_istio_objects_status-test \
 		check_bookinfo_services-test \
 		check_latency_bookinfo_issue-test \
 		fix_bookinfo_routing-test \
@@ -66,7 +65,7 @@ troubleshoot_latency_trace-test:
 
 check_mesh_status-test:
 	$(EVAL_BASE) \
-	  --tag check_mesh_Status
+	  --tag check_mesh_status
 
 check_bookinfo_services-test:
 	$(EVAL_BASE) \
@@ -76,9 +75,9 @@ check_latency_bookinfo_issue-test:
 	$(EVAL_BASE) \
 	  --tag latency_bookinfo_issue
 
-check_istioObjects_status-test:
+check_istio_objects_status-test:
 	$(EVAL_BASE) \
-	  --tag check_istioObjects_status
+	  --tag check_istio_objects_status
 
 # No MCP Tests
 check_mesh_status-test-without-mcp:

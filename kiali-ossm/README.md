@@ -32,17 +32,7 @@ The evaluation framework sends queries to an OLS instance as the system under te
 
 ## Setup: install Istio, Kiali, and Bookinfo
 
-All scenarios assume Istio, Kiali, and the Bookinfo sample application are already running in the cluster. Run **one** of the following from this directory depending on your cluster type. See [`build/README.md`](build/README.md) for a full description of every step and all available variables.
-
-### Upstream Kubernetes
-
-```bash
-make setup-kiali
-```
-
-Installs Istio (demo profile) with Prometheus, Jaeger, and Kiali via `istioctl`, then deploys Bookinfo and exposes both services via port-forward (`localhost:20001` for Kiali, `localhost:20002` for Bookinfo).
-
-### OpenShift Service Mesh (OSSM / Sail)
+All scenarios assume Istio, Kiali, and the Bookinfo sample application are already running in the cluster. See [`build/README.md`](build/README.md) for a full description of every step and all available variables.
 
 ```bash
 make setup-kiali-openshift
@@ -54,11 +44,11 @@ Installs the Sail and Kiali operators via OLM, deploys an `Istio` CR with add-on
 
 ## Scenarios
 
-Each scenario below corresponds to a conversation in [`conversations.yaml`](conversations.yaml) and an evaluation target in the [`Makefile`](Makefile). Scenarios with a `setup_script` introduce a fault before the conversation starts and clean it up afterwards.
+Each scenario below corresponds to a conversation in [`evals.yaml`](evals.yaml) and an evaluation target in the [`Makefile`](Makefile). Scenarios with a `setup_script` introduce a fault before the conversation starts and clean it up afterwards.
 
 ### `check_mesh_status`
 
-**Tag:** `check_mesh_Status`
+**Tag:** `check_mesh_status`
 
 Asks the agent to perform a full mesh health assessment: control-plane version and health, observability stack status (Prometheus, Grafana, Tempo/Jaeger), and data-plane namespace health. The agent is expected to cite specific evidence from tool output and provide a prioritised action list.
 
@@ -68,14 +58,14 @@ make check_mesh_status-test
 
 ---
 
-### `check_istioObjects_status`
+### `check_istio_objects_status`
 
-**Tag:** `check_istioObjects_status`
+**Tag:** `check_istio_objects_status`
 
 A misconfigured `VirtualService` (`reviews-bad-config`) is deployed in `bookinfo` with four Kiali validation errors: missing gateway, undefined subset, non-existent destination host, and route weights not summing to 100. The agent must inspect Istio objects in the namespace and report each error with a concrete fix.
 
 ```bash
-make check_istioObjects_status-test
+make check_istio_objects_status-test
 ```
 
 ---

@@ -8,6 +8,6 @@ echo "Cleaning up namespace_pod_count scenario resources..."
 oc delete -f "$FIXTURE_DIR/manifests.yaml" --ignore-not-found
 oc delete namespace fleet-alpha fleet-alpha1 --ignore-not-found
 
-# shellcheck source=../_common/cleanup_infra-openai.sh
-source "$SCRIPT_DIR/../_common/cleanup_infra-openai.sh"
+# shellcheck source=../_common/cleanup_infra-claude-vertex.sh
+source "$SCRIPT_DIR/../_common/cleanup_infra-claude-vertex.sh"
 echo "Cleanup complete."

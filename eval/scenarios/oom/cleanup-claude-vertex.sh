@@ -8,6 +8,6 @@ echo "Cleaning up OOM scenario resources..."
 oc delete deployment awesome-application -n "$NS" --ignore-not-found
 oc delete namespace "$NS" --ignore-not-found
 
-# shellcheck source=../_common/cleanup_infra-openai.sh
-source "$SCRIPT_DIR/../_common/cleanup_infra-openai.sh"
+# shellcheck source=../_common/cleanup_infra-claude-vertex.sh
+source "$SCRIPT_DIR/../_common/cleanup_infra-claude-vertex.sh"
 echo "Cleanup complete."

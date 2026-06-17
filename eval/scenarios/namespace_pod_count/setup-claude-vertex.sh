@@ -9,8 +9,8 @@ EXPECTED_A=6
 EXPECTED_B=9
 
 # Deploy agentic infrastructure (LLMProvider, Agent CRDs)
-# shellcheck source=../_common/setup_infra-openai.sh
-source "$SCRIPT_DIR/../_common/setup_infra-openai.sh"
+# shellcheck source=../_common/setup_infra-claude-vertex.sh
+source "$SCRIPT_DIR/../_common/setup_infra-claude-vertex.sh"
 
 # Deploy the workloads
 oc apply -f "$FIXTURE_DIR/manifests.yaml"

@@ -7,8 +7,8 @@ NS="oom-scenario"
 APP="awesome-application"
 
 # Deploy agentic infrastructure (LLMProvider, Agent CRDs)
-# shellcheck source=../_common/setup_infra-openai.sh
-source "$SCRIPT_DIR/../_common/setup_infra-openai.sh"
+# shellcheck source=../_common/setup_infra-claude-vertex.sh
+source "$SCRIPT_DIR/../_common/setup_infra-claude-vertex.sh"
 
 # Deploy the broken workload
 oc apply -f "$FIXTURE_DIR/manifest.yaml"

@@ -6,8 +6,8 @@ FIXTURE_DIR="$SCRIPT_DIR/fixtures"
 NS="service-mesh"
 
 # Deploy agentic infrastructure (LLMProvider, Agent CRDs)
-# shellcheck source=../_common/setup_infra-openai.sh
-source "$SCRIPT_DIR/../_common/setup_infra-openai.sh"
+# shellcheck source=../_common/setup_infra-claude-vertex.sh
+source "$SCRIPT_DIR/../_common/setup_infra-claude-vertex.sh"
 
 # Deploy backend + frontend + broken NetworkPolicy
 oc apply -f "$FIXTURE_DIR/manifest.yaml"

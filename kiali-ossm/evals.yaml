@@ -25,7 +25,7 @@
         - custom:answer_correctness
 
 # ── check_istio_objects_status ─────────────────────────────────────────────────────────
-- conversation_group_id: check_istioObject_status
+- conversation_group_id: check_istio_objects_status
   tag: check_istio_objects_status
   description: "A misconfigured VirtualService (reviews-bad-config) is deployed in bookinfo with four Kiali validation errors: missing gateway, undefined subset, non-existent destination host, and route weights not summing to 100."
 

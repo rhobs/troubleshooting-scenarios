@@ -1,0 +1,71 @@
+- conversation_group_id: Payments Failure Root Cause Analysis
+  description: Proposal-based evaluation of payments failure root cause analysis
+  setup_script: ./setup_payments-openai.sh
+  cleanup_script: ./cleanup_payments-openai.sh
+  tag: payments
+  type: proposal
+
+  conversation_metrics:
+    - "geval:payments_troubleshooting_experience"
+    - "geval:troubleshooting_continuity"
+    - "deepeval:conversation_completeness"
+    - "deepeval:conversation_relevancy"
+
+  turns:
+    - turn_id: question1
+      proposal_spec:
+        request: >-
+          There's an alert storm - payments and the database are failing.
+          How are they related? Investigate.
+        targetNamespaces:
+          - payments
+          - shared-services
+        analysis:
+          agent: eval-default
+        execution:
+          agent: eval-default
+        verification:
+          agent: eval-default
+
+      expected_proposal_status:
+        phase: Completed
+        conditions:
+          - type: Analyzed
+            status: "True"
+          - type: Executed
+            status: "True"
+          - type: Verified
+            status: "True"
+
+      expected_outcome: >-
+        Root cause: shared-services/reporting-service is repeatedly opening
+        DB connections and leaving them idle in transaction (division by zero
+        without rollback/close), exhausting PostgreSQL connection slots.
+        payments/payments-api cannot obtain a DB connection and returns 503,
+        triggering the alert storm. reconciliation-service CrashLooping is a
+        separate issue (probe port mismatch 8443 vs 8080), not related to
+        the DB connection exhaustion. Fix: restart or scale down
+        reporting-service.
+
+      expected_analysis_outcome: >-
+        The agent should identify that PaymentErrorRateHigh is caused by
+        PostgreSQL connection exhaustion driven by reporting-service, not by
+        a payments-api bug. It should distinguish the reconciliation-service
+        CrashLoop (probe port mismatch) as a separate, unrelated issue.
+
+      expected_execution_outcome: >-
+        The agent should restart or scale down reporting-service in
+        shared-services to free DB connections, allowing payments-api
+        to resume processing.
+
+      expected_verification_outcome: >-
+        The agent should verify that PostgreSQL connections drop to normal
+        levels and payments-api returns 200 on /api/v1/process-payment.
+
+      turn_metrics:
+        - "custom:proposal_status"
+        - "custom:proposal_evaluation_correctness"
+        - "geval:generic_troubleshooting_experience"
+      turn_metrics_metadata:
+        "custom:proposal_evaluation_correctness":
+          threshold: 0.75

@@ -1,4 +1,3 @@
----
 # NetObserv evaluation scenarios — requires live cluster + NetObserv + kubernetes-mcp-server (netobserv toolset)
 
 # --- DNS latency (DNSTracking) ---

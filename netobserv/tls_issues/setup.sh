@@ -55,6 +55,6 @@ if ! wait_for_rollout "${TARGET_NS}" "tls-server" "180s"; then
   exit 1
 fi
 wait_for_rollout "${TARGET_NS}" "tls-client" "120s"
-wait_for_log_pattern "${TARGET_NS}" "app=tls-client" "TLS/certificate|protocol mismatch|certificate|SSL|ERROR|failed|unable|refused" 40 3
+wait_for_log_pattern "${TARGET_NS}" "app=tls-client" "TLS/certificate|protocol mismatch|certificate|SSL|ERROR|failed|unable|refused" 60 3
 wait_for_netobserv_warmup
 echo "Scenario tls_issues ready (TARGET_NS=${TARGET_NS})"

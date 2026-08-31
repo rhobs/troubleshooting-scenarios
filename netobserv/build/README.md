@@ -113,11 +113,6 @@ make deploy-flowcollector
 
 ## MCP server
 
-Eval scenarios use the **netobserv** toolset on **openshift-mcp-server**. The shared `eval.mk` infrastructure handles deployment automatically via `make setup`. From the **repository root**:
+Eval scenarios use the **netobserv** toolset on **openshift-mcp-server**. The shared `eval.mk` infrastructure handles deployment automatically — running `make setup` from the `netobserv/` directory deploys the MCP server with `MCP_TOOLSETS=core,config,netobserv` and connects it to OLS.
 
-```bash
-make setup-openshift-mcp TOOLSETS_ADDITIONAL=netobserv
-make connect-ols-mcp
-```
-
-See the root [README](../../README.md#openshift-mcp-server-setup) for the full MCP lifecycle.
+See [`scripts/setup-mcp.sh`](../../scripts/setup-mcp.sh) and [`scripts/eval.mk`](../../scripts/eval.mk) for details.

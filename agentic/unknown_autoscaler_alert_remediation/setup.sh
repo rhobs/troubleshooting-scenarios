@@ -1,0 +1,1 @@
+../unknown_autoscaler_alert/setup.sh

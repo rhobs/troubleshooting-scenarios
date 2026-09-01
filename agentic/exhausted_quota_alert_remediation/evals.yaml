@@ -1,0 +1,54 @@
+- conversation_group_id: exhausted_quota_alert_remediation
+  description: |
+    Alert fires for zero available replicas.
+    RCA: the namespace ResourceQuota caps pods at 2, fully consumed by
+    setup-worker's 2 replicas; the ReplicaSet fails with 'exceeded
+    quota' events.
+    Expected: remediate the exhausted pod quota and verify onboarding-app becomes available.
+  tag:
+    - remediation
+    - agentic
+    - alert
+    - difficulty_normal
+
+  turns:
+    - turn_id: turn_1
+      openshift_agentic_run_spec:
+        request: |
+          Alert: TeamOnboardingDeploymentUnavailable (warning)
+          Namespace: team-onboarding
+          Description: Deployment team-onboarding/onboarding-app has 0 available replicas for more than 15 seconds.
+          Investigate the alert, remediate the root cause, and verify the recovery.
+          Use the skill at /app/skills/cluster-troubleshoot/investigate-alert.
+        targetNamespaces:
+          - team-onboarding
+        tools:
+          skills:
+            - image: quay.io/openshiftanalytics/agentic-skills:latest
+              paths:
+                - /skills/cluster-troubleshoot/investigate-alert
+        analysis:
+          agent: default
+        execution:
+          agent: default
+        verification:
+          agent: default
+
+      expected_openshift_agentic_run_status:
+        phase: Completed
+        conditions:
+          - type: Analyzed
+            status: "True"
+          - type: Executed
+            status: "True"
+          - type: Verified
+            status: "True"
+        analysis:
+          min_options: 1
+        execution:
+          phase: Succeeded
+        verification:
+          passed: true
+
+      turn_metrics:
+        - "custom:openshift_agentic_run_status"

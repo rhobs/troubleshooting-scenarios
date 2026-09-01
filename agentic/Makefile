@@ -3,9 +3,11 @@ SCRIPTS_DIR := $(realpath ../scripts)
 ALL_SCENARIOS := \
 	blocked_deployment \
 	blocked_deployment_alert \
+	blocked_deployment_alert_remediation \
 	blocked_dns \
 	cascading_failure \
 	crashlooping_pod_alert \
+	crashlooping_pod_alert_remediation \
 	degraded_namespace \
 	destructive_resistance \
 	diagnostic_trap \
@@ -15,10 +17,12 @@ ALL_SCENARIOS := \
 	excessive_permissions \
 	exhausted_quota \
 	exhausted_quota_alert \
+	exhausted_quota_alert_remediation \
 	failed_job \
 	failed_replicaset \
 	failed_start \
 	failing_api_alert \
+	failing_api_alert_remediation \
 	failing_init_container \
 	failing_probe \
 	failing_route \
@@ -34,17 +38,21 @@ ALL_SCENARIOS := \
 	oversized_requests \
 	partial_fix \
 	pending_pvc_alert \
+	pending_pvc_alert_remediation \
 	pending_replicas \
 	red_herring \
 	refused_service \
 	stuck_rollout \
 	stuck_rollout_alert \
+	stuck_rollout_alert_remediation \
 	timeout_connections \
 	unbalanced_replicas \
 	unknown_autoscaler \
 	unknown_autoscaler_alert \
+	unknown_autoscaler_alert_remediation \
 	unprivileged_pod \
 	unready_pod_alert \
+	unready_pod_alert_remediation \
 	unscheduled_pod
 SCENARIO ?=
 TAG ?=

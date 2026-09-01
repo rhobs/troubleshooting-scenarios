@@ -1,0 +1,56 @@
+- conversation_group_id: failing_api_alert_remediation
+  description: |
+    Alert fires for 100% payment error rate (payments-api returns
+    503).
+    RCA: reporting-service leaks database connections, exhausting the
+    shared PostgreSQL pool; payments-api cannot acquire a connection.
+    Expected: identify reporting-service as the root cause, roll it back
+    to v1.0.1, and verify payments-api recovers.
+  tag:
+    - remediation
+    - agentic
+    - core
+    - alert
+    - difficulty_hard
+
+  turns:
+    - turn_id: turn_1
+      openshift_agentic_run_spec:
+        request: |
+          Alert: PaymentErrorRateHigh (critical)
+          Namespace: payments
+          Description: Payment error rate is 100.00%, which exceeds the 15% threshold.
+          Investigate the alert, remediate the root cause, and verify the recovery.
+          Use the skill at /app/skills/cluster-troubleshoot/investigate-alert.
+        targetNamespaces:
+          - payments
+        tools:
+          skills:
+            - image: quay.io/openshiftanalytics/agentic-skills:latest
+              paths:
+                - /skills/cluster-troubleshoot/investigate-alert
+        analysis:
+          agent: default
+        execution:
+          agent: default
+        verification:
+          agent: default
+
+      expected_openshift_agentic_run_status:
+        phase: Completed
+        conditions:
+          - type: Analyzed
+            status: "True"
+          - type: Executed
+            status: "True"
+          - type: Verified
+            status: "True"
+        analysis:
+          min_options: 1
+        execution:
+          phase: Succeeded
+        verification:
+          passed: true
+
+      turn_metrics:
+        - "custom:openshift_agentic_run_status"

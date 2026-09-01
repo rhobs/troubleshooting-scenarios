@@ -1,0 +1,1 @@
+../crashlooping_pod_alert/setup.sh

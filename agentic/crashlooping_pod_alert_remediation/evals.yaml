@@ -1,0 +1,55 @@
+- conversation_group_id: crashlooping_pod_alert_remediation
+  description: |
+    Alert fires for repeated container restarts.
+    RCA: the pod crashes at startup because the required environment
+    variable DEPLOY_ENV is missing from the deployment.
+    Expected: add DEPLOY_ENV to the affected container specification and verify
+    the pod recovers.
+  tag:
+    - remediation
+    - agentic
+    - core
+    - alert
+    - difficulty_normal
+
+  turns:
+    - turn_id: turn_1
+      openshift_agentic_run_spec:
+        request: |
+          Alert: WarehouseOpsPodRestarting (warning)
+          Namespace: warehouse-ops
+          Description: Container in pod warehouse-ops/order-fulfillment-daemon has restarted multiple times. Check application logs and resource configuration.
+          Investigate the alert, remediate the root cause, and verify the recovery.
+          Use the skill at /app/skills/cluster-troubleshoot/investigate-alert.
+        targetNamespaces:
+          - warehouse-ops
+        tools:
+          skills:
+            - image: quay.io/openshiftanalytics/agentic-skills:latest
+              paths:
+                - /skills/cluster-troubleshoot/investigate-alert
+        analysis:
+          agent: default
+        execution:
+          agent: default
+        verification:
+          agent: default
+
+      expected_openshift_agentic_run_status:
+        phase: Completed
+        conditions:
+          - type: Analyzed
+            status: "True"
+          - type: Executed
+            status: "True"
+          - type: Verified
+            status: "True"
+        analysis:
+          min_options: 1
+        execution:
+          phase: Succeeded
+        verification:
+          passed: true
+
+      turn_metrics:
+        - "custom:openshift_agentic_run_status"

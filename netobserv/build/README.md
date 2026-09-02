@@ -80,7 +80,7 @@ Do **not** use `deploy-sample-cr` from netobserv-operator — its defaults are u
 | `sampling` | 50 | 1 |
 | `privileged` | false | true |
 | eBPF features | commented out | DNSTracking, PacketDrop, FlowRTT, NetworkEvents |
-| `networkPolicy.additionalNamespaces` | `[]` | `openshift-mcp`, `kubernetes-mcp-server` |
+| `networkPolicy.additionalNamespaces` | `[]` | `openshift-mcp` |
 | `loki.monolithic.installDemoLoki` | commented out | `true` |
 
 Scenario → required eBPF feature:
@@ -113,21 +113,6 @@ make deploy-flowcollector
 
 ## MCP server
 
-Eval scenarios use the **netobserv** toolset on **openshift-mcp-server**. From the **repository root**:
+Eval scenarios use the **netobserv** toolset on **openshift-mcp-server**. The shared `eval.mk` infrastructure handles deployment automatically — running `make setup` from the `netobserv/` directory deploys the MCP server with `MCP_TOOLSETS=core,config,netobserv` and connects it to OLS.
 
-```bash
-make setup-openshift-mcp TOOLSETS_ADDITIONAL=netobserv
-make connect-ols-mcp
-```
-
-### Testing upstream PRs (optional)
-
-```bash
-KUBERNETES_MCP_IMAGE=quay.io/<you>/kubernetes-mcp-server:<pr-tag> \
-  make setup-kubernetes-mcp
-make connect-ols-kubernetes-mcp
-```
-
-Both MCP namespaces are allowed in `flowcollector.yaml`. Teardown: `make teardown-kubernetes-mcp`.
-
-See the root [README](../../README.md#openshift-mcp-server-setup) for the full MCP lifecycle.
+See [`scripts/setup-mcp.sh`](../../scripts/setup-mcp.sh) and [`scripts/eval.mk`](../../scripts/eval.mk) for details.

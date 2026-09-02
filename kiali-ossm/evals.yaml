@@ -73,39 +73,36 @@
   setup_script: ./invalid_istio_object/setup.sh
   cleanup_script: ./invalid_istio_object/cleanup.sh
 
-# ── fix_bookinfo_routing ──────────────────────────────────────────────────────
-- conversation_group_id: fix_bookinfo_routing
-  tag: fix_bookinfo_routing
-  description: 'Multi-turn: reviews-v3 has weight 0 so never gets traffic. Agent
-    investigates, identifies the routing issue, and fixes weights.'
+# ── diagnose_bookinfo_routing ─────────────────────────────────────────────────
+- conversation_group_id: diagnose_bookinfo_routing
+  tag: diagnose_bookinfo_routing
+  description: "reviews-v3 has weight 0 so never gets traffic. Agent investigates and identifies the routing issue."
+
   turns:
     - turn_id: investigate
       query: >
-        In our Bookinfo app, the product page only ever shows black or no stars.It
-        never shows red stars.  All Istio resources and services are deployed in
-        the 'bookinfo' namespace. Can you investigate and fix it?
+        In our Bookinfo app, the product page only ever shows black or no stars. It never shows red stars. All Istio resources and services are deployed in the 'bookinfo' namespace. Can you investigate what is causing the issue?
       expected_response: >
         The agent should inspect workloads, the reviews VirtualService, and the
         reviews DestinationRule in the bookinfo namespace. It should identify that
         the reviews VirtualService routes 0% of traffic to subset v3 (weight: 0),
         meaning reviews-v3 — the version that renders red stars — never receives
-        requests. All workload pods should be confirmed as running and healthy.
-        The
-        agent should apply a fix by patching the reviews VirtualService to send
-        traffic to v3 (either 100% to v3 or distributing across v1/v2/v3), confirm
-        the patch by reporting the updated spec, and explain that the product page
-        should now show red stars.
-      turn_metrics: [custom:answer_correctness]
+        requests. All workload pods should be confirmed as running and healthy. The
+        agent may note that assigning a non-zero weight to v3 (either 100% to v3 or
+        distributing across v1/v2/v3) would allow the product page to show red stars.
+      turn_metrics:
+        - custom:answer_correctness
+
   setup_script: ./fix_bookinfo_routing/setup.sh
   cleanup_script: ./fix_bookinfo_routing/cleanup.sh
 
-# ── fix_bookinfo_fault_injection ──────────────────────────────────────────────
-- conversation_group_id: fix_bookinfo_fault_injection
-  tag: fix_bookinfo_fault_injection
-  description: "Multi-turn: a 100% fault injection on ratings causes 503 errors. Agent investigates, identifies root cause, and fixes it."
+# ── diagnose_bookinfo_fault_injection ────────────────────────────────────────
+- conversation_group_id: diagnose_bookinfo_fault_injection
+  tag: diagnose_bookinfo_fault_injection
+  description: "A 100% fault injection on ratings causes 503 errors. Agent investigates and identifies the root cause."
 
   turns:
-    - turn_id: investigate_and_fix
+    - turn_id: investigate
       query: >
         Some users are seeing errors on the Bookinfo product page — it looks like
         the ratings service is broken. All pods are running and mTLS / auth policies
@@ -119,23 +116,22 @@
         all traffic with no match conditions. It should confirm the DestinationRule
         for ratings is correctly defined and not contributing to the issue. It should
         identify the 100% fault injection abort as the root cause of the 503 errors
-        seen on the product page, and may note this is typically used for chaos
-        or
-        resilience testing. The agent should offer to remove the fault injection
-        rule
-        (e.g. by deleting the abort block or setting percentage to 0) to restore
-        normal service, and may provide the corrected VirtualService spec.
-      turn_metrics: [custom:answer_correctness]
+        seen on the product page, and may note this is typically used for chaos or
+        resilience testing. The agent may note that removing the abort block or
+        setting its percentage to 0 would restore normal service.
+      turn_metrics:
+        - custom:answer_correctness
+
   setup_script: ./fix_bookinfo_fault_injection/setup.sh
   cleanup_script: ./fix_bookinfo_fault_injection/cleanup.sh
 
 # ── troubleshoot_latency_trace ────────────────────────────────────────────────
 - conversation_group_id: troubleshoot_latency_trace
   tag: troubleshoot_latency_trace
-  description: A 3-second delay fault is injected on the ratings service. The agent
-    must identify the latency root cause using traces and fix the delay.
+  description: "A 3-second delay fault is injected on the ratings service. The agent must identify the latency root cause using traces."
+
   turns:
-    - turn_id: investigate_and_fix
+    - turn_id: investigate
       query: >
         The Bookinfo product page is loading very slow — requests to the page
         are taking several seconds. All pods are running fine. Can you investigate
@@ -155,10 +151,12 @@
         making all upstream services (reviews, productpage) appear slow.
         The agent should name ratings as the responsible service, cite the relevant
         VirtualService spec (fault.delay.fixedDelay: 3s, percentage.value: 100),
-        explain that this pattern is typical of intentional chaos/resilience testing,
-        and offer to remove the fault injection block from the ratings VirtualService
-        to restore normal page load times.
-      turn_metrics: [custom:answer_correctness]
+        and explain that this pattern is typical of intentional chaos/resilience testing.
+        The agent should note that removing the fault injection block from the ratings
+        VirtualService would restore normal page load times.
+      turn_metrics:
+        - custom:answer_correctness
+
   setup_script: ./troubleshoot_latency_trace/setup.sh
   cleanup_script: ./troubleshoot_latency_trace/cleanup.sh
 

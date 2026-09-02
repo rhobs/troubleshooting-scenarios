@@ -5,8 +5,8 @@ SCENARIOS = check_mesh_status \
             check_istio_objects_status \
             check_bookinfo_services \
             check_latency_bookinfo_issue \
-            fix_bookinfo_routing \
-            fix_bookinfo_fault_injection \
+            diagnose_bookinfo_routing \
+            diagnose_bookinfo_fault_injection \
             troubleshoot_latency_trace
 
 # Cluster platform

@@ -9,16 +9,24 @@
 # Limits concurrent evaluations to avoid OpenAI API rate limiting.
 core:
   max_threads: 5
-# Judge LLM — scores OLS responses against expected answers
-llm:
-  provider: openai
-  model: gpt-5.4-mini  # gpt-5-mini does not produce valid JSON for DeepEval metrics
-  temperature: 0.0
-  max_tokens: 5000
-  timeout: 300
-  num_retries: 3
   cache_enabled: true
-# OLS API — the system under test (model must match OLSConfig, e.g. openai_lseval uses gpt-4o-mini)
+# Judge LLM pool — scores OLS responses against expected answers
+llm_pool:
+  defaults:
+    timeout: 300
+    num_retries: 3
+  models:
+    judge:
+      provider: openai
+      model: gpt-5.4-mini  # gpt-5-mini does not produce valid JSON for DeepEval metrics
+      parameters:
+        temperature: 0.0
+        max_completion_tokens: 5000
+# Judge panel — selects which model(s) from llm_pool act as judge
+judge_panel:
+  judges:
+    - judge
+# OLS API — the system under test (must match OLSConfig defaultProvider/defaultModel)
 api:
   enabled: true
   api_base: http://0.0.0.0:8080
@@ -28,7 +36,6 @@ api:
   model: gpt-5.4  # must match OLSConfig default_model
   no_tools:
   system_prompt:
-  cache_enabled: false
   extra_request_params:
     mode: troubleshooting
 # Metrics evaluated per conversation turn
@@ -77,24 +84,25 @@ metrics_metadata:
         - score_range: [8, 10]
           expected_outcome: Perfect continuity. References specific historical data
             to provide a conclusive fix.
-# Output Configuration
-output:
-  output_dir: ./eval_output
-  base_filename: evaluation
-  enabled_outputs: [csv, json]
-  csv_columns:
-    - conversation_group_id
-    - turn_id
-    - metric_identifier
-    - score
-    - threshold
-    - result
-    - reason
-    - query
-    - response
-    - tool_calls
-    - expected_tool_calls
-    - execution_time
+# Storage Configuration
+storage:
+  - type: file
+    output_dir: ./eval_output
+    base_filename: evaluation
+    enabled_outputs: [csv, json]
+    csv_columns:
+      - conversation_group_id
+      - turn_id
+      - metric_identifier
+      - score
+      - threshold
+      - result
+      - reason
+      - query
+      - response
+      - tool_calls
+      - expected_tool_calls
+      - execution_time
 # Visualization settings
 visualization:
   figsize: [12, 8]

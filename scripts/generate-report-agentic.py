@@ -105,8 +105,11 @@ def load_amended_entries(run_dir: Path) -> list[dict]:
                 continue
             turn = turns[0]
             duration = None
-            analysis_results = turn.get("openshift_agentic_run_results", {}).get("analysis", [])
-            if analysis_results:
+            run_results = turn.get("openshift_agentic_run_results")
+            if not isinstance(run_results, dict):
+                run_results = None
+            analysis_results = run_results.get("analysis", []) if run_results else []
+            if isinstance(analysis_results, list) and analysis_results and isinstance(analysis_results[0], dict):
                 conditions = analysis_results[0].get("conditions", [])
                 started = next((c["lastTransitionTime"] for c in conditions if c["type"] == "Started"), None)
                 completed = next((c["lastTransitionTime"] for c in conditions if c["type"] == "Completed"), None)

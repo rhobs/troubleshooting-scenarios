@@ -28,6 +28,11 @@ METRIC_LABELS = {
 
 CORRECTNESS_METRIC = "custom:openshift_agentic_run_evaluation_correctness"
 STATUS_METRIC = "custom:openshift_agentic_run_status"
+PHASE_CONDITIONS = (
+    ("Analysis", "Analyzed"),
+    ("Execution", "Executed"),
+    ("Verification", "Verified"),
+)
 
 
 def metric_label(metric_id: str) -> str:
@@ -105,7 +110,8 @@ def load_amended_entries(run_dir: Path) -> list[dict]:
                 continue
             turn = turns[0]
             duration = None
-            analysis_results = turn.get("openshift_agentic_run_results", {}).get("analysis", [])
+            agentic_run_results = turn.get("openshift_agentic_run_results") or {}
+            analysis_results = agentic_run_results.get("analysis", [])
             if analysis_results:
                 conditions = analysis_results[0].get("conditions", [])
                 started = next((c["lastTransitionTime"] for c in conditions if c["type"] == "Started"), None)
@@ -123,6 +129,7 @@ def load_amended_entries(run_dir: Path) -> list[dict]:
                 "query": turn.get("query", ""),
                 "response": turn.get("response", ""),
                 "tags": tags,
+                "agentic_run_status": turn.get("openshift_agentic_run_status") or {},
                 "analysis_duration": duration,
                 "agent_tokens": agent_tok,
             })
@@ -169,6 +176,21 @@ def get_judge_reason(results: list[dict], conversation_id: str, metric_id: str) 
     return ""
 
 
+def get_performance_result(
+    results: list[dict], conversation_id: str
+) -> tuple[str | None, float | None]:
+    """Return the preferred result and score for performance reporting.
+
+    Correctness is preferred when configured. Status-only evaluations do not
+    emit a correctness result, so use their deterministic status result.
+    """
+    for metric_id in (CORRECTNESS_METRIC, STATUS_METRIC):
+        result = get_result(results, conversation_id, metric_id)
+        if result is not None:
+            return result, get_score(results, conversation_id, metric_id)
+    return None, None
+
+
 def anchor_id(agent: str, conversation_id: str) -> str:
     return f"{agent}--{conversation_id}"
 
@@ -191,8 +213,7 @@ def score_cell(agent_runs: list, conversation_id: str, agent: str) -> str:
     for results in agent_runs:
         if results is None:
             continue
-        score = get_score(results, conversation_id, CORRECTNESS_METRIC)
-        result = get_result(results, conversation_id, CORRECTNESS_METRIC)
+        result, score = get_performance_result(results, conversation_id)
         if result is not None:
             scores.append((result, score))
 
@@ -231,7 +252,7 @@ def overall_score(agent_runs: list, conversations: list[str]) -> tuple[int, int]
         if results is None:
             continue
         for cid in conversations:
-            result = get_result(results, cid, CORRECTNESS_METRIC)
+            result, _ = get_performance_result(results, cid)
             if result is not None:
                 total += 1
                 if result == "PASS":
@@ -274,9 +295,9 @@ def mean_score(agent_runs: list, conversations: list[str]) -> float | None:
         if results is None:
             continue
         for cid in conversations:
-            s = get_score(results, cid, CORRECTNESS_METRIC)
-            if s is not None:
-                scores.append(s)
+            _, score = get_performance_result(results, cid)
+            if score is not None:
+                scores.append(score)
     if not scores:
         return None
     return sum(scores) / len(scores)
@@ -428,6 +449,70 @@ def duration_cell(agent_amended: list, cid: str, agent: str) -> str:
         return "N/A"
     anchor = anchor_id(agent, cid)
     return f"[{format_duration(d)}](#{anchor})"
+
+
+def remediation_conversations(
+    conversations: list[str], agent_amended: dict[str, list]
+) -> list[str]:
+    """Return evaluated conversations tagged for remediation."""
+    remediation = []
+    for cid in conversations:
+        for runs in agent_amended.values():
+            if any(
+                entry["conversation_group_id"] == cid
+                and "remediation" in entry.get("tags", [])
+                for entries in runs
+                for entry in entries
+            ):
+                remediation.append(cid)
+                break
+    return remediation
+
+
+def phase_status(entries: list[dict], conversation_id: str, condition_type: str) -> str:
+    """Return Completed only when the AgenticRun phase condition is true."""
+    for entry in entries:
+        if entry["conversation_group_id"] != conversation_id:
+            continue
+        for condition in entry.get("agentic_run_status", {}).get("conditions", []):
+            if condition.get("type") == condition_type:
+                return "Completed" if str(condition.get("status", "")).lower() == "true" else "Failed"
+        return "Failed"
+    return "Failed"
+
+
+def phase_count(agent_amended: list, cid: str, condition_type: str) -> tuple[int, int]:
+    """Return completed and total runs for one remediation phase."""
+    statuses = [phase_status(entries, cid, condition_type) for entries in agent_amended]
+    return sum(status == "Completed" for status in statuses), len(statuses)
+
+
+def phase_breakdown_cell(agent_amended: list, cid: str, agent: str) -> str:
+    """Build one linked phase-summary cell for an agent and conversation."""
+    phases = []
+    for label, condition_type in PHASE_CONDITIONS:
+        completed, total = phase_count(agent_amended, cid, condition_type)
+        text = f"{completed}/{total}"
+        if total and completed == total:
+            text = f"✅ {text}"
+        elif completed == 0:
+            text = f"❌ {text}"
+        phases.append(f"{label[0]} {text}")
+    return f"[{'<br>'.join(phases)}](#{anchor_id(agent, cid)})"
+
+
+def generate_phase_breakdown_table(
+    conversations: list[str], agent_names: list[str], agent_amended: dict[str, list]
+) -> str:
+    """Render per-phase outcomes for remediation scenarios."""
+    header = "| Scenario | " + " | ".join(agent_names) + " |"
+    separator = "|---|" + "|".join("---" for _ in agent_names) + "|"
+    lines = [header, separator]
+    for cid in conversations:
+        anchor = cid.lower().replace(" ", "-")
+        cells = [phase_breakdown_cell(agent_amended[agent], cid, agent) for agent in agent_names]
+        lines.append(f"| [{cid}](#{anchor}) | {' | '.join(cells)} |")
+    return "\n".join(lines)
 
 
 def generate_duration_table(
@@ -621,6 +706,16 @@ def generate_scenario_details(
 
                     lines.append("")
 
+                if "remediation" in tags:
+                    phase_entries = [
+                        entry for entry in amended_entries if entry["conversation_group_id"] == cid
+                    ]
+                    for label, condition_type in PHASE_CONDITIONS:
+                        status = phase_status(phase_entries, cid, condition_type)
+                        icon = "✅" if status == "Completed" else "❌"
+                        lines.append(f"**{label}**: {icon} {status}")
+                    lines.append("")
+
                 # Analysis duration
                 for entry in amended_entries:
                     if entry["conversation_group_id"] == cid and entry.get("analysis_duration") is not None:
@@ -717,6 +812,15 @@ def generate_report(eval_dir: Path) -> str:
     lines.append(generate_summary_table(conversations, agent_names, agent_runs))
     lines.append("")
 
+    remediation = remediation_conversations(conversations, agent_amended)
+    if remediation:
+        lines.append("## Correctness breakdown by Phase")
+        lines.append("")
+        lines.append("A = Analysis; E = Execution; V = Verification.")
+        lines.append("")
+        lines.append(generate_phase_breakdown_table(remediation, agent_names, agent_amended))
+        lines.append("")
+
     # Duration per scenario
     lines.append("## Time")
     lines.append("")
@@ -759,7 +863,7 @@ def _scenario_pass_total(agent_runs: list, conversation_id: str) -> tuple[int, i
     for results in agent_runs:
         if results is None:
             continue
-        result = get_result(results, conversation_id, CORRECTNESS_METRIC)
+        result, _ = get_performance_result(results, conversation_id)
         if result is not None:
             total += 1
             if result == "PASS":

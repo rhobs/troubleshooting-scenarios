@@ -1,0 +1,54 @@
+- conversation_group_id: stuck_rollout_alert_remediation
+  description: |
+    Alert fires for a stalled rollout.
+    RCA: the new ReplicaSet's pod is in ImagePullBackOff on an image tag
+    that does not exist.
+    Expected: restore a working deployment revision and verify the rollout completes.
+  tag:
+    - remediation
+    - agentic
+    - core
+    - alert
+    - difficulty_normal
+
+  turns:
+    - turn_id: turn_1
+      openshift_agentic_run_spec:
+        request: |
+          Alert: ShippingTrackerRolloutStalled (warning)
+          Namespace: shipping-tracker
+          Description: Deployment shipping-tracker/shipping-tracker rollout is not progressing.
+          Investigate the alert, remediate the root cause, and verify the recovery.
+          Use the skill at /app/skills/cluster-troubleshoot/investigate-alert.
+        targetNamespaces:
+          - shipping-tracker
+        tools:
+          skills:
+            - image: quay.io/openshiftanalytics/agentic-skills:latest
+              paths:
+                - /skills/cluster-troubleshoot/investigate-alert
+        analysis:
+          agent: default
+        execution:
+          agent: default
+        verification:
+          agent: default
+
+      expected_openshift_agentic_run_status:
+        phase: Completed
+        conditions:
+          - type: Analyzed
+            status: "True"
+          - type: Executed
+            status: "True"
+          - type: Verified
+            status: "True"
+        analysis:
+          min_options: 1
+        execution:
+          phase: Succeeded
+        verification:
+          passed: true
+
+      turn_metrics:
+        - "custom:openshift_agentic_run_status"

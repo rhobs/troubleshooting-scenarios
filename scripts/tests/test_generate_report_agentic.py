@@ -66,9 +66,11 @@ def _make_amended_yaml(entries: list[dict]) -> list[dict]:
             turn["api_input_tokens"] = e["api_input_tokens"]
         if "api_output_tokens" in e:
             turn["api_output_tokens"] = e["api_output_tokens"]
+        if "agentic_run_status" in e:
+            turn["openshift_agentic_run_status"] = e["agentic_run_status"]
         entry = {
             "conversation_group_id": e["conversation_id"],
-            "tag": [e["conversation_id"]],
+            "tag": e.get("tags", [e["conversation_id"]]),
             "turns": [turn],
         }
         if "description" in e:
@@ -231,6 +233,93 @@ class TestGenerateReport:
         assert "**Pass rate**" in report
         assert "75% (3/4)" in report
 
+    def test_status_metric_fallback(self, tmp_path, capsys):
+        _write_run(
+            tmp_path / "gpt-5.4" / "run_1",
+            results=[_make_result(
+                "blocked_deployment_alert-remediation",
+                metric="custom:openshift_agentic_run_status",
+            )],
+            amended_entries=[{"conversation_id": "blocked_deployment_alert-remediation"}],
+        )
+        agent_runs = {
+            "gpt-5.4": [mod.load_run_summary(tmp_path / "gpt-5.4" / "run_1")]
+        }
+        conversations = mod.collect_conversations(agent_runs)
+
+        report = mod.generate_report(tmp_path)
+        mod.print_correctness_table(conversations, ["gpt-5.4"], agent_runs)
+
+        assert "✅ 100% (1/1)" in report
+        assert "✅ 1.00" in report
+        assert "1/1" in capsys.readouterr().out
+
+    def test_remediation_phase_breakdown(self, tmp_path):
+        status = {
+            "conditions": [
+                {"type": "Analyzed", "status": "True"},
+                {"type": "Executed", "status": "False"},
+            ]
+        }
+        _write_run(
+            tmp_path / "gpt-5.4" / "run_1",
+            results=[_make_result("remediation-scenario")],
+            amended_entries=[{
+                "conversation_id": "remediation-scenario",
+                "tags": ["remediation"],
+                "agentic_run_status": status,
+            }],
+        )
+        _write_run(
+            tmp_path / "gemini" / "run_1",
+            results=[_make_result("analysis-only")],
+            amended_entries=[{"conversation_id": "analysis-only"}],
+        )
+
+        report = mod.generate_report(tmp_path)
+
+        assert "## Correctness breakdown by Phase" in report
+        assert "A = Analysis; E = Execution; V = Verification." in report
+        assert "Each linked cell reports" not in report
+        assert "| Scenario | gemini | gpt-5.4 |" in report
+        assert "[A ✅ 1/1<br>E ❌ 0/1<br>V ❌ 0/1](#gpt-5.4--remediation-scenario)" in report
+        assert "| [analysis-only](#analysis-only) |" not in report.split("## Correctness breakdown by Phase")[1].split("## Time")[0]
+        assert "**Analysis**: ✅ Completed" in report
+        assert "**Execution**: ❌ Failed" in report
+        assert "**Verification**: ❌ Failed" in report
+
+    def test_remediation_phase_breakdown_counts_repeats(self, tmp_path):
+        for run, verification_status in [(1, "True"), (2, "False"), (3, "True")]:
+            _write_run(
+                tmp_path / "gpt-5.4" / f"run_{run}",
+                results=[_make_result("remediation-scenario")],
+                amended_entries=[{
+                    "conversation_id": "remediation-scenario",
+                    "tags": ["remediation"],
+                    "agentic_run_status": {
+                        "conditions": [
+                            {"type": "Analyzed", "status": "True"},
+                            {"type": "Executed", "status": "True"},
+                            {"type": "Verified", "status": verification_status},
+                        ]
+                    },
+                }],
+                timestamp=f"20260830_10000{run}",
+            )
+
+        report = mod.generate_report(tmp_path)
+
+        assert "[A ✅ 3/3<br>E ✅ 3/3<br>V 2/3](#gpt-5.4--remediation-scenario)" in report
+
+    def test_omits_phase_breakdown_without_remediation(self, tmp_path):
+        _write_run(
+            tmp_path / "gpt-5.4" / "run_1",
+            results=[_make_result("analysis-only")],
+            amended_entries=[{"conversation_id": "analysis-only"}],
+        )
+
+        assert "## Correctness breakdown by Phase" not in mod.generate_report(tmp_path)
+
     def test_timestamp_in_header(self, tmp_path):
         _write_run(
             tmp_path / "gpt-5.4" / "run_1",
@@ -271,6 +360,23 @@ class TestGenerateReport:
             amended_entries=[{"conversation_id": "s1"}],
         )
         report = mod.generate_report(tmp_path)
+        assert "# Evaluation Summary" in report
+        assert "s1" in report
+
+    def test_handles_null_agentic_run_results(self, tmp_path):
+        run_dir = tmp_path / "gpt-5.4" / "run_1"
+        _write_run(
+            run_dir,
+            results=[_make_result("s1")],
+            amended_entries=[{"conversation_id": "s1"}],
+        )
+        amended_path = next(run_dir.glob("*amended*.yaml"))
+        amended = yaml.safe_load(amended_path.read_text())
+        amended[0]["turns"][0]["openshift_agentic_run_results"] = None
+        amended_path.write_text(yaml.dump(amended))
+
+        report = mod.generate_report(tmp_path)
+
         assert "# Evaluation Summary" in report
         assert "s1" in report
 

@@ -1,0 +1,54 @@
+- conversation_group_id: blocked_deployment_alert_remediation
+  description: |
+    Alert fires for zero available replicas, and no pod is created.
+    RCA: the namespace LimitRange requires at least 256Mi memory per
+    container, but the deployment requests 64Mi.
+    Expected: update dashboard-app's memory request and limit to comply with
+    the LimitRange, then verify its pod is running.
+  tag:
+    - remediation
+    - agentic
+    - alert
+    - difficulty_normal
+
+  turns:
+    - turn_id: turn_1
+      openshift_agentic_run_spec:
+        request: |
+          Alert: AnalyticsDashboardDeploymentUnavailable (warning)
+          Namespace: analytics-dashboard
+          Description: Deployment analytics-dashboard/dashboard-app has 0 available replicas for more than 15 seconds.
+          Investigate the alert, remediate the root cause, and verify the recovery.
+          Use the skill at /app/skills/cluster-troubleshoot/investigate-alert.
+        targetNamespaces:
+          - analytics-dashboard
+        tools:
+          skills:
+            - image: quay.io/openshiftanalytics/agentic-skills:latest
+              paths:
+                - /skills/cluster-troubleshoot/investigate-alert
+        analysis:
+          agent: default
+        execution:
+          agent: default
+        verification:
+          agent: default
+
+      expected_openshift_agentic_run_status:
+        phase: Completed
+        conditions:
+          - type: Analyzed
+            status: "True"
+          - type: Executed
+            status: "True"
+          - type: Verified
+            status: "True"
+        analysis:
+          min_options: 1
+        execution:
+          phase: Succeeded
+        verification:
+          passed: true
+
+      turn_metrics:
+        - "custom:openshift_agentic_run_status"

@@ -1,0 +1,1 @@
+../stuck_rollout_alert/setup.sh

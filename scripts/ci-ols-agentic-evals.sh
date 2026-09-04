@@ -8,7 +8,7 @@
 #   VERTEX_PROJECT_ID               - GCP project ID (falls back to credentials JSON)
 #   VERTEX_REGION                   - GCP region (default: us-east1)
 #   AGENT_NAME                      - Agent to use: openai (OpenAI), gemini (Google), opus (Anthropic)
-#   SUITES                          - Space-separated scenario list (default: all)
+#   SCENARIOS                       - Space-separated scenario list (default: all)
 #   ARTIFACT_DIR                    - CI artifact directory (default: /tmp/artifacts)
 
 set -euo pipefail
@@ -159,22 +159,40 @@ function run_evals() {
     # Backup original system.yaml
     cp system.yaml system.yaml.backup
 
-    # Update system.yaml to use only the specified agent
-    python3 -c "
-import yaml
-with open('system.yaml', 'r') as f:
-    config = yaml.safe_load(f)
-config['agents']['default']['agent'] = ['${AGENT_MODEL}']
-with open('system.yaml', 'w') as f:
-    yaml.safe_dump(config, f, default_flow_style=False)
-"
+    # Update system.yaml to use only the specified agent (no Python dependencies)
+    sed -i.tmp "s/agent: \[gpt-5.4, gemini-2.5-pro, claude-opus-4-6\]/agent: [${AGENT_MODEL}]/" system.yaml
+    rm -f system.yaml.tmp
 
+    # Validate that system.yaml now contains exactly the expected agent
+    if ! grep -q "agent: \[${AGENT_MODEL}\]" system.yaml; then
+        echo "ERROR: Failed to configure system.yaml with agent: [${AGENT_MODEL}]"
+        echo "Expected pattern not found after sed replacement."
+        echo "Current agent configuration:"
+        grep "agent: \[" system.yaml || echo "  (no agent: [...] line found)"
+        mv system.yaml.backup system.yaml
+        exit 1
+    fi
+
+    # Verify no multi-agent configuration remains
+    if grep -q "agent: \[.*,.*\]" system.yaml; then
+        echo "ERROR: system.yaml still contains multi-agent configuration after replacement"
+        echo "Current agent configuration:"
+        grep "agent: \[" system.yaml
+        mv system.yaml.backup system.yaml
+        exit 1
+    fi
+
+    echo "==> Verified system.yaml configured with single agent: [${AGENT_MODEL}]"
+
+    # Run setup after system.yaml is modified
     make setup
 
-    if [[ -n "${SUITES:-}" ]]; then
-        make evals SUITES="$SUITES"
+    if [[ -n "${SCENARIOS:-}" ]]; then
+        # Convert space-separated SCENARIOS to comma-separated SCENARIO for Makefile
+        local SCENARIO_LIST="${SCENARIOS// /,}"
+        make eval SCENARIO="$SCENARIO_LIST"
     else
-        make evals
+        make eval
     fi
 
     # Restore original system.yaml

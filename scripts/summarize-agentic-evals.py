@@ -26,9 +26,9 @@ def load_json_data(json_files: list[Path]) -> tuple[list[list[dict]], dict, str]
     for path in sorted(json_files):
         with open(path) as f:
             data = json.load(f)
-        runs.append(data.get("results", []))
+        runs.append(data.get("results") or [])
         if not config:
-            config = data.get("configuration", {})
+            config = data.get("configuration") or {}
             timestamp = data.get("timestamp", "")
     return runs, config, timestamp
 
@@ -98,9 +98,15 @@ def load_amended_data(json_files: list[Path]) -> list[list[dict]]:
 
 def _format_diagnosis(turn: dict) -> str:
     """Extract and format diagnosis from an amended YAML turn."""
-    results = turn.get("openshift_agentic_run_results", {})
-    for analysis in results.get("analysis", []):
-        diag = analysis.get("diagnosis", {})
+    results = turn.get("openshift_agentic_run_results")
+    if not isinstance(results, dict):
+        return ""
+    for analysis in results.get("analysis") or []:
+        if not isinstance(analysis, dict):
+            continue
+        diag = analysis.get("diagnosis")
+        if not isinstance(diag, dict):
+            continue
         root_cause = diag.get("rootCause", "")
         summary = diag.get("summary", "")
         if root_cause or summary:
@@ -438,7 +444,8 @@ def main():
 
     descriptions = load_descriptions(evals_files)
     json_runs, config, timestamp = load_json_data(json_files)
-    amended_runs = load_amended_data(json_files)
+    # Only load amended data for agentic runs (OLS behavioral runs don't have this)
+    amended_runs = load_amended_data(json_files) if run_type == "agentic" else [[] for _ in json_runs]
     conversations, columns, rows = build_summary(json_runs)
     total_runs = len(json_runs)
 

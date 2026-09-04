@@ -1,0 +1,21 @@
+- conversation_group_id: crashlooping_pod
+  description: |
+    Alert fires for repeated container restarts.
+    RCA: the pod crashes at startup because the required environment
+    variable DEPLOY_ENV is missing from the deployment.
+    Expected: add the DEPLOY_ENV environment variable to the container
+    spec.
+  tag:
+    - classic
+    - core
+    - alert
+    - difficulty_normal
+
+  turns:
+    - turn_id: investigate_crashloop
+      query: "Orders are not being processed in warehouse-ops. Can you investigate what is wrong?"
+      expected_response: >-
+        The order-fulfillment-daemon pod is crash-looping because the required
+        DEPLOY_ENV environment variable is missing from the deployment.
+      turn_metrics:
+        - custom:answer_correctness

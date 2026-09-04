@@ -1,0 +1,23 @@
+- conversation_group_id: refused_connections
+  description: |
+    Gateway-proxy returns repeated connection refused errors.
+    RCA: a hot-reloaded configuration uses staging database and Redis endpoints
+    in production, where they are unreachable.
+    Expected: identify the configuration drift and restore the production endpoints.
+  tag:
+    - classic
+    - core
+    - difficulty_medium
+
+  turns:
+    - turn_id: investigate_refused_connections
+      query: >-
+        Requests through gateway-proxy in ingress-layer started failing. Can you
+        investigate the cause?
+      expected_response: >-
+        The connection refused errors started after gateway-proxy hot-reloaded
+        a changed configuration. The new configuration uses staging database
+        and Redis endpoints in production, where those endpoints are not
+        reachable.
+      turn_metrics:
+        - custom:answer_correctness

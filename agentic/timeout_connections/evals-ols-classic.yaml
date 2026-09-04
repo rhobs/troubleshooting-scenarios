@@ -1,0 +1,25 @@
+- conversation_group_id: timeout_connections
+  description: |
+    Frontend logs connection timeouts to the backend, which appears
+    healthy.
+    RCA: a NetworkPolicy only allows ingress from pods labelled
+    tier=backend; the frontend has tier=frontend, so traffic is
+    blocked.
+    Expected: update the NetworkPolicy ingress rule to allow
+    tier=frontend.
+  tag:
+    - classic
+    - core
+    - difficulty_normal
+
+  turns:
+    - turn_id: investigate_connectivity
+      query: >-
+        The frontend in service-mesh cannot reach backend-service. Can you
+        investigate the cause?
+      expected_response: >-
+        The backend-network-policy NetworkPolicy only allows ingress from pods
+        with tier=backend. The frontend pod has tier=frontend, so the policy
+        blocks its traffic to backend-service.
+      turn_metrics:
+        - custom:answer_correctness

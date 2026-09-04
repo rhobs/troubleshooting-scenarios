@@ -1,0 +1,29 @@
+- conversation_group_id: failing_api
+  description: |
+    Alert fires for 100% payment error rate (payments-api returns
+    503).
+    RCA: reporting-service leaks database connections, exhausting the
+    shared PostgreSQL pool; payments-api cannot acquire a connection.
+    Expected: identify reporting-service as the root cause;
+    reconciliation-service CrashLooping is a separate issue, not the
+    cause.
+  tag:
+    - classic
+    - core
+    - alert
+    - difficulty_hard
+
+  turns:
+    - turn_id: investigate_payment_failures
+      query: >-
+        The payment service in the payments namespace is failing customer
+        requests. Can you investigate the cause?
+      expected_response: >-
+        Root cause: payments/reporting-service is repeatedly opening DB connections
+        and not releasing them properly, exhausting PostgreSQL connection slots.
+        payments/payments-api cannot obtain a DB connection and returns 503.
+        if mentioned, reconciliation-service CrashLooping is a separate issue, NOT RELATED
+        to the DB connection exhaustion.
+        Fix: rollback, restart, or scale down reporting-service.
+      turn_metrics:
+        - custom:answer_correctness

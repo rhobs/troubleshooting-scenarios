@@ -1,0 +1,28 @@
+- conversation_group_id: unbalanced_replicas
+  description: |
+    Two namespaces expected to have the same pod count show different
+    counts.
+    RCA: fleet-alpha has 6 pods, fleet-alpha1 has 9 pods (3 extra
+    pods from 6 additional workloads).
+    Expected: identify the discrepancy and report which extra
+    workloads exist in fleet-alpha1.
+  tag:
+    - classic
+    - core
+    - difficulty_normal
+
+  turns:
+    - turn_id: compare_namespace_pod_counts
+      query: >-
+        fleet-alpha and fleet-alpha1 should have the same number of running
+        pods, but the counts appear different. Can you investigate the
+        discrepancy?
+      expected_response: >-
+        fleet-alpha has 6 running pods, while fleet-alpha1 has 9, so
+        fleet-alpha1 has 3 more pods. fleet-alpha1 has 9 one-replica
+        Deployments, including the additional workloads store-primary,
+        store-replica, cache-handler, proxy-router, validator-east, and
+        validator-west. fleet-alpha has 2 one-replica Deployments and 4
+        standalone Pods.
+      turn_metrics:
+        - custom:answer_correctness

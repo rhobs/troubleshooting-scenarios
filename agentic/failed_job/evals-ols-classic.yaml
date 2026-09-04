@@ -1,0 +1,21 @@
+- conversation_group_id: failed_job
+  description: |
+    Batch job fails after exhausting retries.
+    RCA: the job cannot connect to its database at prod-db:3333; logs
+    show repeated TCP connection refused (errno 111). The database
+    service is either missing or misconfigured.
+    Expected: identify the connection failure as root cause and
+    recommend fixing the database endpoint.
+  tag:
+    - classic
+    - core
+    - difficulty_normal
+
+  turns:
+    - turn_id: investigate_failed_job
+      query: "The latest inventory synchronization in catalog-mgmt failed. Can you find out why?"
+      expected_response: >-
+        The inventory-sync-validator job repeatedly fails because it cannot
+        connect to the database endpoint prod-db:3333.
+      turn_metrics:
+        - custom:answer_correctness

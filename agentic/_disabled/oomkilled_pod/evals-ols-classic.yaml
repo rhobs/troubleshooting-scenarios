@@ -1,0 +1,24 @@
+- conversation_group_id: oomkilled_pod
+  description: |
+    Alert fires after report-generator restarts several times.
+    RCA: the application stores every processed record in an unbounded cache and
+    exceeds its 60Mi memory limit.
+    Expected: identify the unbounded memory growth and recommend bounding the cache.
+  tag:
+    - classic
+    - core
+    - alert
+    - difficulty_normal
+
+  turns:
+    - turn_id: investigate_oomkill
+      query: >-
+        The report generator in data-processing keeps restarting during normal
+        processing. Can you investigate?
+      expected_response: >-
+        The report-generator container is OOMKilled because it keeps every
+        processed record in an unbounded cache. Its memory use grows until it
+        exceeds the 60Mi limit. The application must bound or evict the cache;
+        increasing the limit alone does not remove the leak.
+      turn_metrics:
+        - custom:answer_correctness

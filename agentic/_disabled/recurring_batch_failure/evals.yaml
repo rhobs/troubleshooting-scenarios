@@ -1,4 +1,9 @@
 - conversation_group_id: recurring_batch_failure
+  description: |
+    Some historical batch runs fail while most runs complete successfully.
+    RCA: calls to the upstream service time out between 03:00 and 03:05 UTC;
+    calls outside this window succeed.
+    Expected: identify the recurring time window and upstream connection failures.
   tag:
     - agentic
     - difficulty_medium

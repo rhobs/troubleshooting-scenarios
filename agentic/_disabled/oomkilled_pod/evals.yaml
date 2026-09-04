@@ -1,4 +1,9 @@
 - conversation_group_id: oomkilled_pod
+  description: |
+    Alert fires after report-generator restarts several times.
+    RCA: the application stores every processed record in an unbounded cache and
+    exceeds its 60Mi memory limit.
+    Expected: identify the unbounded memory growth and recommend bounding the cache.
   tag:
     - agentic
     - core

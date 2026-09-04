@@ -6,6 +6,7 @@ agentic/results/logs/
 __pycache__/
 venv/
 .tools/
+.serena/
 
 # Secrets / credentials — never commit API keys
 .env

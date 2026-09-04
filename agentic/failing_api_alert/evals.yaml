@@ -38,7 +38,7 @@
             status: "True"
 
       expected_outcome: >-
-        Root cause: shared-services/reporting-service is repeatedly opening DB connections
+        Root cause: payments/reporting-service is repeatedly opening DB connections
         and not releasing them properly, exhausting PostgreSQL connection slots.
         payments/payments-api cannot obtain a DB connection and returns 503.
         if mentioned, reconciliation-service CrashLooping is a separate issue, NOT RELATED

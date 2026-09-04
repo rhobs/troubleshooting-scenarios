@@ -1,0 +1,24 @@
+- conversation_group_id: unready_pod
+  description: |
+    Alert fires for a pod in not-ready state.
+    RCA: the readiness probe does an HTTP GET on port 9200 but the
+    container is a simple echo/sleep loop with no HTTP server.
+    Expected: remove the readiness probe or replace it with an exec
+    probe appropriate for the container.
+  tag:
+    - classic
+    - core
+    - alert
+    - difficulty_normal
+
+  turns:
+    - turn_id: investigate_unready_pod
+      query: >-
+        The catalog indexing workload in discovery-hub never becomes available.
+        Can you investigate the cause?
+      expected_response: >-
+        The catalog-index-service pod is not Ready because its HTTP readiness
+        probe checks /healthz on port 9200, but the container does not run an
+        HTTP server on that port.
+      turn_metrics:
+        - custom:answer_correctness

@@ -1,0 +1,53 @@
+logging:
+  source_level: DEBUG
+
+core:
+  max_threads: 3
+  fail_on_invalid_data: true
+  skip_on_failure: false
+  cache_enabled: false
+
+llm_pool:
+  defaults:
+    parameters:
+      max_completion_tokens: 1000
+  models:
+    judge:
+      provider: openai
+      model: gpt-5.4
+
+judge_panel:
+  judges: [judge]
+
+agents:
+  enabled: true
+  default:
+    agent: [gpt-5.4, gpt-5.2]
+    repeat: 1
+    parallel: true
+    agent_config:
+      timeout: 300
+  gpt-5.4:
+    type: http_api
+    api_base: https://localhost:8443
+    endpoint_type: query
+    provider: openai
+    model: gpt-5.4
+    extra_request_params:
+      mode: troubleshooting
+  gpt-5.2:
+    type: http_api
+    api_base: https://localhost:8443
+    endpoint_type: query
+    provider: openai
+    model: gpt-5.2
+    extra_request_params:
+      mode: troubleshooting
+
+storage:
+  - type: file
+    output_dir: ./eval_output
+    enabled_outputs: [csv, json]
+
+environment:
+  LITELLM_LOG: ERROR

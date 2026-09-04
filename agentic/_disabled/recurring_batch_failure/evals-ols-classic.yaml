@@ -1,0 +1,21 @@
+- conversation_group_id: recurring_batch_failure
+  description: |
+    Some historical batch runs fail while most runs complete successfully.
+    RCA: calls to the upstream service time out between 03:00 and 03:05 UTC;
+    calls outside this window succeed.
+    Expected: identify the recurring time window and upstream connection failures.
+  tag:
+    - classic
+    - difficulty_medium
+
+  turns:
+    - turn_id: investigate_batch_failures
+      query: >-
+        Some historical batch runs in data-pipeline failed. Can you investigate?
+      expected_response: >-
+        batch-processor failures occur between 03:00 and 03:05 UTC because
+        requests to https://pipeline-intake.corp.net/submit time out. Outside
+        this window, batch processing completes successfully. The recurring
+        pattern is consistent with an upstream maintenance window.
+      turn_metrics:
+        - custom:answer_correctness

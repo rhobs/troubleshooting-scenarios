@@ -185,7 +185,6 @@ spec:
   ols:
     defaultModel: "${OLS_DEFAULT_MODEL}"
     defaultProvider: "${OLS_DEFAULT_PROVIDER}"
-    introspectionEnabled: false
 EOF
 
 # 8. Wait for OLS to be ready

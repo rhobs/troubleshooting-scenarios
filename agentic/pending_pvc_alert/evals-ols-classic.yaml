@@ -1,0 +1,24 @@
+- conversation_group_id: pending_pvc
+  description: |
+    Alert fires for a PVC stuck in Pending.
+    RCA: the PVC references StorageClass 'standard-v2' which does not
+    exist in the cluster. The init container also uses runAsUser: 65532,
+    which violates the namespace UID range enforced by restricted-v2 SCC.
+    Expected: change the PVC's StorageClass to a valid one or create
+    the missing StorageClass, and use a UID allowed by the SCC.
+  tag:
+    - classic
+    - core
+    - alert
+    - difficulty_medium
+
+  turns:
+    - turn_id: investigate_pending_pvc
+      query: "Memcached in cache-tier has not become available. Can you investigate?"
+      expected_response: >-
+        The memcached-data-pvc PersistentVolumeClaim is Pending because it
+        references the missing standard-v2 StorageClass. The init container
+        also uses UID 65532, which is outside the namespace range allowed by
+        the restricted-v2 SCC.
+      turn_metrics:
+        - custom:answer_correctness

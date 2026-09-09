@@ -17,7 +17,7 @@ MESH_LABELS="${BOOKINFO_MESH_LABELS:-istio-discovery=enabled}"
 SCRIPT_EXTRA="${BOOKINFO_SCRIPT_EXTRA:--tg}"
 TRAFFIC_ROUTE="${BOOKINFO_TRAFFIC_ROUTE:-http://productpage.$NAMESPACE.svc.cluster.local:9080/productpage}"
 
-BOOKINFO_HACK_DIR="$KIALI_DIR/bookinfo-hack"
+BOOKINFO_HACK_DIR="$OUTPUT_DIR/bookinfo-hack"
 BOOKINFO_RAW_BASE="https://raw.githubusercontent.com/kiali/kiali/${KIALI_BOOKINFO_REF}/hack/istio"
 
 # --- Fetch Kiali hack scripts ---
@@ -122,7 +122,7 @@ while true; do
   status=""
   if command -v jq >/dev/null 2>&1; then
     status=$(printf '%s' "$response" | jq -r --arg ns "$NAMESPACE" --arg wl "productpage-v1" \
-      '.workloads[]? | select(.namespace == $ns and .name == $wl) | .health.status.status' 2>/dev/null | head -n 1)
+      '.workloads[]? | select(.namespace == $ns and .name == $wl) | .health.status.status' 2>/dev/null | head -n 1 || true)
   else
     if echo "$response" | tr -d '\n\r' | grep -Eq '"name":"productpage-v1".*"namespace":"'"$NAMESPACE"'".*"status":\{"status":"Healthy"'; then
       status="Healthy"

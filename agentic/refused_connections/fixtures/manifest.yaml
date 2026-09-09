@@ -1,0 +1,305 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ingress-layer
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gateway-proxy-config
+  namespace: ingress-layer
+data:
+  app.json: |
+    {
+      "environment": "production",
+      "upstream_environment": "production",
+      "upstreams": {
+        "database": {
+          "host": "database-primary.ingress-layer.svc.cluster.local",
+          "port": 5432
+        },
+        "cache": {
+          "host": "cache-primary.ingress-layer.svc.cluster.local",
+          "port": 6379
+        }
+      }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: database-primary
+  namespace: ingress-layer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: database-primary
+  template:
+    metadata:
+      labels:
+        app: database-primary
+    spec:
+      containers:
+        - name: service
+          image: docker.io/nginxinc/nginx-unprivileged:1.27
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: "10m"
+              memory: "32Mi"
+            limits:
+              cpu: "100m"
+              memory: "128Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: database-primary
+  namespace: ingress-layer
+spec:
+  selector:
+    app: database-primary
+  ports:
+    - name: database
+      port: 5432
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cache-primary
+  namespace: ingress-layer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cache-primary
+  template:
+    metadata:
+      labels:
+        app: cache-primary
+    spec:
+      containers:
+        - name: service
+          image: docker.io/nginxinc/nginx-unprivileged:1.27
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: "10m"
+              memory: "32Mi"
+            limits:
+              cpu: "100m"
+              memory: "128Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cache-primary
+  namespace: ingress-layer
+spec:
+  selector:
+    app: cache-primary
+  ports:
+    - name: cache
+      port: 6379
+      targetPort: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: database-shadow
+  namespace: ingress-layer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: database-shadow
+  template:
+    metadata:
+      labels:
+        app: database-shadow
+    spec:
+      containers:
+        - name: service
+          image: docker.io/nginxinc/nginx-unprivileged:1.27
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: "10m"
+              memory: "32Mi"
+            limits:
+              cpu: "100m"
+              memory: "128Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: database-shadow
+  namespace: ingress-layer
+spec:
+  selector:
+    app: database-shadow
+  ports:
+    - name: database
+      port: 5432
+      targetPort: 5432
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cache-shadow
+  namespace: ingress-layer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cache-shadow
+  template:
+    metadata:
+      labels:
+        app: cache-shadow
+    spec:
+      containers:
+        - name: service
+          image: docker.io/nginxinc/nginx-unprivileged:1.27
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: "10m"
+              memory: "32Mi"
+            limits:
+              cpu: "100m"
+              memory: "128Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cache-shadow
+  namespace: ingress-layer
+spec:
+  selector:
+    app: cache-shadow
+  ports:
+    - name: cache
+      port: 6379
+      targetPort: 6379
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway-proxy
+  namespace: ingress-layer
+  labels:
+    app: gateway-proxy
+    component: ingress
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gateway-proxy
+  template:
+    metadata:
+      labels:
+        app: gateway-proxy
+        component: ingress
+    spec:
+      containers:
+        - name: gateway
+          image: IMAGE_PLACEHOLDER
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            requests:
+              cpu: "20m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"
+          volumeMounts:
+            - name: configuration
+              mountPath: /etc/gateway
+              readOnly: true
+      volumes:
+        - name: configuration
+          configMap:
+            name: gateway-proxy-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway-proxy
+  namespace: ingress-layer
+spec:
+  selector:
+    app: gateway-proxy
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080

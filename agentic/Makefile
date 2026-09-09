@@ -41,6 +41,7 @@ ALL_SCENARIOS := \
 	pending_pvc_alert_remediation \
 	pending_replicas \
 	red_herring \
+	refused_connections \
 	refused_service \
 	stuck_rollout \
 	stuck_rollout_alert \
@@ -59,6 +60,7 @@ OLS_CLASSIC_SCENARIOS := \
 	failed_job \
 	failing_api_alert \
 	pending_pvc_alert \
+	refused_connections \
 	timeout_connections \
 	unbalanced_replicas \
 	unready_pod_alert

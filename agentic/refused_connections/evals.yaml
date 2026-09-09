@@ -1,0 +1,44 @@
+- conversation_group_id: refused_connections
+  description: |
+    Gateway-proxy returns repeated connection refused errors in the ingress-layer namespace.
+    RCA: The production gateway selects database and cache endpoints from a non-production environment, and those endpoints do not accept connections.
+    Expected: Correlate the active configuration with the runtime connection failures, identify the environment mismatch, recommend restoring the production endpoints, and verify successful traffic.
+  tag:
+    - agentic
+    - core
+    - difficulty_medium
+
+  turns:
+    - turn_id: turn_1
+      openshift_agentic_run_spec:
+        request: |
+          The gateway-proxy in the ingress-layer namespace is returning
+          connection refused errors. Requests through the gateway are failing.
+          Investigate what is causing the connection refused errors.
+        targetNamespaces:
+          - ingress-layer
+        analysis:
+          agent: default
+
+      expected_openshift_agentic_run_status:
+        phase: Completed
+        conditions:
+          - type: Analyzed
+            status: "True"
+
+      expected_outcome: >-
+        Root cause: gateway-proxy is running in a production environment but
+        its active configuration selects database and cache endpoints belonging
+        to a staging or other non-production environment. Real connection
+        attempts to those endpoints are refused, causing the gateway's failed
+        requests. Fix: restore the production endpoint configuration or roll
+        back the configuration change, then verify that gateway requests and
+        upstream connections succeed. The answer does not need to identify a
+        specific configuration path or reload mechanism.
+
+      turn_metrics:
+        - "custom:openshift_agentic_run_status"
+        - "custom:openshift_agentic_run_evaluation_correctness"
+      turn_metrics_metadata:
+        "custom:openshift_agentic_run_evaluation_correctness":
+          threshold: 0.75

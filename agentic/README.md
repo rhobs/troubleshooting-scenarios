@@ -84,6 +84,16 @@ Scenarios with an isolated problem and direct symptom-cause correlation.
 | `unscheduled_pod` | Pod stuck in Pending, not scheduled to any node | nodeSelector requires `disk-type=ssd-high-iops` but no nodes have this label | `Analysis` | `user-imports` | |
 | `failing_probe` | Pod in CrashLoopBackOff (probe failure) | Liveness probe targets port 8081 but container listens on 8080; connection refused | `Analysis` | `status-api` | |
 
+### KubeVirt (OLS-classic only)
+
+Scenarios under [`kubevirt/`](kubevirt/) require OpenShift Virtualization and the `kubevirt` MCP toolset. See [kubevirt/README.md](kubevirt/README.md) for prerequisites and setup.
+
+| Scenario | VM | Fault | Namespace |
+|----------|-----|-------|-----------|
+| `kubevirt/vm_storage_failure` | `production-db-vm` | Non-existent StorageClass `premium-nvme-storage` | `kubevirt-scenarios` |
+| `kubevirt/vm_crashloop` | `web-server-vm` | cloud-init `runcmd: shutdown -h now` | `kubevirt-scenarios` |
+| `kubevirt/vm_migration_failure` | `critical-app-vm` | `nodeSelector` pins VM to one node | `kubevirt-scenarios` |
+
 ### Conventions
 
 Scenarios triggered by alerts (specific to lightspeed-agentic-alerts-manager) have:

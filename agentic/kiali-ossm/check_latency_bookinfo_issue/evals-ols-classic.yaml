@@ -1,0 +1,34 @@
+- conversation_group_id: check_latency_bookinfo_issue
+  description: >
+    Users are reporting that the Bookinfo productpage is occasionally taking
+    5+ seconds to load, but it doesn't happen on every request.
+  tag:
+    - classic
+    - kiali-ossm
+    - difficulty_normal
+  turns:
+    - turn_id: diagnose
+      query: >
+        Users are reporting that the Bookinfo productpage is occasionally taking
+        5+ seconds to load, but it doesn't happen on every request.
+      expected_response: >
+        The agent should investigate the reported intermittent latency using Kiali/OSSM
+        and Kubernetes tools. It should collect and cite: productpage service latency
+        metrics (P95/P99 values), the Kiali traffic graph showing response times
+        and
+        error rates across the call chain (ingressgateway → productpage → reviews
+        →
+        ratings), distributed traces for productpage, and pod or ingress logs.
+        If the latency is not currently reproducible (metrics and traces show normal
+        response times with no active errors), the agent should clearly state that,
+        identify the most likely intermittent causes (e.g. external edge path not
+        captured by server-side tracing, occasional downstream errors or retries,
+        resource pressure spikes), and provide actionable next steps such as
+        increasing trace sampling, checking Route or edge timeout configuration,
+        and
+        adding explicit timeout and retry policies to the VirtualService.
+        If an active issue is found (e.g. failing edges in the traffic graph, errors
+        in pod logs), the agent should identify the root cause and recommend an
+        immediate mitigation plus a permanent fix.
+      turn_metrics:
+        - custom:answer_correctness

@@ -1,0 +1,45 @@
+- conversation_group_id: check_istio_objects_status
+  description: >
+    A misconfigured VirtualService (reviews-bad-config) is deployed
+    in bookinfo with four Kiali validation errors: missing gateway, undefined subset,
+    non-existent destination host, and route weights not summing to 100.
+  tag:
+    - classic
+    - kiali-ossm
+    - difficulty_normal
+  turns:
+    - turn_id: diagnose
+      query: >
+        I deployed a VirtualService called reviews-bad-config in the bookinfo namespace
+        but I think it has some configuration problems. Can you check the Istio
+        objects
+        in that namespace and tell me if there are any validation errors or issues
+        I
+        should fix?
+      expected_response: >
+        The agent should use Kiali/OSSM MCP tools to list and inspect the Istio
+        configuration objects in the bookinfo namespace, retrieve the full spec
+        of
+        reviews-bad-config, and cross-check referenced Gateways, Services, and
+        DestinationRules. It should report the VirtualService as invalid and
+        identify the following Kiali validation errors:
+        KIA1102 — Gateway not found: spec.gateways references bookinfo-missing-gateway
+        which does not exist in bookinfo; the agent should note the existing valid
+        Gateway (e.g. bookinfo-gateway) and recommend pointing to it instead.
+        KIA1101 — Destination host not found: a route destination references
+        fake-service which is not a known Service in bookinfo; the agent should
+        list
+        the existing services and recommend removing or replacing that destination.
+        KIA1107 — Subset not found: the routes reference subsets (e.g. v99, v1)
+        on
+        host reviews, but there is no DestinationRule for reviews in bookinfo defining
+        any subsets; the agent should recommend creating a DestinationRule with
+        the
+        intended subsets (v1/v2/v3).
+        The agent may additionally note that route weights do not sum to 100 (80+10=90)
+        as a hygiene issue. For each finding the agent should cite the evidence
+        from
+        the tool output (path, spec excerpt, existing resources) and provide a concrete
+        fix, ideally including a corrected VirtualService example.
+      turn_metrics:
+        - custom:answer_correctness

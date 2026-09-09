@@ -1,13 +1,13 @@
 - conversation_group_id: troubleshoot_latency_trace
   description: >
     A 3-second delay fault is injected on the ratings service. The agent
-    must identify the latency root cause using traces and fix the delay.
+    must identify the latency root cause using traces.
   tag:
     - classic
     - kiali-ossm
     - difficulty_medium
   turns:
-    - turn_id: investigate_and_fix
+    - turn_id: investigate
       query: >
         The Bookinfo product page is loading very slow — requests to the page
         are taking several seconds. All pods are running fine. Can you investigate
@@ -27,8 +27,8 @@
         making all upstream services (reviews, productpage) appear slow.
         The agent should name ratings as the responsible service, cite the relevant
         VirtualService spec (fault.delay.fixedDelay: 3s, percentage.value: 100),
-        explain that this pattern is typical of intentional chaos/resilience testing,
-        and offer to remove the fault injection block from the ratings VirtualService
-        to restore normal page load times.
+        and explain that this pattern is typical of intentional chaos/resilience testing.
+        The agent should note that removing the fault injection block from the ratings
+        VirtualService would restore normal page load times.
       turn_metrics:
         - custom:answer_correctness

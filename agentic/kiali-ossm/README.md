@@ -10,8 +10,8 @@ Evaluation scenarios for AI-assisted diagnosis of OpenShift Service Mesh (OSSM) 
 | `check_istio_objects_status` | Misconfigured VirtualService with 4 validation errors | Kiali validation errors |
 | `check_bookinfo_services` | None (baseline) | Namespace service health overview |
 | `check_latency_bookinfo_issue` | None (intermittent user report) | Latency investigation |
-| `fix_bookinfo_routing` | reviews-v3 weight=0, no red stars | Routing fix |
-| `fix_bookinfo_fault_injection` | 100% fault abort 503 on ratings | Fault injection removal |
+| `diagnose_bookinfo_routing` | reviews-v3 weight=0, no red stars | Routing diagnosis |
+| `diagnose_bookinfo_fault_injection` | 100% fault abort 503 on ratings | Fault injection diagnosis |
 | `troubleshoot_latency_trace` | 3s fixedDelay on ratings | Trace-based latency diagnosis |
 
 ## Setup and Running

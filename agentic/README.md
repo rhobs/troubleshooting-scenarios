@@ -94,8 +94,8 @@ Scenarios under [`kiali-ossm/`](kiali-ossm/) require OpenShift Service Mesh (OSS
 | `kiali-ossm/check_istio_objects_status` | Misconfigured VirtualService with 4 validation errors | Kiali validation errors |
 | `kiali-ossm/check_bookinfo_services` | None (baseline) | Namespace service health overview |
 | `kiali-ossm/check_latency_bookinfo_issue` | None (intermittent user report) | Latency investigation |
-| `kiali-ossm/fix_bookinfo_routing` | reviews-v3 weight=0, no red stars | Routing fix |
-| `kiali-ossm/fix_bookinfo_fault_injection` | 100% fault abort 503 on ratings | Fault injection removal |
+| `kiali-ossm/diagnose_bookinfo_routing` | reviews-v3 weight=0, no red stars | Routing diagnosis |
+| `kiali-ossm/diagnose_bookinfo_fault_injection` | 100% fault abort 503 on ratings | Fault injection diagnosis |
 | `kiali-ossm/troubleshoot_latency_trace` | 3s fixedDelay on ratings | Trace-based latency diagnosis |
 
 ### KubeVirt (OLS-classic only)

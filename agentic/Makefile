@@ -70,8 +70,8 @@ OLS_CLASSIC_SCENARIOS := \
 	kiali-ossm/check_istio_objects_status \
 	kiali-ossm/check_latency_bookinfo_issue \
 	kiali-ossm/check_mesh_status \
-	kiali-ossm/fix_bookinfo_fault_injection \
-	kiali-ossm/fix_bookinfo_routing \
+	kiali-ossm/diagnose_bookinfo_fault_injection \
+	kiali-ossm/diagnose_bookinfo_routing \
 	kiali-ossm/troubleshoot_latency_trace \
 	kubevirt/vm_crashloop \
 	kubevirt/vm_migration_failure \

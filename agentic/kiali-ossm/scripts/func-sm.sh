@@ -142,7 +142,7 @@ install_istio() {
     errormsg "No Sail/ServiceMesh operator pods found in namespace [${OLM_OPERATORS_NAMESPACE}] (cannot oc wait on an empty list)."
     exit 1
   fi
-  if ! ${OC} wait --for condition=Ready "${operator_pods}" --timeout 300s -n "${OLM_OPERATORS_NAMESPACE}"; then
+  if ! ${OC} wait --for condition=Ready ${operator_pods} --timeout 300s -n "${OLM_OPERATORS_NAMESPACE}"; then
     errormsg "Timed out or failed: ${OC} wait --for condition=Ready ${operator_pods} --timeout 300s -n ${OLM_OPERATORS_NAMESPACE}"
     exit 1
   fi

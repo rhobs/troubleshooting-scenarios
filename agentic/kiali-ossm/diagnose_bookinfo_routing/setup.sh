@@ -11,9 +11,10 @@ ${KUBECTL} apply -f "$FIXTURE_DIR/manifests.yaml"
 
 # Verify the VirtualService was accepted by Istio
 ATTEMPT=0
+VS=0
 until [ "$ATTEMPT" -ge 10 ]; do
   ATTEMPT=$((ATTEMPT + 1))
-  VS=$(${KUBECTL} get virtualservice reviews -n "$NAMESPACE" --no-headers 2>/dev/null | wc -l | tr -d ' ')
+  VS=$(${KUBECTL} get virtualservice reviews -n "$NAMESPACE" --no-headers 2>/dev/null | wc -l | tr -d ' ') || true
   if [ "$VS" -ge 1 ]; then
     echo "VirtualService reviews is active in namespace $NAMESPACE"
     break

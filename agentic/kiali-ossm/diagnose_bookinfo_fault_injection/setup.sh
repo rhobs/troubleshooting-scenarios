@@ -28,9 +28,10 @@ $KUBECTL apply -f "$FIXTURE_DIR/manifests.yaml"
 
 # Verify the VirtualService was accepted
 ATTEMPT=0
+VS=0
 until [ "$ATTEMPT" -ge 10 ]; do
   ATTEMPT=$((ATTEMPT + 1))
-  VS=$($KUBECTL get virtualservice ratings -n "$NAMESPACE" --no-headers 2>/dev/null | wc -l | tr -d ' ')
+  VS=$($KUBECTL get virtualservice ratings -n "$NAMESPACE" --no-headers 2>/dev/null | wc -l | tr -d ' ') || true
   if [ "$VS" -ge 1 ]; then
     echo "VirtualService ratings is active in namespace $NAMESPACE"
     break

@@ -58,6 +58,16 @@ OLS_CLASSIC_SCENARIOS := \
 	crashlooping_pod_alert \
 	failed_job \
 	failing_api_alert \
+	kiali-ossm/check_bookinfo_services \
+	kiali-ossm/check_istio_objects_status \
+	kiali-ossm/check_latency_bookinfo_issue \
+	kiali-ossm/check_mesh_status \
+	kiali-ossm/diagnose_bookinfo_fault_injection \
+	kiali-ossm/diagnose_bookinfo_routing \
+	kiali-ossm/troubleshoot_latency_trace \
+	kubevirt/vm_crashloop \
+	kubevirt/vm_migration_failure \
+	kubevirt/vm_storage_failure \
 	pending_pvc_alert \
 	timeout_connections \
 	unbalanced_replicas \
@@ -87,7 +97,11 @@ else
   SCENARIOS := $(_CANDIDATES)
 endif
 
-_OLS_CLASSIC_CANDIDATES := $(filter $(_CANDIDATES),$(OLS_CLASSIC_SCENARIOS))
+ifdef SCENARIO
+  _OLS_CLASSIC_CANDIDATES := $(filter $(strip $(subst $(COMMA), ,$(SCENARIO))),$(OLS_CLASSIC_SCENARIOS))
+else
+  _OLS_CLASSIC_CANDIDATES := $(OLS_CLASSIC_SCENARIOS)
+endif
 ifdef TAG
   _OLS_CLASSIC := $(shell for d in $(_OLS_CLASSIC_CANDIDATES); do \
     for t in $(subst $(COMMA), ,$(TAG)); do \
@@ -118,8 +132,8 @@ else
 	@for scenario in $(SCENARIOS); do \
 	  if [ ! -d "$$scenario" ]; then \
 	    echo "Error: scenario '$$scenario' not found. Available scenarios:"; \
-	    for d in */; do \
-	      if [ -f "$$d/evals.yaml" ]; then echo "  $${d%/}"; fi; \
+	    find . -name evals.yaml -not -path '*/results/*' -printf '%h\n' | sed 's|^\./||' | sort | while read -r d; do \
+	      echo "  $$d"; \
 	    done; \
 	    exit 1; \
 	  fi; \
@@ -222,9 +236,39 @@ else
 	  auth_token=$$(oc create token "$$eval_sa" -n openshift-lightspeed --duration=1h); \
 	fi; \
 	export API_KEY="$$auth_token"; \
+	group_script() { \
+	  local scenario="$$1" name="$$2"; \
+	  if echo "$$scenario" | grep -q '/' && [ -x "$$(dirname "$$scenario")/$$name" ]; then \
+	    echo "$$(dirname "$$scenario")/$$name"; \
+	  fi; \
+	}; \
 	echo "==> Scenarios: $(_OLS_CLASSIC)"; \
+	groups_done=""; \
 	overall_status=0; \
 	for scenario in $(_OLS_CLASSIC); do \
+	  grp=$$(group_script "$$scenario" setup.sh); \
+	  if [ -n "$$grp" ] && ! echo "$$groups_done" | grep -qF "|$$grp|"; then \
+	    echo ""; \
+	    echo "==> Group setup: $$grp"; \
+	    bash "$$grp" || { overall_status=$$?; break; }; \
+	    groups_done="$${groups_done}|$$grp|"; \
+	    if [ -n "$$pf_pid" ]; then \
+	      kill $$pf_pid 2>/dev/null || true; wait $$pf_pid 2>/dev/null || true; \
+	      echo "==> Restarting port-forward after group setup..."; \
+	      oc port-forward -n openshift-lightspeed deployment/lightspeed-app-server 8443:8443 >/dev/null 2>&1 & \
+	      pf_pid=$$!; \
+	    fi; \
+	    echo "==> Waiting for OLS to be ready after group setup..."; \
+	    ols_ok=false; \
+	    for i in $$(seq 1 30); do \
+	      if curl -ksf --connect-timeout 2 "https://localhost:8443/docs" >/dev/null 2>&1; then ols_ok=true; break; fi; \
+	      sleep 2; \
+	    done; \
+	    if [ "$$ols_ok" != "true" ]; then \
+	      echo "Error: OLS not reachable after group setup"; \
+	      overall_status=1; break; \
+	    fi; \
+	  fi; \
 	  echo ""; \
 	  echo "==> Setup: $$scenario"; \
 	  scenario_status=0; \
@@ -239,6 +283,14 @@ else
 	  echo "==> Cleanup: $$scenario"; \
 	  if [ -x $$scenario/cleanup.sh ]; then bash $$scenario/cleanup.sh || echo "WARNING: cleanup failed (non-fatal)"; fi; \
 	  if [ $$scenario_status -ne 0 ]; then overall_status=$$scenario_status; break; fi; \
+	done; \
+	for scenario in $(_OLS_CLASSIC); do \
+	  grp=$$(group_script "$$scenario" cleanup.sh); \
+	  if [ -n "$$grp" ] && ! echo "$$groups_done" | grep -qF "|cleanup:$$grp|"; then \
+	    echo "==> Group cleanup: $$grp"; \
+	    bash "$$grp" || echo "WARNING: group cleanup failed (non-fatal)"; \
+	    groups_done="$${groups_done}|cleanup:$$grp|"; \
+	  fi; \
 	done; \
 	if [ -n "$$(find "$(EVAL_DIR)" -name '*_summary.json' -print -quit 2>/dev/null)" ]; then \
 	  echo ""; \

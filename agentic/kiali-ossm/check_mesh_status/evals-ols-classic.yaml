@@ -1,0 +1,28 @@
+- conversation_group_id: check_mesh_status
+  description: Check the status of the mesh and identify any issues.
+  tag:
+    - classic
+    - kiali-ossm
+    - difficulty_normal
+  turns:
+    - turn_id: diagnose
+      query: >
+        Check the status of the mesh and identify any issues.
+      expected_response: >
+        The agent should use Kiali/OSSM MCP tools to provide a structured Istio
+        mesh health
+        assessment organized as: (1) control plane — report istiod version and health;
+        (2) observability stack — list each component (Prometheus, Grafana, Tempo/Jaeger)
+        with Healthy or Unreachable status; (3) data plane — report the overall
+        health
+        of monitored namespaces with any DEGRADED or UNHEALTHY namespaces called
+        out.
+        For each issue found, the agent should cite specific evidence from tool
+        output
+        (error rates, log lines, pod status, graph edges), explain the likely root
+        cause,
+        and provide a concrete remediation step. The response should be well-structured,
+        grounded in observed Kiali and Kubernetes data, and end with a prioritized
+        action list.
+      turn_metrics:
+        - custom:answer_correctness

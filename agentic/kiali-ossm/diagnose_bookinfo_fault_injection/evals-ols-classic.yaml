@@ -1,0 +1,28 @@
+- conversation_group_id: diagnose_bookinfo_fault_injection
+  description: >
+    A 100% fault injection on ratings causes 503 errors. Agent investigates
+    and identifies the root cause.
+  tag:
+    - classic
+    - kiali-ossm
+    - difficulty_medium
+  turns:
+    - turn_id: investigate
+      query: >
+        Some users are seeing errors on the Bookinfo product page — it looks like
+        the ratings service is broken. All pods are running and mTLS / auth policies
+        are not the issue. All Istio resources are in the 'bookinfo' namespace.
+        Can you check the Istio VirtualService routing rules
+        for the ratings service and find what's causing the problem?
+      expected_response: >
+        The agent should find and cite the ratings VirtualService spec showing a
+        fault.abort block with httpStatus 503 and percentage value 100, applying
+        to
+        all traffic with no match conditions. It should confirm the DestinationRule
+        for ratings is correctly defined and not contributing to the issue. It should
+        identify the 100% fault injection abort as the root cause of the 503 errors
+        seen on the product page, and may note this is typically used for chaos or
+        resilience testing. The agent may note that removing the abort block or
+        setting its percentage to 0 would restore normal service.
+      turn_metrics:
+        - custom:answer_correctness

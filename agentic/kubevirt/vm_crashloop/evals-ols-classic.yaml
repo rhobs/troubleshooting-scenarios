@@ -1,0 +1,23 @@
+- conversation_group_id: vm_crashloop
+  description: |
+    VM repeatedly starts and shuts down due to a malicious cloud-init
+    runcmd that calls 'shutdown -h now'.
+    RCA: the cloud-init userData contains a runcmd entry that immediately
+    shuts the VM down after boot.
+    Expected: inspect cloud-init config and identify the offending command.
+  tag:
+    - classic
+    - kubevirt
+    - difficulty_normal
+
+  turns:
+    - turn_id: diagnose
+      query: >-
+        VM web-server-vm in namespace kubevirt-scenarios keeps restarting.
+        It starts but dies within 30-60 seconds. Events show repeated
+        Started/Stopped cycles. Why is this happening?
+      expected_response: >-
+        The cloud-init userData contains a runcmd entry with
+        'shutdown -h now'. Remove or fix the offending cloud-init command.
+      turn_metrics:
+        - custom:answer_correctness

@@ -1,0 +1,34 @@
+- conversation_group_id: troubleshoot_latency_trace
+  description: >
+    A 3-second delay fault is injected on the ratings service. The agent
+    must identify the latency root cause using traces.
+  tag:
+    - classic
+    - kiali-ossm
+    - difficulty_medium
+  turns:
+    - turn_id: investigate
+      query: >
+        The Bookinfo product page is loading very slow — requests to the page
+        are taking several seconds. All pods are running fine. Can you investigate
+        what is causing the latency and tell me which service is responsible?
+      expected_response: >
+        The agent should investigate service-to-service communication using distributed
+        traces or the Kiali traffic graph to map the full request path for the Bookinfo
+        application. It should report observed response times across the call chain
+        (e.g. ingressgateway → productpage ~7 s, productpage → reviews v2 ~4.8 s,
+        productpage → reviews v3 ~2.4 s, reviews v3 → ratings ~2.4 s) and identify
+        the reviews and ratings services as contributors to the overall latency.
+        The agent should then inspect Istio VirtualService resources in the bookinfo
+        namespace — not just one named "reviews" but all VirtualServices — and locate
+        the ratings VirtualService, which contains a fault injection delay rule:
+        fixedDelay of 3 s applied to 100% of traffic routed to the ratings v1 subset.
+        This is the root cause: the artificial delay cascades through the call chain,
+        making all upstream services (reviews, productpage) appear slow.
+        The agent should name ratings as the responsible service, cite the relevant
+        VirtualService spec (fault.delay.fixedDelay: 3s, percentage.value: 100),
+        and explain that this pattern is typical of intentional chaos/resilience testing.
+        The agent should note that removing the fault injection block from the ratings
+        VirtualService would restore normal page load times.
+      turn_metrics:
+        - custom:answer_correctness

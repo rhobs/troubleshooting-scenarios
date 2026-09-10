@@ -1,0 +1,23 @@
+- conversation_group_id: vm_storage_failure
+  description: |
+    VM stuck in Provisioning due to a non-existent StorageClass.
+    RCA: the DataVolume references StorageClass 'premium-nvme-storage'
+    which does not exist on the cluster.
+    Expected: identify the missing StorageClass and recommend switching
+    to a valid one or removing storageClassName to use the default.
+  tag:
+    - classic
+    - kubevirt
+    - difficulty_normal
+
+  turns:
+    - turn_id: diagnose
+      query: >-
+        VM production-db-vm in namespace kubevirt-scenarios is not starting.
+        It has been stuck in Provisioning for over 10 minutes. Can you help?
+      expected_response: >-
+        The DataVolume references a non-existent StorageClass named
+        'premium-nvme-storage'. Switch to a valid StorageClass or remove
+        storageClassName to use the cluster default.
+      turn_metrics:
+        - custom:answer_correctness

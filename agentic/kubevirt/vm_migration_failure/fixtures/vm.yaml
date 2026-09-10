@@ -1,0 +1,45 @@
+---
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: critical-app-vm
+  labels:
+    app: critical-app
+    scenario: vm-migration-failure
+spec:
+  instancetype:
+    name: u1.small
+  preference:
+    name: fedora
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        app: critical-app
+    spec:
+      domain:
+        devices:
+          autoattachPodInterface: false
+          disks:
+            - bootOrder: 1
+              name: rootdisk
+            - name: cloudinitdisk
+              disk: {}
+          interfaces:
+            - masquerade: {}
+              name: default
+      networks:
+        - name: default
+          pod: {}
+      subdomain: headless
+      volumes:
+        - containerDisk:
+            image: quay.io/containerdisks/fedora:42
+          name: rootdisk
+        - cloudInitNoCloud:
+            userData: |
+              #cloud-config
+              user: fedora
+              password: fedora
+              chpasswd: { expire: False }
+          name: cloudinitdisk

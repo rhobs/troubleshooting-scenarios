@@ -1,0 +1,58 @@
+---
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: production-db-vm
+  labels:
+    app: production-db
+    scenario: vm-storage-failure
+spec:
+  dataVolumeTemplates:
+    - metadata:
+        name: production-db-vm-volume
+      spec:
+        sourceRef:
+          kind: DataSource
+          name: fedora
+          namespace: openshift-virtualization-os-images
+        storage:
+          storageClassName: premium-nvme-storage
+          resources:
+            requests:
+              storage: 30Gi
+  instancetype:
+    name: u1.small
+  preference:
+    name: fedora
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        app: production-db
+    spec:
+      domain:
+        devices:
+          autoattachPodInterface: false
+          disks:
+            - bootOrder: 1
+              name: rootdisk
+            - name: cloudinitdisk
+              disk: {}
+          interfaces:
+            - masquerade: {}
+              name: default
+      networks:
+        - name: default
+          pod: {}
+      subdomain: headless
+      volumes:
+        - dataVolume:
+            name: production-db-vm-volume
+          name: rootdisk
+        - cloudInitNoCloud:
+            userData: |
+              #cloud-config
+              user: fedora
+              password: fedora
+              chpasswd: { expire: False }
+          name: cloudinitdisk

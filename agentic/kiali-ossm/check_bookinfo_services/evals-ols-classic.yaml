@@ -1,0 +1,26 @@
+- conversation_group_id: check_bookinfo_services
+  description: Check my bookinfo namespace services in my servicemesh
+  tag:
+    - classic
+    - kiali-ossm
+    - difficulty_normal
+  turns:
+    - turn_id: diagnose
+      query: >
+        Check my bookinfo namespace services in my servicemesh
+      expected_response: >
+        Using Kiali/OSSM MCP tools, the agent should provide a comprehensive health
+        overview
+        of the bookinfo namespace covering: (1) overall namespace health status
+        (Healthy, DEGRADED, or UNHEALTHY) with availability and error rate figures;
+        (2) individual service health for all services present (details, productpage,
+        ratings, reviews, istio-ingressgateway) and the validity of Istio config
+        objects (Gateway, VirtualService); (3) the traffic graph showing
+        service-to-service call paths, mTLS status, and response times for each
+        edge.
+        If the namespace is healthy with no errors, the agent should confirm this
+        clearly and may note any mesh-wide observability warnings (e.g. Grafana
+        Unreachable) as non-blocking. If issues are found, it should identify the
+        root cause with supporting evidence and offer concrete next steps.
+      turn_metrics:
+        - custom:answer_correctness

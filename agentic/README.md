@@ -78,6 +78,30 @@ Scenarios with an isolated problem and direct symptom-cause correlation.
 | `unscheduled_pod` | Pod stuck in Pending, not scheduled to any node | nodeSelector requires `disk-type=ssd-high-iops` but no nodes have this label | `Analysis` | `user-imports` | |
 | `failing_probe` | Pod in CrashLoopBackOff (probe failure) | Liveness probe targets port 8081 but container listens on 8080; connection refused | `Analysis` | `status-api` | |
 
+### Kiali/OSSM (OLS-classic only)
+
+Scenarios under [`kiali-ossm/`](kiali-ossm/) require OpenShift Service Mesh (OSSM), Kiali, and the Bookinfo sample application. They use the `ossm` MCP toolset. See [kiali-ossm/README.md](kiali-ossm/README.md) for prerequisites and setup.
+
+| Scenario | Fault | Signal |
+|----------|-------|--------|
+| `kiali-ossm/check_mesh_status` | None (baseline) | Mesh health assessment |
+| `kiali-ossm/check_istio_objects_status` | Misconfigured VirtualService with 4 validation errors | Kiali validation errors |
+| `kiali-ossm/check_bookinfo_services` | None (baseline) | Namespace service health overview |
+| `kiali-ossm/check_latency_bookinfo_issue` | None (intermittent user report) | Latency investigation |
+| `kiali-ossm/diagnose_bookinfo_routing` | reviews-v3 weight=0, no red stars | Routing diagnosis |
+| `kiali-ossm/diagnose_bookinfo_fault_injection` | 100% fault abort 503 on ratings | Fault injection diagnosis |
+| `kiali-ossm/troubleshoot_latency_trace` | 3s fixedDelay on ratings | Trace-based latency diagnosis |
+
+### KubeVirt (OLS-classic only)
+
+Scenarios under [`kubevirt/`](kubevirt/) require OpenShift Virtualization and the `kubevirt` MCP toolset. See [kubevirt/README.md](kubevirt/README.md) for prerequisites and setup.
+
+| Scenario | VM | Fault | Namespace |
+|----------|-----|-------|-----------|
+| `kubevirt/vm_storage_failure` | `production-db-vm` | Non-existent StorageClass `premium-nvme-storage` | `kubevirt-scenarios` |
+| `kubevirt/vm_crashloop` | `web-server-vm` | cloud-init `runcmd: shutdown -h now` | `kubevirt-scenarios` |
+| `kubevirt/vm_migration_failure` | `critical-app-vm` | `nodeSelector` pins VM to one node | `kubevirt-scenarios` |
+
 ### Conventions
 
 Scenarios triggered by alerts (specific to lightspeed-agentic-alerts-manager) have:

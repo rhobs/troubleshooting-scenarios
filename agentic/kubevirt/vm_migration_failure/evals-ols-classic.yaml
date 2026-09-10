@@ -1,0 +1,25 @@
+- conversation_group_id: vm_migration_failure
+  description: |
+    Live migration fails because the VM has a nodeSelector pinning it
+    to a single node.
+    RCA: the VM spec contains a nodeSelector constraint that prevents
+    migration to any other node.
+    Expected: identify the scheduling constraint and recommend removing
+    the nodeSelector or adding more matching nodes.
+  tag:
+    - classic
+    - kubevirt
+    - difficulty_normal
+
+  turns:
+    - turn_id: diagnose
+      query: >-
+        I tried to live migrate VM critical-app-vm in namespace
+        kubevirt-scenarios but the migration failed. The VM is running
+        fine otherwise. What went wrong?
+      expected_response: >-
+        The VM has a nodeSelector pinning it to a specific node. Live
+        migration requires at least one other schedulable node that matches
+        the selector. Remove the nodeSelector or add more matching nodes.
+      turn_metrics:
+        - custom:answer_correctness

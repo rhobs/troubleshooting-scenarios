@@ -1,0 +1,27 @@
+- conversation_group_id: restarting_pod_alert
+  description: |
+    The report-generator workload restarts repeatedly during normal processing.
+    RCA: completed reports accumulate in the application cache without effective
+    eviction, increasing memory use until the container is OOMKilled.
+    Expected: diagnose application-driven memory growth and recommend bounded
+    retention or restoring a known-good release, not a limit increase alone.
+  tag:
+    - classic
+    - core
+    - alert
+    - difficulty_normal
+
+  turns:
+    - turn_id: turn_1
+      query: >-
+        The report generator in data-processing keeps restarting during normal
+        processing. Can you investigate?
+      expected_response: >-
+        The report-generator containers are OOMKilled because completed reports
+        continue accumulating in the application cache. Growing cache entries
+        and memory across completed work indicate ineffective eviction and
+        unbounded retention. Recommend bounding or evicting the cache, or
+        restoring the known-good release. Increasing the memory limit alone
+        delays rather than fixes recurrence.
+      turn_metrics:
+        - custom:answer_correctness

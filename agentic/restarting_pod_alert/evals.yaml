@@ -1,0 +1,54 @@
+- conversation_group_id: restarting_pod_alert
+  description: |
+    The report-generator workload restarts repeatedly during normal processing.
+    RCA: completed reports accumulate in the application cache without effective
+    eviction, increasing memory use until the container is OOMKilled.
+    Expected: diagnose application-driven memory growth and recommend bounded
+    retention or restoring a known-good release, not a limit increase alone.
+  tag:
+    - agentic
+    - alert
+    - difficulty_normal
+
+  turns:
+    - turn_id: turn_1
+      openshift_agentic_run_spec:
+        request: |
+          Alert: DataProcessingPodRestarting (critical)
+          Namespace: data-processing
+          Description: Containers in the report-generator workload have restarted multiple times during normal processing.
+          Investigate using the skill at /app/skills/cluster-troubleshoot/investigate-alert
+        targetNamespaces:
+          - data-processing
+        tools:
+          skills:
+            - image: quay.io/openshiftanalytics/agentic-skills:latest
+              paths:
+                - /skills/cluster-troubleshoot/investigate-alert
+        analysis:
+          agent: default
+
+      expected_openshift_agentic_run_status:
+        phase: Completed
+        conditions:
+          - type: Analyzed
+            status: "True"
+
+      expected_outcome: >-
+        The report-generator containers are OOMKilled after repeated restarts.
+        Runtime status and progress logs show completed reports accumulating in
+        the cache while memory grows, supporting ineffective eviction or
+        unbounded retention rather than a memory limit that is merely too small.
+        Recommend bounding or evicting retained records, or restoring the
+        known-good release. Increasing the memory limit alone only delays
+        recurrence. The rollout history supports identifying the application
+        release change, but no exact version number or source-code expression is
+        required. No executed change or agent-performed recovery verification is
+        required.
+
+      turn_metrics:
+        - "custom:openshift_agentic_run_status"
+        - "custom:openshift_agentic_run_evaluation_correctness"
+      turn_metrics_metadata:
+        "custom:openshift_agentic_run_evaluation_correctness":
+          threshold: 0.75

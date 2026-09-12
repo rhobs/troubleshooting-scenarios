@@ -45,6 +45,7 @@ Scenarios with an isolated problem and direct symptom-cause correlation.
 | `crashlooping_pod_alert` | Pod in CrashLoopBackOff | Required environment variable `DEPLOY_ENV` is missing from the deployment spec | `Analysis` | `warehouse-ops` | `WarehouseOpsPodRestarting` |
 | `crashlooping_pod_alert_remediation` | (remediation variant of above) | Required environment variable `DEPLOY_ENV` is missing from the deployment spec | `Analysis`<br>`Execution`<br>`Verification` | `warehouse-ops` | `WarehouseOpsPodRestarting` |
 | `evicted_pod` | Pod repeatedly evicted | emptyDir sizeLimit (10Mi) too small for app's ~64Mi cache; kubelet evicts in a loop | `Analysis` | `log-aggregator` | |
+| `restarting_pod_alert` | Report-generator restarts during normal processing | Current release retains completed reports without effective cache eviction, causing application-driven memory growth and OOM termination | `Analysis` | `data-processing` | `DataProcessingPodRestarting` |
 | `failed_job` | inventory-sync-validator Job fails | Job cannot connect to database at prod-db:3333 (connection refused) | `Analysis` | `catalog-mgmt` | |
 | `failing_init_container` | Pod stuck in Init:CrashLoopBackOff | Obsolete init container cannot reach decommissioned database, blocking app start | `Analysis` | `onboarding-app` | |
 | `blocked_deployment` | Deployment creates no pods | App memory request (64Mi) below namespace LimitRange minimum (256Mi) | `Analysis` | `analytics-dashboard` | `AnalyticsDashboardDeploymentUnavailable` |

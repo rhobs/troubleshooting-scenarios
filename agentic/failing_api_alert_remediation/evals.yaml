@@ -8,6 +8,7 @@
     to v1.0.1, and verify payments-api recovers.
   tag:
     - remediation
+    - difficulty_medium
 
   turns:
     - turn_id: turn_1

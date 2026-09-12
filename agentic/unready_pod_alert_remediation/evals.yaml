@@ -6,6 +6,7 @@
     Expected: make the readiness probe appropriate for the workload and verify the pod becomes ready.
   tag:
     - remediation
+    - difficulty_normal
 
   turns:
     - turn_id: turn_1

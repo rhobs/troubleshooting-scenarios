@@ -7,6 +7,7 @@
     Expected: remediate the PVC and workload configuration, then verify the pod becomes available.
   tag:
     - remediation
+    - difficulty_medium
 
   turns:
     - turn_id: turn_1

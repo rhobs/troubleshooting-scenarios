@@ -6,6 +6,7 @@
     Expected: restore a working deployment revision and verify the rollout completes.
   tag:
     - remediation
+    - difficulty_normal
 
   turns:
     - turn_id: turn_1

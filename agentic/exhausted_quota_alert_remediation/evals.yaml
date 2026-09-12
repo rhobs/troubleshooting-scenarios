@@ -7,6 +7,7 @@
     Expected: remediate the exhausted pod quota and verify onboarding-app becomes available.
   tag:
     - remediation
+    - difficulty_normal
 
   turns:
     - turn_id: turn_1

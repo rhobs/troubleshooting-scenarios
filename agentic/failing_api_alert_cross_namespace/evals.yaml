@@ -1,17 +1,18 @@
-- conversation_group_id: failing_api
+- conversation_group_id: failing_api_alert_cross_namespace
   description: |
     Alert fires for 100% payment error rate (payments-api returns
     503).
-    RCA: reporting-service leaks database connections, exhausting the
-    shared PostgreSQL pool; payments-api cannot acquire a connection.
-    Expected: identify reporting-service as the root cause;
-    reconciliation-service CrashLooping is a separate issue, not the
-    cause.
+    RCA: reporting-service in shared-services leaks database connections,
+    exhausting the shared PostgreSQL pool; payments-api in payments cannot
+    acquire a connection.
+    Expected: identify shared-services/reporting-service as the root cause;
+    shared-services/reconciliation-service CrashLooping is a separate issue,
+    not the cause.
   tag:
     - agentic
     - core
     - alert
-    - difficulty_medium
+    - difficulty_hard
 
   turns:
     - turn_id: turn_1
@@ -23,6 +24,7 @@
           Investigate using the skill at /app/skills/cluster-troubleshoot/investigate-alert
         targetNamespaces:
           - payments
+          - shared-services
         tools:
           skills:
             - image: quay.io/openshiftanalytics/agentic-skills:latest
@@ -38,11 +40,12 @@
             status: "True"
 
       expected_outcome: >-
-        Root cause: payments/reporting-service is repeatedly opening DB connections
-        and not releasing them properly, exhausting PostgreSQL connection slots.
+        Root cause: shared-services/reporting-service is repeatedly opening DB
+        connections and not releasing them properly, exhausting the connection
+        slots on shared-services/postgres.
         payments/payments-api cannot obtain a DB connection and returns 503.
-        if mentioned, reconciliation-service CrashLooping is a separate issue, NOT RELATED
-        to the DB connection exhaustion.
+        if mentioned, shared-services/reconciliation-service CrashLooping is a
+        separate issue, NOT RELATED to the DB connection exhaustion.
         Fix: rollback, restart, or scale down reporting-service.
 
       turn_metrics:

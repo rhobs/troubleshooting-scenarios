@@ -1,24 +1,28 @@
-- conversation_group_id: unknown_autoscaler_alert_remediation
+- conversation_group_id: failing_api_alert_cross_namespace_remediation
   description: |
-    Alert fires for an inactive HPA (ScalingActive=False).
-    RCA: the deployment containers have no CPU resource requests, so
-    the HPA cannot compute utilization percentage.
-    Expected: add a CPU request to the container specification and verify the HPA becomes active.
+    Alert fires for 100% payment error rate (payments-api returns
+    503).
+    RCA: reporting-service in shared-services leaks database connections,
+    exhausting the shared PostgreSQL pool; payments-api in payments cannot
+    acquire a connection.
+    Expected: identify shared-services/reporting-service as the root cause,
+    roll it back to v1.0.1, and verify payments-api recovers.
   tag:
     - remediation
-    - difficulty_normal
+    - difficulty_hard
 
   turns:
     - turn_id: turn_1
       openshift_agentic_run_spec:
         request: |
-          Alert: ProductCatalogHpaInactive (warning)
-          Namespace: product-catalog
-          Description: HPA product-catalog/catalog-api reports ScalingActive=False and cannot compute target metrics.
+          Alert: PaymentErrorRateHigh (critical)
+          Namespace: payments
+          Description: Payment error rate is 100.00%, which exceeds the 15% threshold.
           Investigate the alert, remediate the root cause, and verify the recovery.
           Use the skill at /app/skills/cluster-troubleshoot/investigate-alert.
         targetNamespaces:
-          - product-catalog
+          - payments
+          - shared-services
         tools:
           skills:
             - image: quay.io/openshiftanalytics/agentic-skills:latest

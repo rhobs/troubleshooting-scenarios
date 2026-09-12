@@ -11,7 +11,7 @@
     - classic
     - core
     - alert
-    - difficulty_hard
+    - difficulty_medium
 
   turns:
     - turn_id: investigate_payment_failures

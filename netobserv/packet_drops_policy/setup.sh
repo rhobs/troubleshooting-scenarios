@@ -15,8 +15,8 @@ source "${SCRIPT_DIR}/../build/scripts/wait_for.sh"
 check_netobserv_prereqs
 deploy_netobserv_fixture "${SCRIPT_DIR}/fixtures" "${TARGET_NS}"
 
-wait_for_rollout "${TARGET_NS}" "policy-backend" "120s"
-wait_for_rollout "${TARGET_NS}" "policy-frontend" "120s"
+wait_for_rollout "${TARGET_NS}" "policy-backend" "180s"
+wait_for_rollout "${TARGET_NS}" "policy-frontend" "180s"
 # Probe every ~5s — need several blocked attempts before NetObserv/Loki show OVS drops.
 wait_for_min_log_matches "${TARGET_NS}" "app=policy-frontend" "connection blocked|timed out" 5 60 5
 wait_for_netobserv_warmup

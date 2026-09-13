@@ -41,7 +41,7 @@ metrics_metadata:
         from tools
       criteria: |
         The agent is investigating a network observability problem with NetObserv tools from
-        kubernetes-mcp-server (netobserv_list_flows, netobserv_get_flow_metrics). Evaluate:
+        openshift-mcp-server (netobserv_list_flows, netobserv_get_flow_metrics). Evaluate:
           - The response must use real data from tool calls (flow metrics, flow logs), not generic advice
           - Evidence should reference NetObserv-specific signals (flow fields, namespaces, workloads)
           - Generic Kubernetes troubleshooting without NetObserv data must be penalized

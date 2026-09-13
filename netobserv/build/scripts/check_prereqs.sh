@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Shared prerequisites and helpers for NetObserv troubleshooting eval scenarios.
-# Requires NetObserv (FlowCollector) and kubernetes-mcp-server with the netobserv toolset.
+# Requires NetObserv (FlowCollector) and openshift-mcp-server with the netobserv toolset.
 
 set -euo pipefail
 
@@ -64,7 +64,7 @@ check_netobserv_prereqs() {
   fi
 
   echo "NetObserv prerequisites OK (TARGET_NS=${TARGET_NS}, NETOBSERV_NS=${NETOBSERV_NS})"
-  echo "OLS must have MCP access via kubernetes-mcp-server with the netobserv toolset enabled."
+  echo "OLS must have MCP access via openshift-mcp-server with the netobserv toolset enabled."
 }
 
 # OpenShift restricted SCC requires runAsUser inside the namespace UID allocation.

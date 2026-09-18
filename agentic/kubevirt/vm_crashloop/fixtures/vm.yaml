@@ -1,0 +1,47 @@
+---
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: web-server-vm
+  labels:
+    app: web-server
+    scenario: vm-crashloop
+spec:
+  instancetype:
+    name: u1.small
+  preference:
+    name: fedora
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        app: web-server
+    spec:
+      domain:
+        devices:
+          autoattachPodInterface: false
+          disks:
+            - bootOrder: 1
+              name: rootdisk
+            - name: cloudinitdisk
+              disk: {}
+          interfaces:
+            - masquerade: {}
+              name: default
+      networks:
+        - name: default
+          pod: {}
+      subdomain: headless
+      volumes:
+        - containerDisk:
+            image: quay.io/containerdisks/fedora:42
+          name: rootdisk
+        - cloudInitNoCloud:
+            userData: |
+              #cloud-config
+              user: fedora
+              password: fedora
+              chpasswd: { expire: False }
+              runcmd:
+                - ["shutdown", "-h", "now"]
+          name: cloudinitdisk

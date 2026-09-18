@@ -1,5 +1,5 @@
 ---
-# NetObserv evaluation scenarios — requires live cluster + NetObserv + kubernetes-mcp-server (netobserv toolset)
+# NetObserv evaluation scenarios — requires live cluster + NetObserv + openshift-mcp-server (netobserv toolset)
 
 # --- DNS latency (DNSTracking) ---
 - conversation_group_id: dns_latency

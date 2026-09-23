@@ -30,7 +30,7 @@ if ! oc api-resources --api-group=ols.openshift.io 2>/dev/null | grep -q olsconf
     printf '\033[0;31mFAIL:\033[0m OLSConfig CRD not found — OLS operator not installed on this cluster (run make setup-ols-classic)\n'
     exit 1
   fi
-  printf '\033[0;33mWARN:\033[0m OLSConfig CRD not found — OLS operator not installed (make setup will install it)\n'
+  printf '\033[0;33mWARN:\033[0m OLSConfig CRD not found — OLS operator not installed (run make setup-ols-classic, or the suite make setup)\n'
 else
   printf '\033[0;32m  OK:\033[0m OLS operator CRD found\n'
 

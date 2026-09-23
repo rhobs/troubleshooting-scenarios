@@ -146,9 +146,11 @@ PREVIEW ?= 0
 COMMA := ,
 EMPTY :=
 SPACE := $(EMPTY) $(EMPTY)
+_ALL_SCENARIOS := $(sort $(_ALL_OLS_AGENTIC) $(_ALL_OLS_CLASSIC))
+_SCENARIO_LIST := $(strip $(subst $(COMMA), ,$(SCENARIO)))
+_UNKNOWN_SCENARIOS := $(filter-out $(_ALL_SCENARIOS),$(_SCENARIO_LIST))
 
 ifdef SCENARIO
-  _SCENARIO_LIST := $(strip $(subst $(COMMA), ,$(SCENARIO)))
   _OLS_AGENTIC_CANDIDATES := $(filter $(_ALL_OLS_AGENTIC),$(_SCENARIO_LIST))
   _OLS_CLASSIC_CANDIDATES := $(filter $(_ALL_OLS_CLASSIC),$(_SCENARIO_LIST))
 else
@@ -172,7 +174,44 @@ else
   OLS_CLASSIC_SCENARIOS := $(_OLS_CLASSIC_CANDIDATES)
 endif
 
-.PHONY: setup-venv setup-ols-agentic setup-ols-classic eval-ols-agentic eval-ols-classic cleanup-ols-agentic cleanup-ols-classic help
+# A scenario can have eval definitions for either OLS Agentic, OLS Classic, or
+# both. Standalone setup and cleanup targets use each selected scenario once.
+MATCHED_SCENARIOS := $(sort $(OLS_AGENTIC_SCENARIOS) $(OLS_CLASSIC_SCENARIOS))
+
+.PHONY: _validate-scenario-filters setup-scenario cleanup-scenario setup-venv setup-ols-agentic setup-ols-classic eval-ols-agentic eval-ols-classic cleanup-ols-agentic cleanup-ols-classic help
+
+_validate-scenario-filters:
+ifeq ($(strip $(SCENARIO)$(TAG)),)
+	@echo "ERROR: set at least one filter: SCENARIO=... or TAG=..." >&2
+	@exit 2
+endif
+ifneq ($(_UNKNOWN_SCENARIOS),)
+	@echo "ERROR: unknown scenario name(s):" >&2
+	@printf '  %s\n' $(_UNKNOWN_SCENARIOS) >&2
+	@exit 2
+endif
+ifeq ($(MATCHED_SCENARIOS),)
+	@echo "ERROR: no scenarios match the given filters." >&2
+	@exit 2
+endif
+
+setup-scenario: _validate-scenario-filters
+ifeq ($(PREVIEW),1)
+	@echo "Preview only: no scenario setup or evaluation will run."
+	@echo "Matched scenarios ($(words $(MATCHED_SCENARIOS))):"
+	@printf '  %s\n' $(MATCHED_SCENARIOS)
+else
+	@bash $(SCRIPTS_DIR)/setup-scenarios.sh --scenarios $(MATCHED_SCENARIOS)
+endif
+
+cleanup-scenario: _validate-scenario-filters
+ifeq ($(PREVIEW),1)
+	@echo "Preview only: no scenario cleanup will run."
+	@echo "Matched scenarios ($(words $(MATCHED_SCENARIOS))):"
+	@printf '  %s\n' $(MATCHED_SCENARIOS)
+else
+	@bash $(SCRIPTS_DIR)/cleanup-scenarios.sh --scenarios $(MATCHED_SCENARIOS)
+endif
 
 setup-ols-agentic: setup-venv
 	@venv/bin/python3 $(SCRIPTS_DIR)/sync-agent-crs.py $(EVALS_DIR)/system-ols-agentic.yaml
@@ -271,6 +310,7 @@ help: ## Show available targets
 	@echo "  lint                 Install tools and run all linters"
 	@echo ""
 	@echo "Setup:"
+	@echo "  setup-scenario       Deploy selected scenario(s) in the cluster"
 	@echo "  setup-ols-agentic    Install venv (OLS agentic operator is manual for now)"
 	@echo "  setup-ols-classic    Install venv and OLS classic"
 	@echo ""
@@ -279,18 +319,24 @@ help: ## Show available targets
 	@echo "  eval-ols-classic     Run OLS classic scenarios"
 	@echo ""
 	@echo "Cleanup:"
+	@echo "  cleanup-scenario     Remove selected scenario(s)"
 	@echo "  cleanup-ols-agentic  Remove venv (OLS agentic operator is manual for now)"
 	@echo "  cleanup-ols-classic  Remove venv and OLS classic"
 	@echo ""
 	@echo "Options:"
-	@echo "  SCENARIO=...              Comma-separated scenarios to run (default: all)"
-	@echo "  TAG=...                   Filter scenarios by tag (default: none)"
+	@echo "  SCENARIO=...              Comma-separated scenarios (required unless TAG is set)"
+	@echo "  TAG=...                   Filter by tag (required unless SCENARIO is set)"
 	@echo "  PREVIEW=1                 List matched scenarios without running them"
 	@echo "  SETUP_MODE=run|scenario   Setup/cleanup lifecycle (default: scenario)"
 	@echo "    run:      per (scenario, agent, repeat) - for mutating agents"
 	@echo "    scenario: per scenario - for read-only agents, parallel OK"
 	@echo ""
 	@echo "Examples:"
+	@echo "  make setup-scenario TAG=core"
+	@echo "  make setup-scenario SCENARIO=blocked_deployment,failed_job"
+	@echo "  make setup-scenario TAG=alert PREVIEW=1"
+	@echo "  make cleanup-scenario SCENARIO=blocked_deployment,failed_job"
+	@echo "  make cleanup-scenario TAG=alert PREVIEW=1"
 	@echo "  make eval-ols-agentic TAG=core SETUP_MODE=scenario"
 	@echo "  make eval-ols-agentic TAG=core PREVIEW=1"
 	@echo "  make eval-ols-classic SCENARIO=crashlooping_pod_alert"

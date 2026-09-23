@@ -52,6 +52,26 @@ make eval-ols-classic SCENARIO=crashlooping_pod_alert          # one scenario
 
 Run `make help` for all targets and options.
 
+### Standalone scenario setup and cleanup
+
+To deploy one or more faults for a manual troubleshooting session or demo,
+without running an evaluation:
+
+```bash
+make setup-scenario SCENARIO=stuck_rollout
+make setup-scenario SCENARIO=stuck_rollout,exhausted_quota
+make setup-scenario TAG=alert
+make setup-scenario TAG=core PREVIEW=1       # list matches without changing the cluster
+make cleanup-scenario SCENARIO=stuck_rollout,exhausted_quota
+make cleanup-scenario TAG=alert PREVIEW=1
+```
+
+The `TAG` and `SCENARIO` filters use the same matching rules as the evaluation
+targets. Setup leaves the selected faults running. Cleanup runs each selected
+scenario's `cleanup.sh`, then the group's `cleanup.sh` once when present.
+Both commands require at least one filter. They validate all scenario names and
+the final match before changing the cluster.
+
 ### Requirements
 
 - OpenShift cluster accessible via `oc login` (5.x for OLS Agentic, 4.x+ for OLS Classic)

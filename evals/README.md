@@ -30,6 +30,22 @@ The preview shows the matched scenarios, their total count, `AGENT`, and `SETUP_
 If `AGENT` is not set, it shows that the default agents come from `system-ols-agentic.yaml`.
 It does not run setup, evaluations, cleanup, or report generation. It needs no cluster connection or venv.
 
+To deploy selected scenario faults for a manual investigation or demo without
+running evaluations:
+
+```bash
+make setup-scenario TAG=core
+make setup-scenario SCENARIO=blocked_deployment,failed_job
+make setup-scenario TAG=alert PREVIEW=1
+make cleanup-scenario SCENARIO=blocked_deployment,failed_job
+make cleanup-scenario TAG=alert PREVIEW=1
+```
+
+Setup leaves the selected faults running. Cleanup runs the matching scenario
+`cleanup.sh` scripts and then each selected group's `cleanup.sh` once when
+present. Both commands require `TAG`, `SCENARIO`, or both. They validate the
+filters before changing the cluster.
+
 Before a real evaluation, `make eval-ols-agentic` checks that the Agent CRs match
 `system-ols-agentic.yaml`. If they are missing or stale, it stops and asks you to
 run `make setup-ols-agentic`.

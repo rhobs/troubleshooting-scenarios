@@ -1,8 +1,10 @@
 #!/bin/bash
-# CI job: run OLS evaluation scenarios for a specific LLM provider.
+# CI job: run OLS Classic evaluation scenarios for a specific LLM provider.
 #
 # Input environment variables:
-#   EVAL_SUITES             - Space-separated suites to run (default: kiali-ossm kubevirt netobserv)
+#   TAG or EVAL_SUITES      - Space-separated scenario tags to run (default: kiali-ossm kubevirt netobserv)
+#                             Each tag maps to a group of scenarios under evals/scenarios/
+#                             TAG is preferred; EVAL_SUITES is legacy name for backward compatibility
 #   OPENAI_API_KEY          - Required for judge LLM (always OpenAI)
 #   OLS_DEFAULT_PROVIDER    - LLM provider: openai, google, or anthropic (default: openai)
 #   OLS_DEFAULT_MODEL       - Model override (optional, has defaults per provider)
@@ -28,8 +30,10 @@ done
 
 : "${OPENAI_API_KEY:?OPENAI_API_KEY must be set (needed for judge LLM)}"
 
-# Default to all three suites if not specified
-SUITES="${EVAL_SUITES:-kiali-ossm kubevirt netobserv}"
+# Default to all three scenario tags if not specified
+# These tags map to scenario groups under evals/scenarios/
+# Support both EVAL_SUITES (legacy) and TAG (new) variable names
+TAGS="${TAG:-${EVAL_SUITES:-kiali-ossm kubevirt netobserv}}"
 
 # ── Auto-extract GCP project ID from SA JSON if needed ───────────────
 
@@ -61,30 +65,19 @@ fi
 
 echo "==> Provider: ${PROVIDER}"
 echo "==> Model: ${MODEL}"
-echo "==> Suites: ${SUITES}"
+echo "==> Scenario Tags: ${TAGS}"
 
-# ── Run evaluations for each suite ───────────────────────────────────
+# ── Run evaluations for each tag ─────────────────────────────────────
 
-run_suite() {
-  local SUITE="$1"
-  local SUITE_DIR="${REPO_ROOT}/${SUITE}"
-
-  if [ ! -d "$SUITE_DIR" ]; then
-    echo "ERROR: Suite directory not found: ${SUITE_DIR}"
-    return 1
-  fi
-
-  if [ ! -f "${SUITE_DIR}/Makefile" ]; then
-    echo "ERROR: No Makefile in suite directory: ${SUITE_DIR}"
-    return 1
-  fi
+run_tag() {
+  local TAG="$1"
 
   echo ""
   echo "=========================================="
-  echo "Running eval: SUITE=${SUITE}, PROVIDER=${PROVIDER}"
+  echo "Running eval: TAG=${TAG}, PROVIDER=${PROVIDER}"
   echo "=========================================="
 
-  cd "$SUITE_DIR"
+  cd "$REPO_ROOT"
 
   # For non-openai providers, hide OPENAI_API_KEY during setup so setup-ols.sh
   # only creates the GCP provider(s) in OLSConfig, avoiding multi-provider issues.
@@ -94,12 +87,11 @@ run_suite() {
     unset OPENAI_API_KEY
   fi
 
-  echo "==> Running make setup..."
-  if ! make setup; then
-    echo "ERROR: make setup failed for ${SUITE}"
+  echo "==> Setting up OLS Classic..."
+  if ! make setup-ols-classic; then
+    echo "ERROR: make setup-ols-classic failed for TAG=${TAG}"
     echo "==> Running cleanup..."
-    make cleanup || true
-    # Restore OPENAI_API_KEY before returning
+    make cleanup-ols-classic || true
     export OPENAI_API_KEY="$SAVED_OPENAI_KEY"
     return 1
   fi
@@ -107,68 +99,72 @@ run_suite() {
   # Restore OPENAI_API_KEY for the judge LLM
   export OPENAI_API_KEY="$SAVED_OPENAI_KEY"
 
-  echo "==> Running evaluations..."
-  local -a EVAL_ARGS=("OLS_PROVIDER=${PROVIDER}")
-  [ -n "$MODEL" ] && EVAL_ARGS+=("OLS_MODEL=${MODEL}")
+  echo "==> Running evaluations for TAG=${TAG}..."
+  local -a EVAL_ARGS=("TAG=${TAG}")
+  [ -n "$MODEL" ] && EVAL_ARGS+=("MODEL=${MODEL}")
 
   # Run evals and capture exit status
   local EVAL_STATUS=0
-  if ! make evals "${EVAL_ARGS[@]}"; then
-    echo "ERROR: make evals failed for ${SUITE}"
+  if ! make eval-ols-classic "${EVAL_ARGS[@]}"; then
+    echo "ERROR: make eval-ols-classic failed for TAG=${TAG}"
     EVAL_STATUS=1
   fi
 
   # Collect artifacts (even if evals failed, there may be partial results)
-  if [ -n "$ARTIFACT_DIR" ] && [ -d "${SUITE_DIR}/results" ]; then
-    echo "==> Copying results to ${ARTIFACT_DIR}/${SUITE}/..."
-    mkdir -p "${ARTIFACT_DIR}/${SUITE}"
-    cp -r "${SUITE_DIR}/results/"* "${ARTIFACT_DIR}/${SUITE}/" 2>/dev/null || true
+  if [ -n "$ARTIFACT_DIR" ] && [ -d "${REPO_ROOT}/evals/results" ]; then
+    # Find the most recently created results directory (timestamped YYYYMMDD_HHMMSS)
+    local LATEST_RESULT_DIR
+    LATEST_RESULT_DIR=$(find "${REPO_ROOT}/evals/results" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' 2>/dev/null | sort -r | head -1)
 
-    # Generate markdown summary if JSON results exist
-    local SUMMARY_JSONS=()
-    while IFS= read -r -d '' file; do
-      SUMMARY_JSONS+=("$file")
-    done < <(find "${SUITE_DIR}/results" -name '*_summary.json' -print0 2>/dev/null | sort -z)
+    if [ -n "$LATEST_RESULT_DIR" ]; then
+      echo "==> Copying results from ${LATEST_RESULT_DIR} to ${ARTIFACT_DIR}/${TAG}/..."
+      mkdir -p "${ARTIFACT_DIR}/${TAG}"
+      cp -r "${REPO_ROOT}/evals/results/${LATEST_RESULT_DIR}" "${ARTIFACT_DIR}/${TAG}/" 2>/dev/null || true
 
-    if [ ${#SUMMARY_JSONS[@]} -gt 0 ] && [ -f "${SUITE_DIR}/evals.yaml" ]; then
-      echo "==> Generating markdown summary..."
-      local VENV_PYTHON="${REPO_ROOT}/venv/bin/python"
-      if [ -f "$VENV_PYTHON" ]; then
-        "$VENV_PYTHON" "${REPO_ROOT}/scripts/summarize-agentic-evals.py" \
-          "${SUITE_DIR}/results" \
-          --output "${ARTIFACT_DIR}/${SUITE}/summary.md" \
-          --run-type ols \
-          "${SUITE_DIR}/evals.yaml" \
-          "${SUMMARY_JSONS[@]}" || echo "Warning: Summary generation failed"
-      else
-        echo "Warning: venv not found, skipping markdown summary generation"
+      # Generate JUnit XML for Sippy ingestion
+      local SUMMARY_FILES=()
+      while IFS= read -r -d '' file; do
+        SUMMARY_FILES+=("$file")
+      done < <(find "${ARTIFACT_DIR}/${TAG}/${LATEST_RESULT_DIR}" -name '*_summary.json' -print0 2>/dev/null | sort -z)
+
+      if [ ${#SUMMARY_FILES[@]} -gt 0 ]; then
+        echo "==> Generating JUnit XML for Sippy..."
+        if [ -f "${REPO_ROOT}/venv/bin/python3" ]; then
+          "${REPO_ROOT}/venv/bin/python3" "${REPO_ROOT}/scripts/eval-to-junit.py" \
+            "${ARTIFACT_DIR}/junit-${TAG}-${PROVIDER}.xml" \
+            "${SUMMARY_FILES[@]}" || echo "Warning: JUnit generation failed"
+        else
+          python3 "${REPO_ROOT}/scripts/eval-to-junit.py" \
+            "${ARTIFACT_DIR}/junit-${TAG}-${PROVIDER}.xml" \
+            "${SUMMARY_FILES[@]}" || echo "Warning: JUnit generation failed"
+        fi
       fi
     fi
   fi
 
-  # Cleanup
-  echo "==> Running cleanup..."
-  make cleanup || true
+  # Cleanup OLS
+  echo "==> Cleaning up OLS Classic..."
+  make cleanup-ols-classic || true
 
   # Return the evaluation status
   if [ $EVAL_STATUS -ne 0 ]; then
-    echo "==> OLS evaluation failed for ${SUITE} / ${PROVIDER}"
+    echo "==> OLS evaluation failed for TAG=${TAG} / ${PROVIDER}"
     return 1
   fi
 
-  echo "==> OLS evaluation complete for ${SUITE} / ${PROVIDER}"
+  echo "==> OLS evaluation complete for TAG=${TAG} / ${PROVIDER}"
 }
 
-# Run each suite and track results
-FAILED_SUITES=()
-PASSED_SUITES=()
+# Run each tag and track results
+FAILED_TAGS=()
+PASSED_TAGS=()
 
-for SUITE in $SUITES; do
-  if run_suite "$SUITE"; then
-    PASSED_SUITES+=("$SUITE")
+for TAG in $TAGS; do
+  if run_tag "$TAG"; then
+    PASSED_TAGS+=("$TAG")
   else
-    echo "ERROR: Evaluation failed for SUITE=${SUITE}, PROVIDER=${PROVIDER}"
-    FAILED_SUITES+=("$SUITE")
+    echo "ERROR: Evaluation failed for TAG=${TAG}, PROVIDER=${PROVIDER}"
+    FAILED_TAGS+=("$TAG")
   fi
 done
 
@@ -176,12 +172,12 @@ echo ""
 echo "=========================================="
 echo "OLS Evaluation Summary for ${PROVIDER}"
 echo "=========================================="
-echo "Passed (${#PASSED_SUITES[@]}): ${PASSED_SUITES[*]:-none}"
-echo "Failed (${#FAILED_SUITES[@]}): ${FAILED_SUITES[*]:-none}"
+echo "Passed (${#PASSED_TAGS[@]}): ${PASSED_TAGS[*]:-none}"
+echo "Failed (${#FAILED_TAGS[@]}): ${FAILED_TAGS[*]:-none}"
 echo ""
 
-if [ ${#FAILED_SUITES[@]} -gt 0 ]; then
-  echo "ERROR: ${#FAILED_SUITES[@]} suite(s) failed"
+if [ ${#FAILED_TAGS[@]} -gt 0 ]; then
+  echo "ERROR: ${#FAILED_TAGS[@]} tag(s) failed"
   exit 1
 fi
 

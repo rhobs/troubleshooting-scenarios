@@ -133,6 +133,25 @@ function collect_results() {
     echo "==> Collecting results to ${ARTIFACT_DIR}..."
     mkdir -p "$ARTIFACT_DIR/agentic-${AGENT}"
     cp -r "$AGENTIC_DIR/results/"* "$ARTIFACT_DIR/agentic-${AGENT}/" 2>/dev/null || true
+
+    # Generate JUnit XML for Sippy ingestion
+    local SUMMARY_FILES=()
+    while IFS= read -r -d '' file; do
+        SUMMARY_FILES+=("$file")
+    done < <(find "$ARTIFACT_DIR/agentic-${AGENT}" -name '*_summary.json' -print0 2>/dev/null | sort -z)
+
+    if [ ${#SUMMARY_FILES[@]} -gt 0 ]; then
+        echo "==> Generating JUnit XML for Sippy..."
+        if [ -f "$REPO_DIR/venv/bin/python3" ]; then
+            "$REPO_DIR/venv/bin/python3" "$REPO_DIR/scripts/eval-to-junit.py" \
+                "$ARTIFACT_DIR/junit-agentic-${AGENT}.xml" \
+                "${SUMMARY_FILES[@]}" || echo "Warning: JUnit generation failed"
+        else
+            python3 "$REPO_DIR/scripts/eval-to-junit.py" \
+                "$ARTIFACT_DIR/junit-agentic-${AGENT}.xml" \
+                "${SUMMARY_FILES[@]}" || echo "Warning: JUnit generation failed"
+        fi
+    fi
 }
 
 function cleanup() {

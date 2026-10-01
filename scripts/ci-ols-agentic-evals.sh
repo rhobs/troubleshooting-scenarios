@@ -6,8 +6,6 @@
 #   EVAL_OPENAI_API_KEY             - OpenAI API key (judge LLM + OpenAI agent)
 #   EVAL_VERTEX_CREDENTIALS         - Path to GCP service account JSON (Vertex AI)
 #   EVAL_VERTEX_PROJECT_ID          - GCP project ID (Vertex region is always global)
-#   AGENT                           - Agent key from system-ols-agentic.yaml
-#                                     (default: openai-gpt-6-luna)
 #   SCENARIOS                       - Space-separated scenario list (default: all)
 #   ARTIFACT_DIR                    - CI artifact directory (default: /tmp/artifacts)
 #
@@ -60,7 +58,7 @@ function run_evals() {
         make setup-venv
     fi
 
-    # Step 3: Run evals (all default agents from system-ols-agentic.yaml)
+    # Step 3: Run all default agents from the system config.
     local -a MAKE_ARGS=()
 
     # Scenario filtering (priority: SCENARIO > TAG)
@@ -132,17 +130,8 @@ function cleanup() {
     make cleanup-ols-agentic || true
 }
 
-# Use the same agent keys as system-ols-agentic.yaml.
-AGENT="${AGENT:-openai-gpt-6-luna}"
-case "$AGENT" in
-    openai-gpt-6-luna|openai-gpt-5-6-terra|openai-gpt-6-sol) ;;
-    google-gemini-3.5-flash-lite|google-gemini-3-8-flash|google-gemini-3-7-flash) ;;
-    anthropic-opus-4-6|anthropic-sonnet-5) ;;
-    *)
-        echo "ERROR: Unknown AGENT=${AGENT}. Valid values: openai-gpt-6-luna, openai-gpt-5-6-terra, openai-gpt-6-sol, google-gemini-3.5-flash-lite, google-gemini-3-8-flash, google-gemini-3-7-flash, anthropic-opus-4-6, anthropic-sonnet-5" >&2
-        exit 1
-        ;;
-esac
+# Use the system config even if the CI environment sets AGENT.
+unset AGENT
 
 # Only register cleanup trap if we're actually setting up the operator
 if [[ "${PREVIEW:-0}" != "1" ]]; then

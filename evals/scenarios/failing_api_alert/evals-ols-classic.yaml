@@ -1,4 +1,4 @@
-- conversation_group_id: failing_api_alert_cross_namespace
+- conversation_group_id: failing_api_alert
   description: |
     Alert fires for 100% payment error rate (payments-api returns
     503).

@@ -67,8 +67,7 @@ spec:
             severity: warning
           annotations:
             summary: Database connections usage high
-            description: Database is using {{ $value }} connections. Monitor for potential
-              connection leaks.
+            description: Database is using {{ $value }} connections, above the threshold of 9.
         - alert: PostgresqlTooManyConnections
           expr: |
             sum(pg_stat_activity_count) > 13
@@ -77,5 +76,4 @@ spec:
             severity: warning
           annotations:
             summary: Too many database connections
-            description: '{{ $value }} active connections detected. This may indicate
-              connection leaks.'
+            description: 'Database is using {{ $value }} connections, above the threshold of 13.'

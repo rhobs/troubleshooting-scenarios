@@ -392,13 +392,6 @@ def test_preview_summary_matches_real_run(request, mode):
         (root / "scripts/generate-report-agentic.py").write_text(
             'import sys\nwith open(sys.argv[-1], "w") as f: f.write("report\\n")\n'
         )
-        config = yaml.safe_load((root / "evals/system-ols-agentic.yaml").read_text())
-        agent = config["agents"]["default"]["agent"][0]
-        make_agent = [f"AGENT={agent}"]
-        runner_agent = ["--agents", agent]
-    else:
-        make_agent = []
-        runner_agent = []
 
     env = {
         **os.environ,
@@ -407,13 +400,13 @@ def test_preview_summary_matches_real_run(request, mode):
     }
     preview = subprocess.run(
         ["make", f"eval-ols-{mode}", f"SCENARIO={scenario_name}",
-         "SETUP_MODE=run", "PREVIEW=1", *make_agent],
+         "SETUP_MODE=run", "PREVIEW=1"],
         cwd=root, env=env, capture_output=True, text=True,
     )
     runner = subprocess.run(
         ["bash", str(root / "scripts" / f"eval-ols-{mode}.sh"),
          "--system-config", f"system-ols-{mode}.yaml", "--setup-mode", "run",
-         *runner_agent, "--scenarios", f"scenarios/{scenario_name}"],
+         "--scenarios", f"scenarios/{scenario_name}"],
         cwd=root / "evals", env=env, capture_output=True, text=True,
     )
     assert preview.returncode == 0, preview.stdout + preview.stderr
@@ -758,7 +751,7 @@ def test_setup_dependencies(variant):
     assert ("setup-ols-classic.sh" in result.stdout) == (variant == "classic")
 
 
-@pytest.mark.parametrize("agent", [None, *SYSTEM_CONFIG["agents"]["default"]["agent"], "invalid"])
+@pytest.mark.parametrize("agent", [None, "invalid"])
 def test_ci_agent_provisioning(workspace, agent):
     bin_dir = workspace / "bin"
     executable(
@@ -824,17 +817,7 @@ def test_ci_agent_provisioning(workspace, agent):
         ["bash", str(workspace / "scripts/ci-ols-agentic-evals.sh")],
         env=env, capture_output=True, text=True,
     )
-    if agent == "invalid":
-        assert result.returncode == 1
-        assert "Unknown AGENT=invalid" in result.stderr
-        assert not (workspace / "make.log").exists()
-        assert not (workspace / "cr.log").exists()
-        return
-
     assert result.returncode == 0, result.stdout + result.stderr
-    selected = agent or SYSTEM_CONFIG["agents"]["default"]["agent"][0]
-    config = SYSTEM_CONFIG["agents"][selected]
-    provider, model = config["description"].split("|", 1)
     resources = [json.loads(line) for line in (workspace / "cr.log").read_text().splitlines()]
     providers = [r for r in resources if r["kind"] == "LLMProvider"]
     assert [r["metadata"]["name"] for r in providers] == [
@@ -844,10 +827,20 @@ def test_ci_agent_provisioning(workspace, agent):
         vertex = resource["spec"]["googleCloudVertex"]
         assert vertex["region"] == "global"
         assert vertex["projectID"] == "test-project"
-    agent_cr = next(
-        r for r in resources
-        if r["kind"] == "Agent" and r["metadata"]["name"] == config["agent_ref"]
-    )
-    assert agent_cr["spec"]["llmProvider"]["name"] == provider
-    assert agent_cr["spec"]["model"] == model
-    assert f"eval-ols-agentic AGENT={selected}" in (workspace / "make.log").read_text()
+    agents = [r for r in resources if r["kind"] == "Agent"]
+    defaults = SYSTEM_CONFIG["agents"]["default"]["agent"]
+    assert {r["metadata"]["name"] for r in agents} == {
+        SYSTEM_CONFIG["agents"][name]["agent_ref"] for name in defaults
+    }
+    for name in defaults:
+        config = SYSTEM_CONFIG["agents"][name]
+        provider, model = config["description"].split("|", 1)
+        agent_cr = next(
+            r for r in agents if r["metadata"]["name"] == config["agent_ref"]
+        )
+        assert agent_cr["spec"]["llmProvider"]["name"] == provider
+        assert agent_cr["spec"]["model"] == model
+    commands = (workspace / "make.log").read_text().splitlines()
+    assert commands == [
+        "setup-ols-agentic", "eval-ols-agentic TAG=core", "cleanup-ols-agentic",
+    ]

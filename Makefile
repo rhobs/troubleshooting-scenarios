@@ -69,12 +69,9 @@ _ALL_OLS_AGENTIC := \
 	exhausted_quota \
 	exhausted_quota_alert \
 	exhausted_quota_alert_remediation \
-	failed_job \
 	failed_replicaset \
 	failed_start \
 	failing_api_alert \
-	failing_api_alert_cross_namespace \
-	failing_api_alert_cross_namespace_remediation \
 	failing_api_alert_remediation \
 	failing_init_container \
 	failing_probe \
@@ -112,8 +109,7 @@ _ALL_OLS_AGENTIC := \
 _ALL_OLS_CLASSIC := \
 	batch_submission_timeouts \
 	crashlooping_pod_alert \
-	failed_job \
-	failing_api_alert_cross_namespace \
+	failing_api_alert \
 	kiali-ossm/check_bookinfo_services \
 	kiali-ossm/check_istio_objects_status \
 	kiali-ossm/check_latency_bookinfo_issue \
@@ -138,7 +134,6 @@ _ALL_OLS_CLASSIC := \
 	unready_pod_alert
 SCENARIO ?=
 TAG ?=
-AGENT ?=
 SETUP_MODE ?= scenario
 PREVIEW ?= 0
 
@@ -233,7 +228,6 @@ ifeq ($(PREVIEW),1)
 	@bash $(SCRIPTS_DIR)/show-eval-summary.sh \
 	  --system-config $(EVALS_DIR)/system-ols-agentic.yaml \
 	  --setup-mode $(SETUP_MODE) \
-	  $(if $(AGENT),--agents $(subst $(COMMA), ,$(AGENT))) \
 	  --scenarios $(OLS_AGENTIC_SCENARIOS)
 else ifeq ($(OLS_AGENTIC_SCENARIOS),)
 	@echo "No scenarios match the given filters."
@@ -241,7 +235,6 @@ else
 	@cd $(EVALS_DIR) && bash ../$(SCRIPTS_DIR)/eval-ols-agentic.sh \
 	  --system-config system-ols-agentic.yaml \
 	  --setup-mode $(SETUP_MODE) \
-	  $(if $(AGENT),--agents $(subst $(COMMA), ,$(AGENT))) \
 	  $(if $(TAG),--tags $(subst $(COMMA), ,$(TAG))) \
 	  --scenarios $(addprefix scenarios/,$(OLS_AGENTIC_SCENARIOS)) \
 	  || { status=$$?; if [ "$$status" -ne 64 ]; then exit "$$status"; fi; }
@@ -306,9 +299,9 @@ help: ## Show available targets
 	@echo ""
 	@echo "Examples:"
 	@echo "  make setup-scenario TAG=core"
-	@echo "  make setup-scenario SCENARIO=blocked_deployment,failed_job"
+	@echo "  make setup-scenario SCENARIO=blocked_deployment,refused_service"
 	@echo "  make setup-scenario TAG=alert PREVIEW=1"
-	@echo "  make cleanup-scenario SCENARIO=blocked_deployment,failed_job"
+	@echo "  make cleanup-scenario SCENARIO=blocked_deployment,refused_service"
 	@echo "  make cleanup-scenario TAG=alert PREVIEW=1"
 	@echo "  make eval-ols-agentic TAG=core SETUP_MODE=scenario"
 	@echo "  make eval-ols-agentic TAG=core PREVIEW=1"

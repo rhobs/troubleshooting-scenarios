@@ -42,7 +42,13 @@ function run_evals() {
 
     # In preview mode, skip infrastructure setup and just show what would run
     if [[ "${PREVIEW:-0}" != "1" ]]; then
-        # Step 1: Install operator
+        # Force openshift-lightspeed namespace (override CI's auto-generated ci-op-* namespace)
+        # The install.sh script respects NAMESPACE env var: NAMESPACE="${NAMESPACE:-openshift-lightspeed}"
+        # Scoped to this function to avoid polluting the global environment
+        local NAMESPACE=openshift-lightspeed
+        export NAMESPACE
+
+        # Step 1: Install operator (creates namespace via hack/quickstart/install.sh)
         install_operator
 
         # Step 2: Configure providers and create Agent CRs from system-ols-agentic.yaml

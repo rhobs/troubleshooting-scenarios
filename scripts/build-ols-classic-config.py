@@ -85,6 +85,7 @@ def main(config_path: str) -> None:
             "name": "openai",
             "type": "openai",
             "credentialsSecretRef": {"name": "creds-classic-openai"},
+            "credentialKey": "apitoken",
             "url": "https://api.openai.com/v1",
             "models": [{"name": model} for model in models["openai"]],
         }

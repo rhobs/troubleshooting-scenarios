@@ -222,7 +222,7 @@ setup-ols-classic: setup-venv
 	@bash $(SCRIPTS_DIR)/preflight.sh
 	@bash $(SCRIPTS_DIR)/setup-ols-classic.sh
 
-eval-ols-agentic:
+eval-ols-agentic: _validate-scenario-filters
 ifeq ($(PREVIEW),1)
 	@echo "Preview only: no setup, evaluation, or cleanup will run."
 	@bash $(SCRIPTS_DIR)/show-eval-summary.sh \
@@ -240,7 +240,7 @@ else
 	  || { status=$$?; if [ "$$status" -ne 64 ]; then exit "$$status"; fi; }
 endif
 
-eval-ols-classic:
+eval-ols-classic: _validate-scenario-filters
 ifeq ($(PREVIEW),1)
 	@echo "Preview only: no setup, evaluation, or cleanup will run."
 	@bash $(SCRIPTS_DIR)/show-eval-summary.sh \

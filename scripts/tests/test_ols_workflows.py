@@ -376,6 +376,46 @@ def test_preflight_checks_the_selected_service(tmp_path, mode):
 
 
 @pytest.mark.parametrize("mode", ["agentic", "classic"])
+@pytest.mark.parametrize("preview", ["0", "1"])
+@pytest.mark.parametrize("filters", [[], ["SCENARIO=", "TAG="], ["SCENARIO= ", "TAG= "]])
+def test_eval_requires_a_filter_before_running(workspace, mode, preview, filters):
+    log = workspace / "events"
+    executable(
+        workspace / "scripts/preflight.sh",
+        '#!/bin/bash\necho preflight >> "$EVENT_LOG"\nexit 1\n',
+    )
+    result = subprocess.run(
+        ["make", f"eval-ols-{mode}", f"PREVIEW={preview}", *filters],
+        cwd=workspace,
+        env={**os.environ, "SCENARIO": "", "TAG": "", "EVENT_LOG": str(log)},
+        capture_output=True, text=True,
+    )
+    assert result.returncode == 2, result.stdout + result.stderr
+    assert "set at least one filter: SCENARIO=... or TAG=..." in result.stderr
+    assert "Preview only:" not in result.stdout
+    assert not log.exists()
+    assert not (workspace / "evals/results").exists()
+
+
+@pytest.mark.parametrize("mode", ["agentic", "classic"])
+def test_eval_accepts_a_tag_filter(request, mode):
+    workspace = request.getfixturevalue("classic_workspace" if mode == "classic" else "workspace")
+    name = "crashlooping_pod_alert"
+    scenario = workspace / "evals/scenarios" / name
+    scenario.mkdir(parents=True)
+    filename = f"evals-ols-{mode}.yaml"
+    shutil.copy(ROOT / "evals/scenarios" / name / filename, scenario / filename)
+    result = subprocess.run(
+        ["make", f"eval-ols-{mode}", "TAG=investigation", "PREVIEW=1"],
+        cwd=workspace,
+        env={**os.environ, "SCENARIO": ""},
+        capture_output=True, text=True,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert f"scenarios:  1\n  {name}" in result.stdout
+
+
+@pytest.mark.parametrize("mode", ["agentic", "classic"])
 def test_preview_summary_matches_real_run(request, mode):
     root = request.getfixturevalue("classic_workspace" if mode == "classic" else "workspace")
     config_path = root / "evals" / f"system-ols-{mode}.yaml"

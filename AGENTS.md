@@ -44,8 +44,8 @@ make tools              # Install local lint tools in .tools/
 make lint               # Install tools if needed, then run all linters
 make setup-ols-agentic  # Install venv + sync Agent CRs
 make setup-ols-classic  # Install venv + OLS classic
-make eval-ols-agentic   # Run OLS agentic scenarios
-make eval-ols-classic   # Run OLS classic scenarios
+make eval-ols-agentic TAG=investigation # Run OLS agentic investigation cases
+make eval-ols-classic TAG=investigation # Run OLS classic investigation cases
 make cleanup-ols-classic # Remove venv + OLS classic
 ```
 

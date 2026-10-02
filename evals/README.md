@@ -30,9 +30,10 @@ Run Make commands from the repository root.
 | `PREVIEW=1` | Show the selection without running setup, evaluation, or cleanup. |
 | `SETUP_MODE=scenario` | Control when resources are set up and removed; see below. |
 
-With both `SCENARIO` and `TAG`, tags filter the named scenarios. With neither,
-the eval target selects all supported scenarios. Manual `setup-scenario` and
-`cleanup-scenario` targets require at least one filter.
+Both eval targets and the manual `setup-scenario` and `cleanup-scenario` targets
+require `SCENARIO`, `TAG`, or both, including with `PREVIEW=1`. Without a filter,
+Make stops before setup or evaluation starts. With both `SCENARIO` and `TAG`,
+tags filter the named scenarios.
 
 ```bash
 make eval-ols-agentic TAG=core PREVIEW=1

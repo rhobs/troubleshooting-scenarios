@@ -17,7 +17,7 @@ from xml.dom.minidom import parseString
 SUITE_NAME = "troubleshooting-scenarios"
 
 
-def add_token_properties(parent: Element, data: dict) -> None:
+def add_token_properties(parent: Element, data: dict, agent_name: str = "unknown") -> None:
     """Add token usage metrics as JUnit properties.
 
     Extracts token counts from the eval summary and embeds them as JUnit properties
@@ -26,6 +26,7 @@ def add_token_properties(parent: Element, data: dict) -> None:
     Args:
         parent: Parent XML element to attach properties to
         data: Eval summary JSON data containing token metrics
+        agent_name: Agent name extracted from directory path (optional)
     """
     props = SubElement(parent, "properties")
 
@@ -64,10 +65,9 @@ def add_token_properties(parent: Element, data: dict) -> None:
     SubElement(props, "property", name="judge_llm_provider", value=judge_provider)
     SubElement(props, "property", name="judge_llm_model", value=judge_model)
 
-    # Agent info is not available in summary JSON, default to OLS
-    # TODO: Pass agent provider/model from CI caller when available
+    # Agent info extracted from directory path (agent_name parameter)
     SubElement(props, "property", name="agent_llm_provider", value="openshift-lightspeed")
-    SubElement(props, "property", name="agent_llm_model", value="unknown")
+    SubElement(props, "property", name="agent_llm_model", value=agent_name)
 
     # Timestamp and eval metadata
     SubElement(props, "property", name="eval_timestamp",
@@ -135,10 +135,15 @@ def build_junit(summary_files: list[Path]) -> Element:
         if not results:
             continue
 
+        # Extract agent and run info from directory path
+        # Path structure: .../AGENT_NAME/run_N/evaluation_*_summary.json
+        agent_name = path.parent.parent.name if path.parent.parent.name != "results" else "unknown"
+        run_number = path.parent.name if path.parent.name.startswith("run_") else "unknown"
+
         suite = SubElement(testsuites, "testsuite", name=SUITE_NAME)
 
         # Add token usage metrics at suite level
-        add_token_properties(suite, data)
+        add_token_properties(suite, data, agent_name)
 
         failures = 0
         errors = 0
@@ -146,7 +151,7 @@ def build_junit(summary_files: list[Path]) -> Element:
         for r in results:
             scenario = r.get("conversation_group_id", "unknown")
             metric = r.get("metric_identifier", "unknown")
-            name = f"{scenario}/{metric}"
+            name = f"{scenario}/{agent_name}/{run_number}/{metric}"
 
             tc = SubElement(suite, "testcase", name=name, classname=scenario)
 

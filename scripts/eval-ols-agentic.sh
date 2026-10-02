@@ -105,6 +105,7 @@ run_scenario() {
   local scenario_state_dir=""
 
   echo ""
+  echo "==> $progress"
   if [ "$SETUP_MODE" != "skip" ]; then
     echo "==> Setup: $scenario"
     scenario_state_dir="$(mktemp -d "$(cd "$EVAL_DIR" && pwd)/.scenario-state.XXXXXX")" || return $?
@@ -115,7 +116,6 @@ run_scenario() {
     echo "==> Setup skipped: $scenario (SETUP_MODE=skip)"
   fi
   if [ "$scenario_status" -eq 0 ]; then
-    echo "==> Progress: $progress"
     bash "$SCRIPT_DIR/run-agentic-evals.sh" \
       --system-config "$SYSTEM_CONFIG" \
       --evals "$scenario/evals-ols-agentic.yaml" \
@@ -158,7 +158,7 @@ if [ "$SETUP_MODE" = "run" ]; then
       for run in $(seq 1 "$REPEAT"); do
         progress_index=$((progress_index + 1))
         run_scenario "$scenario" \
-          "run $progress_index/$total_runs | ${scenario#scenarios/} | agent=$agent | repeat=$run/$REPEAT" \
+          "Progress: run $progress_index/$total_runs | ${scenario#scenarios/} | agent=$agent | repeat=$run/$REPEAT" \
           --agent "$agent" \
           --run-index "$run" || record_failure "$?" "$scenario (agent=$agent run=$run)"
       done
@@ -170,7 +170,7 @@ else
   for scenario in "${SCENARIOS[@]}"; do
     progress_index=$((progress_index + 1))
     run_scenario "$scenario" \
-      "scenario $progress_index/$total_scenarios | ${scenario#scenarios/}" \
+      "Scenario $progress_index/$total_scenarios" \
       || record_failure "$?" "$scenario"
   done
 fi

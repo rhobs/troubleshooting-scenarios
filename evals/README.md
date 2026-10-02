@@ -36,6 +36,9 @@ the eval target selects all supported scenarios. Manual `setup-scenario` and
 
 ```bash
 make eval-ols-agentic TAG=core PREVIEW=1
+make eval-ols-agentic TAG=analysis PREVIEW=1
+make eval-ols-agentic TAG=remediation SETUP_MODE=run
+make eval-ols-classic TAG=difficulty_medium PREVIEW=1
 make eval-ols-agentic SCENARIO=blocked_deployment,refused_service
 make eval-ols-classic SCENARIO=crashlooping_pod_alert PREVIEW=1
 ```
@@ -112,16 +115,28 @@ Each `evals-*.yaml` file has tags under `tag`. Use `TAG=...` with an eval Make
 target to select matching scenarios. The two eval definitions for one scenario
 may have different tags.
 
+Eval mode is selected by the Make target and file name (`evals-ols-agentic.yaml`
+or `evals-ols-classic.yaml`). `agentic` and `classic` are no longer tags.
+Use `analysis` for investigation and `remediation` for cases that apply a fix.
+Each case also has one difficulty tag. `core`, `alert`, and group tags add
+other ways to select cases.
+
+Comma-separated tags use OR: `TAG=core,alert` selects cases with either tag.
+It does not require both. `TAG=alert` selects alert investigation cases;
+alert remediation variants use `remediation` instead.
+
 | Tag | Meaning |
 |-----|---------|
-| `agentic` | OLS agentic cases. |
-| `classic` | OLS classic cases. |
+| `analysis` | Investigation cases that ask for a diagnosis or recommended fix. |
 | `core` | Representative baseline cases across eval modes and difficulty levels. |
-| `alert` | Alert investigation cases; remediation variants use `remediation`. |
+| `alert` | Alert investigation cases, also tagged `analysis`. |
 | `remediation` | OLS Agentic cases that include analysis, a fix, and verification. |
 | `difficulty_normal` | One isolated problem with a direct link between symptom and cause. |
 | `difficulty_medium` | More reasoning is needed, such as several steps, a decoy, or domain knowledge. |
 | `difficulty_hard` | A complex cause chain that can lead to varied results across runs. |
+| `kiali-ossm` | Classic service mesh cases that use Kiali and OSSM. |
+| `kubevirt` | Classic OpenShift Virtualization cases. |
+| `netobserv` | Classic network observability cases. |
 
 ## Scenarios
 
@@ -155,6 +170,7 @@ Scenarios that need several reasoning steps, domain knowledge, or checks against
 | `diagnostic_trap` | Pod crash-looping (diagnostic trap) | Config mounted at wrong path; low memory limit is a decoy, not the real cause | `Analysis` | `inventory-sync` | |
 | `unbalanced_replicas` | Namespaces have different pod counts | fleet-alpha has 6 pods vs fleet-alpha1 with 9, due to different deployment sets | `Analysis` | `fleet-alpha`<br>`fleet-alpha1` | |
 | `unready_pod_alert` | Pod running but not becoming Ready | HTTP readiness probe targets port 9200 but container has no HTTP server | `Analysis` | `discovery-hub` | `DiscoveryHubPodNotReady` |
+| `nothing_wrong` | User reports errors from `ticket-app` | Deployment, pod, and Service are healthy; no application fault is present | `Analysis` | `ticket-service` | |
 
 ### Difficulty level: Normal
 
@@ -180,7 +196,6 @@ Scenarios with one problem and a direct link between symptom and cause.
 | `missing_configmap` | Pod in CreateContainerConfigError | Deployment envFrom references ConfigMap `app-settings` that was never created | `Analysis` | `feature-service` | |
 | `missing_pvc` | Deployment pod never scheduled | Deployment mounts PVC `app-data` that was never created; FailedScheduling | `Analysis` | `document-store` | |
 | `missing_secret_key` | Pod in CreateContainerConfigError | Secret `db-creds` exists but lacks the `password` key referenced by the container | `Analysis` | `credential-store` | |
-| `nothing_wrong` | User reports errors from `ticket-app` | Deployment, pod, and Service are healthy; no application fault is present | `Analysis` | `ticket-service` | |
 | `orphaned_configmaps` | (analysis-only audit) | ConfigMaps exist but are not referenced by any workload in the namespace | `Analysis` | `deploy-artifacts` | |
 | `orphaned_pvc` | PVCs attached to no workload | Two of three PVCs are not mounted by any pod or deployment | `Analysis` | `artifact-storage` | |
 | `exhausted_quota` | Deployment has zero pods | ResourceQuota caps pods at 2, fully consumed by existing blocker deployment | `Analysis` | `team-onboarding` | `TeamOnboardingDeploymentUnavailable` |

@@ -15,6 +15,10 @@ Evaluation scenarios for AI-assisted diagnosis of OpenShift network observabilit
 
 ## Setup and running
 
+All cases use `analysis` and `netobserv` tags. `packet_drops_kernel` and
+`tls_issues` use `difficulty_medium`; the other cases use `difficulty_normal`.
+See the [tag guide](../../README.md#tags) for filtering.
+
 The NetObserv operator, FlowCollector, MCP server, and OLS connection are set up automatically when an OLS-classic NetObserv evaluation runs. From the repository root:
 
 ```bash

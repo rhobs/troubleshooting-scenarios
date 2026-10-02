@@ -39,12 +39,37 @@ Eval definitions for OLS Agentic. Each entry defines:
 
 - `conversation_group_id`: must match the scenario directory name
 - `description`: symptom, `RCA:` (root cause), `Expected:` (what the agent should do)
-- `tag`: list of tags (e.g., `agentic`, `alert`, `difficulty_normal`)
+- `tag`: workflow, difficulty, and optional selection tags (see below)
 - `turns`: the AgenticRun spec, expected status, and scoring metrics
 
 ### evals-ols-classic.yaml
 
 Eval definitions for OLS Classic. Same structure but with `query`/`expected_response` instead of AgenticRun specs. Only add this file if the scenario is meaningful as a text Q&A.
+
+### Tags
+
+Use `analysis` for cases that investigate a problem and recommend a fix.
+Use `remediation` for Agentic cases that include analysis, a fix, and
+verification. Alert investigation cases also use `alert`; remediation
+variants use `remediation` instead of `alert`.
+
+Add one difficulty tag: `difficulty_normal`, `difficulty_medium`, or
+`difficulty_hard`. Use `core` only for cases selected for the baseline suite.
+Grouped cases also use their group tag: `kiali-ossm`, `kubevirt`, or `netobserv`.
+
+The file name selects the eval mode, so do not add `agentic` or `classic` tags.
+For example, an alert investigation case may use:
+
+```yaml
+tag:
+  - analysis
+  - alert
+  - difficulty_normal
+```
+
+See the [tag guide](evals/README.md#tags) for tag meanings and filtering.
+When changing difficulty, move the scenario row to the matching section in
+`evals/README.md`. Check both eval files when a scenario supports both modes.
 
 ## Scenario groups
 

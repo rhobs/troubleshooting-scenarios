@@ -3,7 +3,7 @@
     A 3-second delay fault is injected on the ratings service. The agent
     must identify the latency root cause using traces.
   tag:
-    - analysis
+    - investigation
     - kiali-ossm
     - difficulty_medium
   turns:

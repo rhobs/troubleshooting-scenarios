@@ -4,7 +4,7 @@
     in bookinfo with four Kiali validation errors: missing gateway, undefined subset,
     non-existent destination host, and route weights not summing to 100.
   tag:
-    - analysis
+    - investigation
     - kiali-ossm
     - difficulty_normal
   turns:

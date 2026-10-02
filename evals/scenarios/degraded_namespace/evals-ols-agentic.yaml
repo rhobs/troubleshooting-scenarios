@@ -8,7 +8,7 @@
     Expected: identify exactly the two unhealthy workloads and not
     misdiagnose the healthy ones.
   tag:
-    - analysis
+    - investigation
     - difficulty_medium
 
   turns:

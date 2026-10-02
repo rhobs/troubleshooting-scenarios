@@ -5,7 +5,7 @@
     unprivileged:9.99-broken, which does not exist.
     Expected: roll back to the previous working revision.
   tag:
-    - analysis
+    - investigation
     - core
     - difficulty_normal
 

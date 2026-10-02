@@ -4,7 +4,7 @@
     RCA: The workload generates failed certificate-validation and protocol-mismatch connections.
     Expected: Use NetObserv metrics and flows to investigate failed connections and explain the observed TLS or connectivity pattern.
   tag:
-    - analysis
+    - investigation
     - netobserv
     - difficulty_medium
   turns:

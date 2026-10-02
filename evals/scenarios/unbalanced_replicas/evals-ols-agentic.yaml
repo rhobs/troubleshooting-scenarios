@@ -7,7 +7,7 @@
     Expected: identify the discrepancy and report which extra
     workloads exist in fleet-alpha1.
   tag:
-    - analysis
+    - investigation
     - core
     - difficulty_medium
 

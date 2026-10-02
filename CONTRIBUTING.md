@@ -48,13 +48,13 @@ Eval definitions for OLS Classic. Same structure but with `query`/`expected_resp
 
 ### Tags
 
-Use `analysis` for cases that investigate a problem and recommend a fix.
+Use `investigation` for cases that investigate a problem and recommend a fix.
 Use `remediation` for Agentic cases that include analysis, a fix, and
 verification. Alert investigation cases also use `alert`; remediation
 variants use `remediation` instead of `alert`.
 
 Add one difficulty tag: `difficulty_normal`, `difficulty_medium`, or
-`difficulty_hard`. Use `core` only for cases selected for the baseline suite.
+`difficulty_high`. Use `core` only for cases selected for the baseline suite.
 Grouped cases also use their group tag: `kiali-ossm`, `kubevirt`, or `netobserv`.
 
 The file name selects the eval mode, so do not add `agentic` or `classic` tags.
@@ -62,7 +62,7 @@ For example, an alert investigation case may use:
 
 ```yaml
 tag:
-  - analysis
+  - investigation
   - alert
   - difficulty_normal
 ```

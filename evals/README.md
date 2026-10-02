@@ -36,7 +36,7 @@ the eval target selects all supported scenarios. Manual `setup-scenario` and
 
 ```bash
 make eval-ols-agentic TAG=core PREVIEW=1
-make eval-ols-agentic TAG=analysis PREVIEW=1
+make eval-ols-agentic TAG=investigation PREVIEW=1
 make eval-ols-agentic TAG=remediation SETUP_MODE=run
 make eval-ols-classic TAG=difficulty_medium PREVIEW=1
 make eval-ols-agentic SCENARIO=blocked_deployment,refused_service
@@ -103,7 +103,7 @@ Both report types use the same scoring rules:
 
 ## Conventions
 
-Alert analysis scenarios (specific to lightspeed-agentic-alerts-adapter) have:
+Alert investigation scenarios (specific to lightspeed-agentic-alerts-adapter) have:
 
 - Tag `alert` in their `evals-ols-agentic.yaml`
 - Directory name with `_alert` suffix; remediation variants use `_alert_remediation`
@@ -117,7 +117,7 @@ may have different tags.
 
 Eval mode is selected by the Make target and file name (`evals-ols-agentic.yaml`
 or `evals-ols-classic.yaml`). `agentic` and `classic` are no longer tags.
-Use `analysis` for investigation and `remediation` for cases that apply a fix.
+Use `investigation` for investigation and `remediation` for cases that apply a fix.
 Each case also has one difficulty tag. `core`, `alert`, and group tags add
 other ways to select cases.
 
@@ -127,20 +127,20 @@ alert remediation variants use `remediation` instead.
 
 | Tag | Meaning |
 |-----|---------|
-| `analysis` | Investigation cases that ask for a diagnosis or recommended fix. |
+| `investigation` | Investigation cases that ask for a diagnosis or recommended fix. |
 | `core` | Representative baseline cases across eval modes and difficulty levels. |
-| `alert` | Alert investigation cases, also tagged `analysis`. |
+| `alert` | Alert investigation cases, also tagged `investigation`. |
 | `remediation` | OLS Agentic cases that include analysis, a fix, and verification. |
 | `difficulty_normal` | One isolated problem with a direct link between symptom and cause. |
 | `difficulty_medium` | More reasoning is needed, such as several steps, a decoy, or domain knowledge. |
-| `difficulty_hard` | A complex cause chain that can lead to varied results across runs. |
+| `difficulty_high` | A complex cause chain that can lead to varied results across runs. |
 | `kiali-ossm` | Classic service mesh cases that use Kiali and OSSM. |
 | `kubevirt` | Classic OpenShift Virtualization cases. |
 | `netobserv` | Classic network observability cases. |
 
 ## Scenarios
 
-### Difficulty level: Hard
+### Difficulty level: High
 
 Scenarios with several linked causes, used to compare model results across runs.
 

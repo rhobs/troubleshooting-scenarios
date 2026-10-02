@@ -1,6 +1,6 @@
 - conversation_group_id: missing_alerts
   tag:
-    - analysis
+    - investigation
     - difficulty_medium
 
   turns:

@@ -7,7 +7,7 @@
     Expected: create the app-settings ConfigMap and correct the
     liveness probe port to 8080.
   tag:
-    - analysis
+    - investigation
     - difficulty_medium
 
 

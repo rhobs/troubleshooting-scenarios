@@ -6,7 +6,7 @@
     limit is a decoy (no OOMKill occurs).
     Expected: correct the volumeMount path to /etc/app.
   tag:
-    - analysis
+    - investigation
     - core
     - difficulty_medium
 

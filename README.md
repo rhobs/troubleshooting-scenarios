@@ -88,7 +88,7 @@ make eval-ols-agentic SCENARIO=stuck_rollout                  # one scenario
 make eval-ols-agentic SCENARIO=stuck_rollout,exhausted_quota  # multiple
 make eval-ols-agentic TAG=alert                               # filter by tag
 make eval-ols-agentic TAG=alert PREVIEW=1                     # preview matched scenarios
-make eval-ols-agentic TAG=analysis PREVIEW=1                  # preview investigation cases
+make eval-ols-agentic TAG=investigation PREVIEW=1                  # preview investigation cases
 make eval-ols-agentic TAG=remediation SETUP_MODE=run           # run cases that apply fixes
 ```
 
@@ -119,7 +119,7 @@ either evaluation target runs all scenarios supported by that mode.
 See the [eval guide](evals/README.md#running-automated-evals) for filters,
 setup modes, and failure handling.
 
-Tags describe the workflow (`analysis` or `remediation`), difficulty, and
+Tags describe the workflow (`investigation` or `remediation`), difficulty, and
 optional selections such as `core`, `alert`, or a scenario group. The Make
 target selects Agentic or Classic; these mode names are no longer tags.
 `TAG=alert` selects alert investigation cases. Use `TAG=remediation` for

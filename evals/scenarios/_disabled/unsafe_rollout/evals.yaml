@@ -1,6 +1,6 @@
 - conversation_group_id: unsafe_rollout
   tag:
-    - analysis
+    - investigation
     - difficulty_medium
 
   turns:

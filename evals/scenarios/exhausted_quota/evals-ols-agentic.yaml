@@ -6,7 +6,7 @@
     quota' events.
     Expected: raise the pod quota to accommodate both workloads.
   tag:
-    - analysis
+    - investigation
     - difficulty_normal
 
 

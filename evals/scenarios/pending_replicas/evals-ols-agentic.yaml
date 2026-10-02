@@ -5,7 +5,7 @@
     anti-affinity, but the cluster has fewer schedulable nodes.
     Expected: reduce replicas to 3 (the stated HA requirement).
   tag:
-    - analysis
+    - investigation
     - difficulty_normal
 
   turns:

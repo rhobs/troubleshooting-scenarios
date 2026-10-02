@@ -9,7 +9,7 @@
     roll it back to v1.0.1, and verify payments-api recovers.
   tag:
     - remediation
-    - difficulty_hard
+    - difficulty_high
 
   turns:
     - turn_id: turn_1

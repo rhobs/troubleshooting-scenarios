@@ -7,7 +7,7 @@
     Expected: correct the backend image to a valid tag (e.g. 1.27); do
     not weaken the frontend readiness probe.
   tag:
-    - analysis
+    - investigation
     - core
     - difficulty_medium
 

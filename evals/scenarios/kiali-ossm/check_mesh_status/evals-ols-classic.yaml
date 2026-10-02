@@ -1,7 +1,7 @@
 - conversation_group_id: check_mesh_status
   description: Check the status of the mesh and identify any issues.
   tag:
-    - analysis
+    - investigation
     - kiali-ossm
     - difficulty_normal
   turns:

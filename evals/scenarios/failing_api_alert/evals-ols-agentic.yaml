@@ -9,10 +9,10 @@
     shared-services/reconciliation-service CrashLooping is a separate issue,
     not the cause.
   tag:
-    - analysis
+    - investigation
     - core
     - alert
-    - difficulty_hard
+    - difficulty_high
 
   turns:
     - turn_id: turn_1

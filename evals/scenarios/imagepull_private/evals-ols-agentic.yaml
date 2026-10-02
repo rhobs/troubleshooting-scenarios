@@ -6,7 +6,7 @@
     Expected: create a docker-registry Secret with valid credentials
     and attach it to the pod or ServiceAccount.
   tag:
-    - analysis
+    - investigation
     - difficulty_normal
   turns:
     - turn_id: turn_1

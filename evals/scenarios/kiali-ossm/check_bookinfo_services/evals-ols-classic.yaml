@@ -1,7 +1,7 @@
 - conversation_group_id: check_bookinfo_services
   description: Check my bookinfo namespace services in my servicemesh
   tag:
-    - analysis
+    - investigation
     - kiali-ossm
     - difficulty_normal
   turns:

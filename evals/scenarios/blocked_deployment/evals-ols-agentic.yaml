@@ -5,7 +5,7 @@
     container, but the deployment requests 64Mi.
     Expected: raise the deployment's memory request and limit to at least 256Mi.
   tag:
-    - analysis
+    - investigation
     - difficulty_normal
 
   turns:

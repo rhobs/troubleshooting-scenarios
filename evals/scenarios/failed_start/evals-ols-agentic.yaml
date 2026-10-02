@@ -6,7 +6,7 @@
     Expected: remove the command override so the image's default
     entrypoint runs.
   tag:
-    - analysis
+    - investigation
     - difficulty_normal
 
   turns:

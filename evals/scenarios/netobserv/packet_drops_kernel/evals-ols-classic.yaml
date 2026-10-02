@@ -4,7 +4,7 @@
     RCA: A sustained UDP workload is intended to produce observable kernel packet-drop data.
     Expected: Use NetObserv flow metrics and logs to identify affected nodes or workloads, drop causes, and the type of drop.
   tag:
-    - analysis
+    - investigation
     - netobserv
     - difficulty_medium
   turns:

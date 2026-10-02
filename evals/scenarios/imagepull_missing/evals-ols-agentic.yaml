@@ -5,7 +5,7 @@
     unprivileged:1.27-fips does not exist in the registry.
     Expected: correct the image tag to a valid version (e.g. 1.27).
   tag:
-    - analysis
+    - investigation
     - difficulty_normal
 
   turns:

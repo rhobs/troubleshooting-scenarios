@@ -3,7 +3,7 @@
     A 100% fault injection on ratings causes 503 errors. Agent investigates
     and identifies the root cause.
   tag:
-    - analysis
+    - investigation
     - kiali-ossm
     - difficulty_medium
   turns:

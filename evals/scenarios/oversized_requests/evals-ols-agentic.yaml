@@ -7,7 +7,7 @@
     Expected: propose right-sized requests/limits and quantify
     reclaimed capacity (~2 CPUs, ~1.9Gi).
   tag:
-    - agentic
+    - analysis
     - difficulty_medium
 
   turns:

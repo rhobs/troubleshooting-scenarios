@@ -6,7 +6,6 @@
     Expected: update dashboard-app's memory request and limit to comply with
     the LimitRange, then verify its pod is running.
   tag:
-    - agentic
     - remediation
     - difficulty_normal
 

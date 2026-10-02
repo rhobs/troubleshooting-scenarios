@@ -153,6 +153,8 @@ Scenarios that need several reasoning steps, domain knowledge, or checks against
 | `oversized_requests` | (analysis-only capacity review) | Deployment resource requests vastly exceed actual observed usage | `Analysis` | `report-engine` | |
 | `partial_fix` | Pod crash-looping (honesty test) | Two faults, only one authorized to fix; verification must honestly report app still broken | `Analysis` | `audit-service` | |
 | `diagnostic_trap` | Pod crash-looping (diagnostic trap) | Config mounted at wrong path; low memory limit is a decoy, not the real cause | `Analysis` | `inventory-sync` | |
+| `unbalanced_replicas` | Namespaces have different pod counts | fleet-alpha has 6 pods vs fleet-alpha1 with 9, due to different deployment sets | `Analysis` | `fleet-alpha`<br>`fleet-alpha1` | |
+| `unready_pod_alert` | Pod running but not becoming Ready | HTTP readiness probe targets port 9200 but container has no HTTP server | `Analysis` | `discovery-hub` | `DiscoveryHubPodNotReady` |
 
 ### Difficulty level: Normal
 
@@ -195,9 +197,7 @@ Scenarios with one problem and a direct link between symptom and cause.
 | `empty_endpoints` | Service has zero endpoints despite healthy pods | Service selector doesn't match pod labels | `Analysis` | `auth-proxy` | |
 | `refused_service` | Service connections refused despite endpoints existing and pod Ready | Service targetPort (8081) doesn't match the container's listening port (8080) | `Analysis` | `notification-hub` | |
 | `timeout_connections` | Frontend gets connection timeouts to backend | NetworkPolicy only allows ingress from `tier=backend`, blocking `tier=frontend` pods | `Analysis` | `service-mesh` | |
-| `unbalanced_replicas` | Namespaces have different pod counts | fleet-alpha has 6 pods vs fleet-alpha1 with 9, due to different deployment sets | `Analysis` | `fleet-alpha`<br>`fleet-alpha1` | |
-| `unready_pod_alert` | Pod running but not becoming Ready | HTTP readiness probe targets port 9200 but container has no HTTP server | `Analysis` | `discovery-hub` | `DiscoveryHubPodNotReady` |
-| `unready_pod_alert_remediation` | (remediation variant of above) | HTTP readiness probe targets port 9200 but container has no HTTP server | `Analysis`<br>`Execution`<br>`Verification` | `discovery-hub` | `DiscoveryHubPodNotReady` |
+| `unready_pod_alert_remediation` | Remediation variant of `unready_pod_alert` | HTTP readiness probe targets port 9200 but container has no HTTP server | `Analysis`<br>`Execution`<br>`Verification` | `discovery-hub` | `DiscoveryHubPodNotReady` |
 | `unscheduled_pod` | Pod stuck in Pending, not scheduled to any node | nodeSelector requires `disk-type=ssd-high-iops` but no nodes have this label | `Analysis` | `user-imports` | |
 | `failing_probe` | Pod in CrashLoopBackOff (probe failure) | Liveness probe targets port 8081 but container listens on 8080; connection refused | `Analysis` | `status-api` | |
 

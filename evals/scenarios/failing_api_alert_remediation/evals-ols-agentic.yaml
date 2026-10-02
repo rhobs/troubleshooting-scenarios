@@ -8,7 +8,6 @@
     Expected: identify shared-services/reporting-service as the root cause,
     roll it back to v1.0.1, and verify payments-api recovers.
   tag:
-    - agentic
     - remediation
     - difficulty_hard
 

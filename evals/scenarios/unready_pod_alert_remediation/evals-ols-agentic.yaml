@@ -5,7 +5,6 @@
     container has no HTTP server.
     Expected: make the readiness probe appropriate for the workload and verify the pod becomes ready.
   tag:
-    - agentic
     - remediation
     - difficulty_normal
 

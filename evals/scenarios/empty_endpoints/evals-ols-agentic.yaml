@@ -6,7 +6,7 @@
     addresses.
     Expected: align the service selector with the pod labels.
   tag:
-    - agentic
+    - analysis
     - core
     - difficulty_normal
 

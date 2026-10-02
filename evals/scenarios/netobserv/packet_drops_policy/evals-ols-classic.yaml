@@ -4,7 +4,7 @@
     RCA: NetworkPolicy blocks ingress from the frontend workload to the backend workload.
     Expected: Use NetObserv data to identify the policy-related denial, affected workloads, and supporting flow evidence.
   tag:
-    - classic
+    - analysis
     - netobserv
     - difficulty_normal
   turns:

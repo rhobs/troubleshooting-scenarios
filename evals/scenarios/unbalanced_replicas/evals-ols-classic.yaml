@@ -7,9 +7,9 @@
     Expected: identify the discrepancy and report which extra
     workloads exist in fleet-alpha1.
   tag:
-    - classic
+    - analysis
     - core
-    - difficulty_normal
+    - difficulty_medium
 
   turns:
     - turn_id: compare_namespace_pod_counts

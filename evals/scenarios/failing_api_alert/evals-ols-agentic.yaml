@@ -9,7 +9,7 @@
     shared-services/reconciliation-service CrashLooping is a separate issue,
     not the cause.
   tag:
-    - agentic
+    - analysis
     - core
     - alert
     - difficulty_hard

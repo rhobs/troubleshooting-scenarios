@@ -8,7 +8,7 @@
     on UDP/TCP port 5353 (port 53 alone is insufficient on OVN-
     Kubernetes due to post-DNAT).
   tag:
-    - agentic
+    - analysis
     - difficulty_medium
 
 

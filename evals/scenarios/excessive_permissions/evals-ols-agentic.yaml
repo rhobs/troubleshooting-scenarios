@@ -7,7 +7,7 @@
     Expected: identify the over-privilege and recommend scoping down
     to least-privilege or using the default ServiceAccount.
   tag:
-    - agentic
+    - analysis
     - difficulty_medium
 
   turns:

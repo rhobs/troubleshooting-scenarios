@@ -4,7 +4,7 @@
     RCA: The production gateway selects database and cache endpoints from a non-production environment, and those endpoints do not accept connections.
     Expected: Correlate the active configuration with the runtime connection failures, identify the environment mismatch, recommend restoring the production endpoints, and verify successful traffic.
   tag:
-    - classic
+    - analysis
     - difficulty_medium
 
   turns:

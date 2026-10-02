@@ -8,7 +8,7 @@
     Expected: update the NetworkPolicy ingress rule to allow
     tier=frontend.
   tag:
-    - classic
+    - analysis
     - core
     - difficulty_normal
 

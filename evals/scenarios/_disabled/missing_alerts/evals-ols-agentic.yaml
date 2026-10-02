@@ -1,6 +1,6 @@
 - conversation_group_id: missing_alerts
   tag:
-    - agentic
+    - analysis
     - difficulty_medium
 
   turns:

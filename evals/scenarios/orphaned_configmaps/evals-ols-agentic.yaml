@@ -7,7 +7,7 @@
     Expected: identify in-use vs orphaned ConfigMaps and propose a
     cleanup plan for the orphaned ones.
   tag:
-    - agentic
+    - analysis
     - difficulty_normal
 
   turns:

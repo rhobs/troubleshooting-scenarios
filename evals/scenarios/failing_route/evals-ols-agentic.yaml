@@ -6,7 +6,7 @@
     8080 (named 'web'), so the router has no valid backend.
     Expected: set the route's targetPort to 8080 or 'web'.
   tag:
-    - agentic
+    - analysis
     - core
     - difficulty_normal
 

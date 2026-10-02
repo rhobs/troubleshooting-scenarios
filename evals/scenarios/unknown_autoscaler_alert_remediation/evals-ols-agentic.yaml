@@ -5,7 +5,6 @@
     the HPA cannot compute utilization percentage.
     Expected: add a CPU request to the container specification and verify the HPA becomes active.
   tag:
-    - agentic
     - remediation
     - difficulty_normal
 

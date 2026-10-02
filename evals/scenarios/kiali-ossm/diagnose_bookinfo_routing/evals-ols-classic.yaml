@@ -3,7 +3,7 @@
     reviews-v3 has weight 0 so never gets traffic. Agent investigates
     and identifies the routing issue.
   tag:
-    - classic
+    - analysis
     - kiali-ossm
     - difficulty_medium
   turns:

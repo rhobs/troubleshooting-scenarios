@@ -7,7 +7,7 @@
     Expected: change the PVC's StorageClass to a valid one or create
     the missing StorageClass, and use a UID allowed by the SCC.
   tag:
-    - agentic
+    - analysis
     - core
     - alert
     - difficulty_hard

@@ -6,7 +6,7 @@
     Expected: add the DEPLOY_ENV environment variable to the container
     spec.
   tag:
-    - agentic
+    - analysis
     - core
     - alert
     - difficulty_normal

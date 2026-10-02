@@ -7,7 +7,7 @@
     Expected: identify the scheduling constraint and recommend removing
     the nodeSelector or adding more matching nodes.
   tag:
-    - classic
+    - analysis
     - kubevirt
     - difficulty_normal
 

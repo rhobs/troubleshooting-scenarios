@@ -5,7 +5,7 @@
     listens on 8080.
     Expected: correct the service's targetPort to 8080.
   tag:
-    - agentic
+    - analysis
     - core
     - difficulty_normal
 

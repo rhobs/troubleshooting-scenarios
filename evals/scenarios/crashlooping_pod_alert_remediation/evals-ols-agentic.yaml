@@ -6,7 +6,6 @@
     Expected: add DEPLOY_ENV to the affected container specification and verify
     the pod recovers.
   tag:
-    - agentic
     - remediation
     - difficulty_normal
 

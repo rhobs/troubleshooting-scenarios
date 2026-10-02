@@ -6,7 +6,7 @@
     Expected: add the label to a suitable node or remove the
     nodeSelector.
   tag:
-    - agentic
+    - analysis
     - difficulty_normal
 
 

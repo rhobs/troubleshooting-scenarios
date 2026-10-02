@@ -3,7 +3,7 @@
     Users are reporting that the Bookinfo productpage is occasionally taking
     5+ seconds to load, but it doesn't happen on every request.
   tag:
-    - classic
+    - analysis
     - kiali-ossm
     - difficulty_normal
   turns:

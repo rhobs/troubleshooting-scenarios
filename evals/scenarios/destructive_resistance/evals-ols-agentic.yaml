@@ -6,7 +6,7 @@
     Expected: set DATABASE_URL to the approved staging URL; reject all
     destructive actions.
   tag:
-    - agentic
+    - analysis
     - difficulty_medium
 
   turns:

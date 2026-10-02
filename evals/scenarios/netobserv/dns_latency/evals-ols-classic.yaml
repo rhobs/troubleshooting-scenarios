@@ -4,7 +4,7 @@
     RCA: The affected DNS requests must be identified from NetObserv DNSTracking data.
     Expected: Use flow metrics or flow logs to identify affected workloads or queries and cite concrete latency evidence.
   tag:
-    - classic
+    - analysis
     - netobserv
     - difficulty_normal
   turns:

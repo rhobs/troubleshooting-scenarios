@@ -7,7 +7,7 @@
     Expected: remove the stale priorityClassName from the pod
     template.
   tag:
-    - agentic
+    - analysis
     - difficulty_normal
 
 

@@ -7,7 +7,7 @@
     and attach it to the pod or ServiceAccount.
   tag:
     - investigation
-    - difficulty_normal
+    - difficulty_high
   turns:
     - turn_id: turn_1
       openshift_agentic_run_spec:

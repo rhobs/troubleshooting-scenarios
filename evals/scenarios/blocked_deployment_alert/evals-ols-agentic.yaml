@@ -7,7 +7,7 @@
   tag:
     - investigation
     - alert
-    - difficulty_normal
+    - difficulty_high
 
   turns:
     - turn_id: turn_1

@@ -69,7 +69,7 @@ tag:
 
 See the [tag guide](evals/README.md#tags) for tag meanings and filtering.
 When changing difficulty, move the scenario row to the matching section in
-`evals/README.md`. Check both eval files when a scenario supports both modes.
+`evals/scenarios/README.md`. Check both eval files when a scenario supports both modes.
 
 ## Scenario groups
 
@@ -96,7 +96,7 @@ Grouped scenario names use the `group/scenario` format (e.g., `kubevirt/vm_crash
 After creating the scenario directory:
 
 1. Add the scenario name to the appropriate variable (`_ALL_OLS_AGENTIC` and/or `_ALL_OLS_CLASSIC`) in the root `Makefile`
-2. Add a row to the scenario table in `evals/README.md`
+2. Add a row to the scenario table in `evals/scenarios/README.md`
 3. Run the `review-scenario` skill (`.agents/skills/review-scenario/SKILL.md`, symlinked as `.claude/skills/review-scenario/`) to check for naming leaks, revealing comments, and unrealistic fault setups. In Claude Code: `/review-scenario my_scenario`
 
 ## Checks

@@ -31,7 +31,7 @@ Each scenario under `evals/scenarios/` is a self-contained directory:
 
 ### Adding or modifying scenarios
 
-When adding, removing, or renaming scenarios under `evals/scenarios/`, keep `evals/README.md` (scenario table) and the root `Makefile` (scenario variables) in sync.
+When adding, removing, or renaming scenarios under `evals/scenarios/`, keep `evals/scenarios/README.md` (scenario table) and the root `Makefile` (scenario variables) in sync.
 
 After adding or modifying a scenario, run the `review-scenario` skill to check for naming leaks, revealing comments, and unrealistic fault setups.
 

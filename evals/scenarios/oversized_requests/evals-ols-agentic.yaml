@@ -8,7 +8,7 @@
     reclaimed capacity (~2 CPUs, ~1.9Gi).
   tag:
     - investigation
-    - difficulty_medium
+    - difficulty_high
 
   turns:
     - turn_id: turn_1

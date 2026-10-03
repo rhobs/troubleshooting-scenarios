@@ -9,7 +9,7 @@
     Kubernetes due to post-DNAT).
   tag:
     - investigation
-    - difficulty_medium
+    - difficulty_high
 
 
   turns:

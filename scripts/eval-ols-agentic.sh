@@ -185,6 +185,6 @@ echo "==> Generating report..."
 "$PYTHON" "$SCRIPT_DIR/generate-report-agentic.py" \
   --parallel-runs "$PARALLEL_RUNS" \
   "$EVAL_DIR" \
-  --output "results/report_${DATETIME}.md"
-echo "==> Report: results/report_${DATETIME}.md"
+  --output "$EVAL_DIR/report.md"
+echo "==> Report: $EVAL_DIR/report.md"
 exit "$overall_status"

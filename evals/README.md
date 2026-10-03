@@ -82,12 +82,13 @@ continues with other groups. Group cleanup runs after the full scenario loop.
 
 ## Reports
 
-Runners save Markdown reports to `evals/results/report_<session>.md`.
+Runners save Markdown reports to `evals/results/<session>/report.md`,
+in the same directory as the session results and system config.
 To regenerate a report from saved results, run from the repository root:
 
 ```bash
 venv/bin/python3 scripts/generate-report-classic.py "evals/results/<session>" \
-  --output "evals/results/report_<session>.md"
+  --output "evals/results/<session>/report.md"
 ```
 
 Use `generate-report-agentic.py` for Agentic results. Pass

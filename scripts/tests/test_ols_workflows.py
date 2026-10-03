@@ -607,7 +607,7 @@ def test_failed_scenario_allows_later_scenarios_and_report(
         "cleanup:first", "setup:second", "eval:second", "cleanup:second", "report",
     ]
     assert log.read_text().splitlines() == expected_events
-    assert list((workspace / "evals/results").glob("report_*.md"))
+    assert list((workspace / "evals/results").glob("*/report.md"))
 
 
 @pytest.mark.parametrize("failure_step,expected_status", [("setup", 23), ("eval", 42)])
@@ -663,7 +663,7 @@ def test_classic_failed_scenario_allows_later_scenarios_and_report(
         "cleanup:first", "setup:second", "eval:second", "cleanup:second", "report",
     ]
     assert log.read_text().splitlines() == expected_events
-    assert list((classic_workspace / "evals/results").glob("report_*.md"))
+    assert list((classic_workspace / "evals/results").glob("*/report.md"))
 
 
 def test_classic_run_mode_sets_up_each_agent_repeat(classic_workspace):
@@ -724,7 +724,7 @@ def test_classic_run_mode_sets_up_each_agent_repeat(classic_workspace):
         "setup", "eval:second:2", "cleanup",
         "group-cleanup", "report",
     ]
-    assert list((classic_workspace / "evals/results").glob("report_*.md"))
+    assert list((classic_workspace / "evals/results").glob("*/report.md"))
 
 
 def test_classic_failed_group_setup_skips_group_and_reports_other_scenarios(
@@ -777,7 +777,7 @@ def test_classic_failed_group_setup_skips_group_and_reports_other_scenarios(
         "group-cleanup", "report",
     ]
     assert "Skipping scenarios/group/second" in result.stderr
-    assert list((classic_workspace / "evals/results").glob("report_*.md"))
+    assert list((classic_workspace / "evals/results").glob("*/report.md"))
 
 
 @pytest.mark.parametrize("variant", ["classic", "agentic"])

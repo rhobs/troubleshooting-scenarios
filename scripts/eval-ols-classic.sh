@@ -300,9 +300,9 @@ report_status=0
 "$PYTHON" "$SCRIPT_DIR/generate-report-classic.py" \
   --parallel-runs "$PARALLEL_RUNS" \
   "$EVAL_DIR" \
-  --output "results/report_${DATETIME}.md" || report_status=$?
+  --output "$EVAL_DIR/report.md" || report_status=$?
 if [ "$report_status" -eq 0 ]; then
-  echo "==> Report: results/report_${DATETIME}.md"
+  echo "==> Report: $EVAL_DIR/report.md"
 else
   echo "ERROR: Report generation failed (exit $report_status)" >&2
   if [ "$overall_status" -eq 0 ]; then overall_status=$report_status; fi

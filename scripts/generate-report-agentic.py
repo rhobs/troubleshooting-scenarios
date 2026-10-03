@@ -1083,7 +1083,7 @@ def main():
     )
     parser.add_argument(
         "--output", "-o",
-        help="Output file path (default: EVAL_DIR/results.md)",
+        help="Output file path (default: EVAL_DIR/report.md)",
     )
     parser.add_argument(
         "--parallel-runs", choices=("yes", "no"),
@@ -1098,7 +1098,7 @@ def main():
 
     md = generate_report(eval_dir, args.parallel_runs)
 
-    output = Path(args.output) if args.output else eval_dir / "results.md"
+    output = Path(args.output) if args.output else eval_dir / "report.md"
     output.write_text(md)
 
     agent_names = discover_agents(

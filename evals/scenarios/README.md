@@ -8,7 +8,6 @@ Scenarios with several linked causes, used to compare model results across runs.
 |----------|---------|------------|--------|-----------|-------|
 | `failing_api_alert` | Payment API returning 503s (100% error rate) | Reporting service in `shared-services` leaks DB connections, exhausting the shared PostgreSQL pool used by `payments` | `Analysis` | `payments`<br>`shared-services` | `PaymentErrorRateHigh`<br>`DatabaseConnectionsHigh` |
 | `failing_api_alert_remediation` | (remediation variant of above) | Reporting service in `shared-services` leaks DB connections, exhausting the shared PostgreSQL pool used by `payments` | `Analysis`<br>`Execution`<br>`Verification` | `payments`<br>`shared-services` | `PaymentErrorRateHigh`<br>`DatabaseConnectionsHigh` |
-| `pending_pvc_alert` | PVC stuck in Pending, pods cannot start | PVC references a StorageClass (`standard-v2`) that does not exist | `Analysis` | `cache-tier` | `CacheTierPersistentVolumeClaimPending` |
 | `oversized_requests` | (analysis-only capacity review) | Deployment resource requests vastly exceed actual observed usage | `Analysis` | `report-engine` | |
 | `imagepull_private` | Pod in ImagePullBackOff | Private registry image without imagePullSecret (auth failure) | `Analysis` | `media-processing` | |
 | `batch_submission_timeouts` | Batch processor reports intermittent submission timeouts | Requests to the intake service time out during a repeated narrow UTC interval | `Analysis` | `data-pipeline` | |

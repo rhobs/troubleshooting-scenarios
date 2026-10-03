@@ -88,7 +88,6 @@ _ALL_OLS_AGENTIC := \
 	orphaned_pvc \
 	oversized_requests \
 	partial_fix \
-	pending_pvc_alert \
 	pending_replicas \
 	red_herring \
 	refused_connections \
@@ -126,7 +125,6 @@ _ALL_OLS_CLASSIC := \
 	netobserv/packet_drops_policy \
 	netobserv/tcp_rtt \
 	netobserv/tls_issues \
-	pending_pvc_alert \
 	refused_connections \
 	restarting_pod_alert \
 	timeout_connections \

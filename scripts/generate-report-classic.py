@@ -48,6 +48,8 @@ from report_common import (  # noqa: E402
     system_config_appendix,
 )
 
+from report_progress import format_failed_scenarios, format_progress, load_progress, write_atomic  # noqa: E402
+
 CORRECTNESS_METRIC = "custom:answer_correctness"
 
 
@@ -523,8 +525,12 @@ def generate_scenario_details(
 
 
 def generate_report(eval_dir: Path, parallel_runs: str | None = None) -> str:
+    progress = load_progress(eval_dir)
     agent_names = discover_agents(
-        eval_dir, Path(_SCRIPT_DIR).parent / "evals" / "system-ols-classic.yaml"
+        eval_dir,
+        eval_dir / "system-ols-classic.yaml"
+        if (eval_dir / "system-ols-classic.yaml").is_file()
+        else Path(_SCRIPT_DIR).parent / "evals" / "system-ols-classic.yaml"
     )
 
     agent_runs: dict[str, list] = {}
@@ -573,10 +579,18 @@ def generate_report(eval_dir: Path, parallel_runs: str | None = None) -> str:
     ))
     lines.append("")
 
+    if progress_line := format_progress(progress):
+        lines.append(progress_line)
+        lines.append("")
+
     lines.append(generate_overview_table(
         conversations, agent_names, agent_runs, agent_amended
     ))
     lines.append("")
+
+    if failed_scenarios := format_failed_scenarios(progress):
+        lines.append(failed_scenarios)
+        lines.append("")
 
     lines.append("## Correctness")
     lines.append("")
@@ -618,6 +632,7 @@ def generate_report(eval_dir: Path, parallel_runs: str | None = None) -> str:
 
 GREEN = "\033[0;32m"
 RED = "\033[0;31m"
+YELLOW = "\033[0;33m"
 RESET = "\033[0m"
 
 
@@ -627,7 +642,7 @@ def _scenario_pass_total(agent_runs: list, conversation_id: str) -> tuple[int, i
     for results in agent_runs:
         if results is None:
             continue
-        result = get_result(results, conversation_id)
+        result, _ = get_performance_result(results, conversation_id)
         if result is not None:
             total += 1
             if result == "PASS":
@@ -635,8 +650,10 @@ def _scenario_pass_total(agent_runs: list, conversation_id: str) -> tuple[int, i
     return passed, total
 
 
-def _colorize(passed: int, total: int) -> str:
+def _colorize(passed: int, total: int, technical_failure: bool = False) -> str:
     text = f"{passed}/{total}"
+    if technical_failure:
+        return f"{YELLOW}{text}{RESET}"
     if passed == total:
         return f"{GREEN}{text}{RESET}"
     if passed == 0:
@@ -707,9 +724,13 @@ def print_correctness_table(
     print(sep)
     for cid, row in zip(conversations, grid):
         cells = [f"{scenario_names.get(cid, cid):<{scenario_w}}"]
-        for (p, t), w in zip(row, col_widths):
+        for agent, (p, t), w in zip(agent_names, row, col_widths):
             plain = f"{p}/{t}"
-            colored = _colorize(p, t)
+            technical_failure = any(
+                results is not None and has_technical_failure(results, cid)
+                for results in agent_runs[agent]
+            )
+            colored = _colorize(p, t, technical_failure)
             cells.append(f"{colored}{' ' * (w - len(plain))}")
         print("| " + " | ".join(cells) + " |")
     print(sep)
@@ -750,6 +771,7 @@ def main():
         "--parallel-runs", choices=("yes", "no"),
         help="Whether evaluation runs were executed in parallel",
     )
+    parser.add_argument("--quiet", action="store_true", help="Skip the console summary")
     args = parser.parse_args()
 
     eval_dir = Path(args.eval_dir)
@@ -760,10 +782,16 @@ def main():
     md = generate_report(eval_dir, args.parallel_runs)
 
     output = Path(args.output) if args.output else eval_dir / "report.md"
-    output.write_text(md)
+    write_atomic(output, md)
+    if args.quiet:
+        print(f"Report written to {output}")
+        return
 
     agent_names = discover_agents(
-        eval_dir, Path(_SCRIPT_DIR).parent / "evals" / "system-ols-classic.yaml"
+        eval_dir,
+        eval_dir / "system-ols-classic.yaml"
+        if (eval_dir / "system-ols-classic.yaml").is_file()
+        else Path(_SCRIPT_DIR).parent / "evals" / "system-ols-classic.yaml"
     )
     agent_runs = {}
     agent_amended = {}

@@ -75,8 +75,8 @@ Classic group setup and cleanup run once per selected group in `scenario` and
 In `scenario` and `run` modes, cleanup runs after each setup attempt, even if
 setup or evaluation fails. The runner logs the failure and continues with the
 next run or scenario. Cleanup failures are logged without stopping the loop.
-The runner then tries to generate a report from available results and returns
-a failure status if setup or evaluation failed.
+The runner updates the report from available results and returns a failure
+status if setup or evaluation failed.
 
 If Classic group setup fails, the runner skips that group's scenarios and
 continues with other groups. Group cleanup runs after the full scenario loop.
@@ -85,6 +85,28 @@ continues with other groups. Group cleanup runs after the full scenario loop.
 
 Runners save Markdown reports to `evals/results/<session>/report.md`,
 in the same directory as the session results and system config.
+The report is created before evaluation starts and updated at the start and
+end of each scenario. With `SETUP_MODE=run`, it is updated for each agent and
+repeat. You can open the file during `make eval-ols-agentic` or
+`make eval-ols-classic` to see partial results.
+The CLI prints the results table after each scenario. With `SETUP_MODE=run`,
+it prints the table after all agents and repeats for that scenario finish.
+CLI cells are yellow when the Markdown correctness table shows ❌, meaning
+at least one evaluation error or failed completion check.
+
+Partial reports add one line, such as `Partial results: scenario 2/47.`
+The count shows scenarios whose agents and repeats have all finished.
+Completed reports use the normal format without that line. Scores use saved
+results only. Scenarios whose runs all failed or were skipped after a setup
+error are listed with the reason before Correctness. Progress details remain
+in `progress.json` in the session directory.
+
+Runners try a final report update on exit, including Ctrl+C or termination.
+Completed results remain available if a later scenario fails. Report files
+are replaced only after the new report is fully written. If an update fails,
+the last valid report stays available and the runner logs a warning. A failed
+final update returns an error without replacing an earlier evaluation error.
+
 To regenerate a report from saved results, run from the repository root:
 
 ```bash

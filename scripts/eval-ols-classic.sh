@@ -79,7 +79,28 @@ cleanup_ols_classic() {
     oc delete serviceaccount "$eval_sa" -n openshift-lightspeed --ignore-not-found >/dev/null 2>&1 || true
   fi
 }
-trap cleanup_ols_classic EXIT
+# shellcheck source=scripts/eval-report.sh
+source "$SCRIPT_DIR/eval-report.sh"
+
+# Invoked by the EXIT trap.
+# shellcheck disable=SC2329
+finish_evaluation() {
+  local status=$?
+  local report_status=0
+  trap - EXIT INT TERM
+  report_finalize "$status" || report_status=$?
+  if [ "$report_status" -ne 0 ]; then
+    echo "ERROR: final report update failed; keeping the last report." >&2
+    if [ "$status" -eq 0 ]; then status=$report_status; fi
+  fi
+  cleanup_ols_classic
+  exit "$status"
+}
+
+report_init classic
+trap finish_evaluation EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 if ! curl -ksf --connect-timeout 2 "https://localhost:8443/docs" >/dev/null 2>&1; then
   echo "==> Starting port-forward to OLS..."
@@ -168,18 +189,23 @@ record_failure() {
 run_scenario() {
   local scenario="$1"
   local progress="$2"
-  shift 2
+  local report_output="$3"
+  shift 3
   local scenario_status=0
   local scenario_state_dir=""
+  local failure_detail=""
+
+  report_event start quiet "$scenario" "$@"
 
   echo ""
   echo "==> $progress"
   if [ "$SETUP_MODE" != "skip" ]; then
     echo "==> Setup: $scenario"
-    scenario_state_dir="$(mktemp -d "$(cd "$EVAL_DIR" && pwd)/.scenario-state.XXXXXX")" || return $?
-    if [ -x "$scenario/setup.sh" ]; then
+    scenario_state_dir="$(mktemp -d "$(cd "$EVAL_DIR" && pwd)/.scenario-state.XXXXXX")" || scenario_status=$?
+    if [ "$scenario_status" -eq 0 ] && [ -x "$scenario/setup.sh" ]; then
       SCENARIO_STATE_DIR="$scenario_state_dir" bash "$scenario/setup.sh" || scenario_status=$?
     fi
+    if [ "$scenario_status" -ne 0 ]; then failure_detail="Setup failed (exit $scenario_status)"; fi
   else
     echo "==> Setup skipped: $scenario (SETUP_MODE=skip)"
   fi
@@ -190,8 +216,9 @@ run_scenario() {
       --eval-dir "$EVAL_DIR" \
       "$@" \
       "${TAG_FLAGS[@]}" || scenario_status=$?
+    if [ "$scenario_status" -ne 0 ]; then failure_detail="Evaluation failed (exit $scenario_status)"; fi
   fi
-  if [ "$SETUP_MODE" != "skip" ]; then
+  if [ "$SETUP_MODE" != "skip" ] && [ -n "$scenario_state_dir" ]; then
     echo "==> Cleanup: $scenario"
     if [ -x "$scenario/cleanup.sh" ]; then
       SCENARIO_STATE_DIR="$scenario_state_dir" bash "$scenario/cleanup.sh" || echo "WARNING: cleanup failed (non-fatal)"
@@ -200,9 +227,10 @@ run_scenario() {
     if ! rmdir "$scenario_state_dir" 2>/dev/null; then
       echo "==> Namespace ownership records: $scenario_state_dir"
     fi
-  else
+  elif [ "$SETUP_MODE" = "skip" ]; then
     echo "==> Cleanup skipped: $scenario (SETUP_MODE=skip)"
   fi
+  report_event finish "$report_output" "$scenario" "$@" --exit-code "$scenario_status" --detail "$failure_detail"
   return "$scenario_status"
 }
 
@@ -225,6 +253,7 @@ for scenario in "${SCENARIOS[@]}"; do
     done
     if [ "$group_failed" = "true" ]; then
       echo "WARNING: Skipping $scenario because group setup failed: $grp_setup" >&2
+      report_event skip table "$scenario" --detail "Group setup failed: $grp_setup"
       continue
     fi
     if [ "$already_done" = "false" ]; then
@@ -237,12 +266,14 @@ for scenario in "${SCENARIOS[@]}"; do
           status=$?
           failed_groups+=("$grp_setup")
           record_failure "$status" "$scenario (group setup: $grp_setup)"
+          report_event skip table "$scenario" --detail "OLS connection failed after group setup (exit $status)"
           continue
         fi
       else
         status=$?
         failed_groups+=("$grp_setup")
         record_failure "$status" "$scenario (group setup: $grp_setup)"
+        report_event skip table "$scenario" --detail "Group setup failed (exit $status): $grp_setup"
         continue
       fi
     fi
@@ -256,15 +287,20 @@ for scenario in "${SCENARIOS[@]}"; do
       agent_index=$((agent_index + 1))
       for run in $(seq 1 "$REPEAT"); do
         progress_index=$(( (scenario_index - 1) * ${#AGENTS[@]} * REPEAT + (agent_index - 1) * REPEAT + run ))
+        report_output=quiet
+        if [ "$agent" = "${AGENTS[-1]}" ] && [ "$run" -eq "$REPEAT" ]; then
+          report_output=table
+        fi
         run_scenario "$scenario" \
           "Progress: run $progress_index/$total_runs | ${scenario#scenarios/} | agent=$agent | repeat=$run/$REPEAT" \
+          "$report_output" \
           --agent "$agent" \
           --run-index "$run" || record_failure "$?" "$scenario (agent=$agent run=$run)"
       done
     done
   else
     run_scenario "$scenario" \
-      "Scenario $scenario_index/$total_scenarios" \
+      "Scenario $scenario_index/$total_scenarios" table \
       || record_failure "$?" "$scenario"
   fi
 done
@@ -294,18 +330,5 @@ if [ ${#failed_runs[@]} -gt 0 ]; then
   printf '  %s\n' "${failed_runs[@]}"
 fi
 
-echo ""
-echo "==> Generating report..."
-report_status=0
-"$PYTHON" "$SCRIPT_DIR/generate-report-classic.py" \
-  --parallel-runs "$PARALLEL_RUNS" \
-  "$EVAL_DIR" \
-  --output "$EVAL_DIR/report.md" || report_status=$?
-if [ "$report_status" -eq 0 ]; then
-  echo "==> Report: $EVAL_DIR/report.md"
-else
-  echo "ERROR: Report generation failed (exit $report_status)" >&2
-  if [ "$overall_status" -eq 0 ]; then overall_status=$report_status; fi
-fi
-
+REPORT_FINISHED=1
 exit "$overall_status"

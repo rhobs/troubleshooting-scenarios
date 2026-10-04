@@ -114,6 +114,20 @@ def test_report_does_not_use_current_yaml_for_old_sessions(report_module, tmp_pa
     assert "```yaml" not in report
 
 
+def test_failed_report_replace_keeps_previous_file(report_module, tmp_path, monkeypatch):
+    output = tmp_path / "report.md"
+    output.write_text("Previous report\n")
+
+    def fail_replace(self, target):
+        raise OSError("Cannot replace report")
+
+    monkeypatch.setattr(Path, "replace", fail_replace)
+    with pytest.raises(OSError, match="Cannot replace report"):
+        report_module.write_atomic(output, "New report\n")
+    assert output.read_text() == "Previous report\n"
+    assert not list(tmp_path.glob(".report.md.*"))
+
+
 def test_scenario_names_use_directory_paths(report_module, tmp_path):
     filename = "evals-ols-classic.yaml"
     for directory, cid in (
@@ -173,3 +187,100 @@ def test_directory_labels_keep_scores_and_links(
             ["mesh_check"], ["agent"], {"agent": [[]]}, scenario_names=names,
         )
         assert "| [kiali-ossm/check_mesh_status](#mesh_check) |" in phases
+
+
+@pytest.mark.parametrize("state", ["running", "interrupted", "failed", "completed"])
+def test_progress_only_adds_a_partial_results_line(report_module, tmp_path, state):
+    normal = report_module.generate_report(tmp_path)
+    progress = {
+        "state": state,
+        "scenarios": ["first", "second", "third"],
+        "items": [
+            {"scenario": "first", "state": "completed"},
+            {"scenario": "first", "state": "error"},
+            {"scenario": "second", "state": "completed"},
+            {"scenario": "second", "state": "completed"},
+            {"scenario": "third", "state": "completed"},
+            {"scenario": "third", "state": "interrupted"},
+        ],
+    }
+    (tmp_path / "progress.json").write_text(json.dumps(progress))
+    report = report_module.generate_report(tmp_path)
+    line = "Partial results: scenario 2/3."
+    if state == "completed":
+        assert report == normal
+    else:
+        assert report.count(line) == 1
+        assert report.replace(line + "\n\n", "") == normal
+
+
+@pytest.mark.parametrize("results,expected,color", [
+    (["ERROR"], "0/1", "YELLOW"),
+    (["PASS", "ERROR"], "1/2", "YELLOW"),
+    (["FAIL", "ERROR"], "0/2", "YELLOW"),
+    (["PASS", "FAIL"], "1/2", None),
+    (["PASS"], "1/1", "GREEN"),
+    (["FAIL"], "0/1", "RED"),
+])
+def test_cli_cell_colors_match_markdown(report_module, capsys, results, expected, color):
+    mod = report_module
+    runs = [[metric(mod, result, 1.0 if result == "PASS" else 0.0)] for result in results]
+    mod.print_correctness_table(["scenario"], ["agent"], {"agent": runs})
+    row = next(line for line in capsys.readouterr().out.splitlines() if line.startswith("| scenario"))
+    if color:
+        assert getattr(mod, color) + expected + mod.RESET in row
+    else:
+        assert expected in row
+        assert "\033[" not in row
+    assert ("❌" in mod.score_cell(runs, "scenario", "agent")) == (color == "YELLOW")
+
+
+def test_cli_failed_completion_is_yellow_and_counts_as_failed(report_module, capsys):
+    mod = report_module
+    runs = [[metric(mod, "PASS", 1.0), {
+        "conversation_group_id": "scenario",
+        "metric_identifier": "custom:openshift_agentic_run_status",
+        "result": "FAIL",
+    }]]
+    mod.print_correctness_table(["scenario"], ["agent"], {"agent": runs})
+    row = next(line for line in capsys.readouterr().out.splitlines() if line.startswith("| scenario"))
+    assert mod.YELLOW + "0/1" + mod.RESET in row
+    assert "❌" in mod.score_cell(runs, "scenario", "agent")
+
+
+@pytest.mark.parametrize("states,failed", [
+    (["error", "error"], True),
+    (["skipped", "skipped"], True),
+    (["error", "completed"], False),
+    (["error", "pending"], False),
+    (["interrupted", "interrupted"], False),
+])
+def test_fully_failed_scenarios_appear_before_correctness(report_module, tmp_path, states, failed):
+    normal = report_module.generate_report(tmp_path)
+    progress = {
+        "state": "completed",
+        "items": [{
+            "scenario": "scenarios/restarting_pod_alert", "state": state,
+            "detail": "Setup failed (exit 1)",
+        } for state in states],
+    }
+    (tmp_path / "progress.json").write_text(json.dumps(progress))
+    report = report_module.generate_report(tmp_path)
+    note = "**Scenarios that failed completely:**\n\n- `restarting_pod_alert`: Setup failed (exit 1)"
+    if failed:
+        assert report.count(note) == 1
+        assert report.index(note) < report.index("## Correctness")
+        assert report.replace(note + "\n\n", "") == normal
+    else:
+        assert report == normal
+
+
+def test_report_agent_order_uses_saved_session_config(report_module, tmp_path):
+    kind = Path(report_module.__file__).stem.removeprefix("generate-report-")
+    (tmp_path / f"system-ols-{kind}.yaml").write_text(
+        "agents:\n  default:\n    agent: [zed, alpha]\n"
+    )
+    for agent in ("alpha", "zed"):
+        (tmp_path / agent / "run_1").mkdir(parents=True)
+    report = report_module.generate_report(tmp_path)
+    assert "| | zed | alpha |" in report

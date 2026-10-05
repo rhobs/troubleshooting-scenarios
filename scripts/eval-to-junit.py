@@ -127,6 +127,13 @@ def build_junit(summary_files: list[Path]) -> Element:
     """
     testsuites = Element("testsuites")
 
+    # Create a single testsuite for all tests
+    suite = SubElement(testsuites, "testsuite", name=SUITE_NAME)
+
+    total_tests = 0
+    total_failures = 0
+    total_errors = 0
+
     for path in sorted(summary_files):
         with open(path) as f:
             data = json.load(f)
@@ -139,14 +146,6 @@ def build_junit(summary_files: list[Path]) -> Element:
         # Path structure: .../AGENT_NAME/run_N/evaluation_*_summary.json
         agent_name = path.parent.parent.name if path.parent.parent.name != "results" else "unknown"
         run_number = path.parent.name if path.parent.name.startswith("run_") else "unknown"
-
-        suite = SubElement(testsuites, "testsuite", name=SUITE_NAME)
-
-        # Add token usage metrics at suite level
-        add_token_properties(suite, data, agent_name)
-
-        failures = 0
-        errors = 0
 
         for r in results:
             scenario = r.get("conversation_group_id", "unknown")
@@ -166,10 +165,10 @@ def build_junit(summary_files: list[Path]) -> Element:
                 reason = judges[0].get("reason", "")
 
             if status == "ERROR":
-                errors += 1
+                total_errors += 1
                 SubElement(tc, "error", message=f"score={score}").text = reason
             elif status == "FAIL":
-                failures += 1
+                total_failures += 1
                 SubElement(tc, "failure", message=f"score={score}").text = reason
             elif status == "SKIPPED":
                 SubElement(tc, "skipped")
@@ -178,9 +177,12 @@ def build_junit(summary_files: list[Path]) -> Element:
             if exec_time is not None:
                 tc.set("time", f"{exec_time:.3f}")
 
-        suite.set("tests", str(len(results)))
-        suite.set("failures", str(failures))
-        suite.set("errors", str(errors))
+            total_tests += 1
+
+    # Set totals on the single testsuite
+    suite.set("tests", str(total_tests))
+    suite.set("failures", str(total_failures))
+    suite.set("errors", str(total_errors))
 
     return testsuites
 

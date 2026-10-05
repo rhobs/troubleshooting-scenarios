@@ -19,8 +19,6 @@
           customer-portal returns 503 for every request, but the
           application pod and its service look healthy. Analyze the
           root cause and suggest a fix.
-        targetNamespaces:
-          - customer-portal
         analysis:
           agent: default
 

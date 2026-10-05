@@ -16,8 +16,6 @@
           has no running pods after a recent change. The team says the
           app should run the standard nginxinc/nginx-unprivileged image
           at version 1.27. Analyze the root cause and suggest a fix.
-        targetNamespaces:
-          - asset-renderer
         analysis:
           agent: default
 

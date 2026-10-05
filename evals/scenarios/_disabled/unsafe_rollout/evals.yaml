@@ -13,8 +13,6 @@
           orders-api deployment. Flag every regression the change would
           introduce and recommend whether the rollout should proceed.
           Do not apply the manifest or change anything.
-        targetNamespaces:
-          - checkout-api
         analysis:
           agent: default
 

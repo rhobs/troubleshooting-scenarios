@@ -22,8 +22,6 @@
           security team and must stay. Analyze the root cause and suggest
           how to restore name resolution without dropping the deny-by-default
           posture.
-        targetNamespaces:
-          - search-indexer
         analysis:
           agent: default
 

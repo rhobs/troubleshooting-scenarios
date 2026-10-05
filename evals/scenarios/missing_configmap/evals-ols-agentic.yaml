@@ -19,8 +19,6 @@
           the team forgot to create; the only setting it needs is
           LOG_LEVEL, which should default to "info". Analyze the root
           cause and suggest a fix.
-        targetNamespaces:
-          - feature-service
         analysis:
           agent: default
 

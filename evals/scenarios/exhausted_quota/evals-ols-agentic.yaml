@@ -23,8 +23,6 @@
           team confirmed the namespace's pod quota is outdated and may be
           raised to accommodate the new app. Analyze the root cause,
           remediate, and verify onboarding-app is running.
-        targetNamespaces:
-          - team-onboarding
         analysis:
           agent: default
 

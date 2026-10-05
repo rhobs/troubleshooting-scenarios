@@ -18,8 +18,6 @@
           the namespace are mounted by running workloads and which are
           orphaned, and propose a cleanup plan for the orphaned ones.
           Do not delete anything.
-        targetNamespaces:
-          - artifact-storage
         analysis:
           agent: default
 

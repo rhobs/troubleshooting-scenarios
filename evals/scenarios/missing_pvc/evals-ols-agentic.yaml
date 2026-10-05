@@ -17,8 +17,6 @@
           never gets a pod scheduled. The team says it needs a 1Gi volume
           named app-data that they forgot to create; the cluster's default
           storage class is fine. Analyze the root cause and suggest a fix.
-        targetNamespaces:
-          - document-store
         analysis:
           agent: default
 

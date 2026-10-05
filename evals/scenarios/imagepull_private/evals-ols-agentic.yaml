@@ -18,8 +18,6 @@
           private registry organization. Analyze why the pod is not
           starting and explain what the team needs to do to fix it.
           Do not make any changes.
-        targetNamespaces:
-          - media-processing
         analysis:
           agent: default
 

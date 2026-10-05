@@ -18,8 +18,6 @@
           container is a stock nginx-unprivileged image that worked
           fine with its default entrypoint. Investigate the root cause
           and recommend how to restore it.
-        targetNamespaces:
-          - web-proxy
         analysis:
           agent: default
 

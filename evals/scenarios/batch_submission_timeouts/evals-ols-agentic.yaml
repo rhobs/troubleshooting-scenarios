@@ -15,8 +15,6 @@
           The batch-processor in the data-pipeline namespace is reporting
           errors in its pod logs. Investigate the failures and explain what
           you find.
-        targetNamespaces:
-          - data-pipeline
         analysis:
           agent: default
 

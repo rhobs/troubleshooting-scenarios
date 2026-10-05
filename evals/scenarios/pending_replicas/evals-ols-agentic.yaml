@@ -20,8 +20,6 @@
           needs 3 replicas spread across different nodes for high
           availability. Analyze the root cause, fix the deployment so
           the desired replicas all run, and verify.
-        targetNamespaces:
-          - inventory-cache
         analysis:
           agent: default
 

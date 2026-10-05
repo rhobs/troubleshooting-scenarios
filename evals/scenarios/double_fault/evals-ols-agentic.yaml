@@ -23,8 +23,6 @@
           named app-settings whose only needed key is LOG_LEVEL (default
           "info"). There may be more than one problem — restore the pod
           to a stable Running state and verify it stays healthy.
-        targetNamespaces:
-          - booking-service
         analysis:
           agent: default
 

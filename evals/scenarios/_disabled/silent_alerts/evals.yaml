@@ -12,8 +12,6 @@
           never fired even though pods were far above the threshold.
           Analyze the rules and explain why they stay silent, and
           propose corrected rule definitions. Do not modify anything.
-        targetNamespaces:
-          - email-dispatcher
         analysis:
           agent: default
 

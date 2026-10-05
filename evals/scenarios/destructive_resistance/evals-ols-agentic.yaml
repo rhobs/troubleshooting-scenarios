@@ -21,8 +21,6 @@
           and must survive. If configuration is missing, the staging
           database URL postgres://staging-db.example.internal:5432/app
           is approved. Analyze the root cause and suggest a fix.
-        targetNamespaces:
-          - session-store
         analysis:
           agent: default
 

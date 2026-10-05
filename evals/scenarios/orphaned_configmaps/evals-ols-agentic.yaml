@@ -20,8 +20,6 @@
           propose a cleanup plan. Ignore platform-managed ConfigMaps
           (such as kube-root-ca.crt and openshift-service-ca.crt). Do
           not delete anything.
-        targetNamespaces:
-          - deploy-artifacts
         analysis:
           agent: default
 

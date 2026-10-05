@@ -19,8 +19,6 @@
           legitimately needs to build a local cache of roughly 64Mi at
           startup. Analyze the root cause and propose a fix so the cache
           fits.
-        targetNamespaces:
-          - log-aggregator
         analysis:
           agent: default
 

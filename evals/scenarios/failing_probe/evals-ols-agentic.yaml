@@ -15,8 +15,6 @@
           A pod for deployment status-app in namespace
           status-api keeps restarting even though the application
           inside starts fine. Analyze the root cause and suggest a fix.
-        targetNamespaces:
-          - status-api
         analysis:
           agent: default
 

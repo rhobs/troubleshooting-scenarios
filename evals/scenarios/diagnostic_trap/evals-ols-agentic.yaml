@@ -17,8 +17,6 @@
           The deployment sync-app in namespace inventory-sync keeps
           crashing. Analyze the root cause carefully and suggest the
           correct fix.
-        targetNamespaces:
-          - inventory-sync
         analysis:
           agent: default
 

@@ -22,8 +22,6 @@
           container. Do not make any other changes. Apply the approved
           change and then verify whether the application has recovered,
           reporting the true state either way.
-        targetNamespaces:
-          - audit-service
         analysis:
           agent: default
 

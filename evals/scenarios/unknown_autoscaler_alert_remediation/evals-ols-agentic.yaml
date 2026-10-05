@@ -17,8 +17,6 @@
           Description: HPA product-catalog/catalog-api reports ScalingActive=False and cannot compute target metrics.
           Investigate the alert, remediate the root cause, and verify the recovery.
           Use the skill at /app/skills/cluster-troubleshoot/investigate-alert.
-        targetNamespaces:
-          - product-catalog
         tools:
           skills:
             - image: quay.io/openshiftanalytics/agentic-skills:latest

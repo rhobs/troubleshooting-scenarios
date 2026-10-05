@@ -20,8 +20,6 @@
           becomes Ready. The backend it depends on should run the
           nginx-unprivileged image at version 1.27. Investigate the
           root cause and recommend a fix.
-        targetNamespaces:
-          - order-processing
         analysis:
           agent: default
 

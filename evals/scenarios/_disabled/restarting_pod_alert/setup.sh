@@ -2,7 +2,7 @@
 set -euo pipefail
 
 SCENARIO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SCRIPTS_DIR="$(cd "$SCENARIO_DIR/../../../scripts" && pwd)"
+SCRIPTS_DIR="$(cd "$SCENARIO_DIR/../../../../scripts" && pwd)"
 # shellcheck source=scripts/scenario-namespace.sh
 source "$SCRIPTS_DIR/scenario-namespace.sh"
 FIXTURE_DIR="$SCENARIO_DIR/fixtures"

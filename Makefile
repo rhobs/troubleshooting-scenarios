@@ -92,7 +92,6 @@ _ALL_OLS_AGENTIC := \
 	red_herring \
 	refused_connections \
 	refused_service \
-	restarting_pod_alert \
 	stuck_rollout \
 	stuck_rollout_alert \
 	stuck_rollout_alert_remediation \
@@ -126,7 +125,6 @@ _ALL_OLS_CLASSIC := \
 	netobserv/tcp_rtt \
 	netobserv/tls_issues \
 	refused_connections \
-	restarting_pod_alert \
 	timeout_connections \
 	unbalanced_replicas \
 	unready_pod_alert

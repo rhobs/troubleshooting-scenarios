@@ -1,5 +1,9 @@
 # Restarting pod alert
 
+This scenario is disabled because setup is too slow for normal testing.
+See the [disabled scenarios README](../README.md) for the reason and measured
+setup time.
+
 ## Purpose
 
 This scenario benchmarks analysis-only troubleshooting for a report-processing workload that restarts repeatedly during normal processing. The symptom-based name does not identify the failure mechanism: the agent must correlate pod termination state, previous-container logs, progress telemetry, and rollout history.
@@ -37,7 +41,10 @@ Do not invoke setup merely to check paths: it builds images and changes the clus
 
 ## Lifecycle
 
-From `evals/scenarios/`, the analysis-only entrypoints are:
+To re-enable this scenario, move it back to `evals/scenarios/restarting_pod_alert`,
+update the shared script paths in `setup.sh` and `cleanup.sh`, and restore its
+entries in the root Makefile and active scenario table. From the repository
+root, the analysis-only entrypoints will then be:
 
 ```bash
 make eval-ols-agentic SCENARIO=restarting_pod_alert SETUP_MODE=run
@@ -65,6 +72,10 @@ Cleanup skips namespaces with no matching record, including existing namespaces
 and namespaces that were deleted and recreated by someone else.
 
 The read-only `verify_fixture.py` helper is local qualification tooling. It only reads OpenShift state and logs; it is not copied into the image and is not an AgenticRun stage.
+
+The healthy check takes a final sample after its 30-second observation window.
+Its `oc` commands use the overall verification timeout, so the end of that
+window does not cut short a command or an observation.
 
 ## Evaluation contract
 
@@ -115,12 +126,34 @@ This README records the status of the implementation and qualification gates. It
 
 | Evidence requirement | Status | Required evidence |
 |---|---|---|
-| Repeated setup/cleanup runs | Not run | Run counts, failures, timing variability, image digests, architecture, and sanitized runtime samples. |
+| Repeated setup/cleanup runs | Partial | On 2026-10-04, setup failed before the timeout fix and passed after it. Both attempts were cleaned up. More runs are needed to measure timing variability. |
 | Equivalent-load healthy qualification | Not run | Healthy release remains stable for several measured affected-release failure intervals with bounded cache and no restarts. |
 | Evaluator evidence access | Not run | Actual Agentic and Classic tools can read current status, previous logs, and rollout history with their assigned permissions. |
 | Alert identity qualification | Not run | Firing alert labels correspond to a current affected pod/container, not merely the alert name. |
 | Rubric calibration | Not run | Incomplete, incorrect, strong, and equivalent correct answers are assessed consistently. |
 | Multi-model benchmark | Not run | Fresh runs distinguish reasoning outcomes from inaccessible evidence or inconsistent fixture state. |
+
+Setup-only check on 2026-10-04 (`amd64` cluster):
+
+- The original healthy check failed at the observation deadline while both
+  pods were running with no restarts. Their cache held 2,000 entries.
+- After the fix, `make setup-scenario SCENARIO=restarting_pod_alert` passed
+  in 534 seconds. It checked healthy processing for at least 30 seconds,
+  verified the affected release's OOM/restart evidence, and found the critical
+  `DataProcessingPodRestarting` alert firing.
+- Both affected pods had three `OOMKilled` restarts. Previous-container
+  progress samples showed cache entries rising from 2,100 to 46,100 and
+  RSS rising from about 29 MB to 269 MB while reconciliation continued.
+- The healthy check also printed its RSS growth warning. This short check
+  does not complete the longer healthy qualification listed above.
+- No evaluations were run.
+
+The image digests used in this check were:
+
+| Release | Image digest |
+|---|---|
+| 1.0.1 | `sha256:0f0f7eb2e69797231e27ed6b3a1304a51773146d35f98be0ed3c4fe8376baef4` |
+| 1.0.2 | `sha256:0922f504a70c2a4a51066552269127b3c71555b55bee0740836ad6b80274df5c` |
 
 When qualification is performed, separate fixture failures from agent reasoning failures. Record actual build/push, baseline, rollout, first-OOM, restart, alert, and cleanup timings. Do not rewrite user-owned historical result files or claim a gate passed without supporting observations.
 
@@ -133,4 +166,6 @@ When qualification is performed, separate fixture failures from agent reasoning 
 - Prometheus availability, metric propagation, or evaluator RBAC can prevent alert/evidence qualification.
 - Namespace cleanup is destructive for the dedicated namespace and must only be run in the intended cluster context.
 
-The initial 8/10 assessment is a design hypothesis. Live reliability, reference stability, evidence access, rubric behavior, and model outcomes remain unperformed until explicitly qualified.
+The initial 8/10 assessment is a design hypothesis. The setup check above does
+not complete the remaining reliability, reference stability, evidence access,
+rubric, or model qualification.

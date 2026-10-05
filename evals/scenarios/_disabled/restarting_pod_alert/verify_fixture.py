@@ -564,10 +564,11 @@ def wait_for_healthy(expected_image: str, duration: float, timeout: float) -> No
         )
 
     observations = [startup_observation]
-    while time.monotonic() < stability_deadline:
-        snapshot = read_workload(expected_image, _remaining(stability_deadline))
+    while True:
+        # The observation window sets the duration, not the oc command deadline.
+        snapshot = read_workload(expected_image, _remaining(overall_deadline))
         observation = _healthy_observation(
-            snapshot, expected_image, stability_deadline, startup_observation
+            snapshot, expected_image, overall_deadline, startup_observation
         )
         if observation is None:
             raise VerificationError("healthy observation crossed a process lifetime boundary")
@@ -575,8 +576,9 @@ def wait_for_healthy(expected_image: str, duration: float, timeout: float) -> No
             raise VerificationError("healthy pods stopped emitting progress evidence")
         observations.append(observation)
         remaining = stability_deadline - time.monotonic()
-        if remaining > 0:
-            time.sleep(min(POLL_INTERVAL_SECONDS, remaining))
+        if remaining <= 0:
+            break
+        time.sleep(min(POLL_INTERVAL_SECONDS, remaining))
 
     if not healthy_observation_valid(observations, expected_image):
         raise VerificationError("healthy observation did not show stable bounded processing")

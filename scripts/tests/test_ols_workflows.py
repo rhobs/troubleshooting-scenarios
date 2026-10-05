@@ -12,7 +12,6 @@ import yaml
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SYSTEM_CONFIG = yaml.safe_load((ROOT / "evals/system-ols-agentic.yaml").read_text())
 
 
 def executable(path, content):
@@ -79,7 +78,7 @@ def namespace_workspace(classic_workspace):
         root / "scripts/generate-report-classic.py",
         root / "scripts/generate-report-agentic.py",
     )
-    for name in ("restarting_pod_alert", "batch_submission_timeouts"):
+    for name in ("_disabled/restarting_pod_alert", "batch_submission_timeouts"):
         shutil.copytree(ROOT / "evals/scenarios" / name, root / "evals/scenarios" / name)
     # Stop setup after namespace creation, without builds or a cluster.
     executable(root / "bin/podman", "#!/bin/bash\nexit 23\n")
@@ -128,7 +127,7 @@ elif args[:2] == ["registry", "login"]:
 @pytest.mark.parametrize("service", ["agentic", "classic"])
 @pytest.mark.parametrize("setup_mode", ["scenario", "run"])
 @pytest.mark.parametrize("scenario_name,namespace", [
-    ("restarting_pod_alert", "data-processing"),
+    ("_disabled/restarting_pod_alert", "data-processing"),
     ("batch_submission_timeouts", "data-pipeline"),
 ])
 @pytest.mark.parametrize("existing", [True, False])
@@ -169,7 +168,7 @@ def test_failed_setup_only_cleans_its_namespace(
 
 
 @pytest.mark.parametrize("scenario_name,namespace", [
-    ("restarting_pod_alert", "data-processing"),
+    ("_disabled/restarting_pod_alert", "data-processing"),
     ("batch_submission_timeouts", "data-pipeline"),
 ])
 @pytest.mark.parametrize("namespace_uid,read_error", [
@@ -216,7 +215,7 @@ def test_failed_namespace_create_does_not_record_ownership(namespace_workspace):
     result = subprocess.run(
         ["bash", "-c", 'source "$1"; scenario_create_namespace data-processing "$2" oc',
          "bash", str(root / "scripts/scenario-namespace.sh"),
-         str(root / "evals/scenarios/restarting_pod_alert/fixtures/namespace.yaml")],
+         str(root / "evals/scenarios/_disabled/restarting_pod_alert/fixtures/namespace.yaml")],
         env={**os.environ, "PATH": f"{root / 'bin'}:{os.environ['PATH']}",
              "NAMESPACE_STATE": str(root / "namespace"), "OC_LOG": str(root / "oc.log"),
              "NAMESPACE_CREATE_FAIL": "1"},
@@ -965,7 +964,15 @@ def test_setup_dependencies(variant):
 
 
 @pytest.mark.parametrize("agent", [None, "invalid"])
-def test_ci_agent_provisioning(workspace, agent):
+@pytest.mark.parametrize("active_subset", [False, True])
+def test_ci_agent_provisioning(workspace, agent, active_subset):
+    config_path = workspace / "evals/system-ols-agentic.yaml"
+    system_config = yaml.safe_load(config_path.read_text())
+    if active_subset:
+        system_config["agents"]["default"]["agent"] = (
+            system_config["agents"]["default"]["agent"][:1]
+        )
+        config_path.write_text(yaml.safe_dump(system_config))
     bin_dir = workspace / "bin"
     executable(
         bin_dir / "git",
@@ -1041,12 +1048,12 @@ def test_ci_agent_provisioning(workspace, agent):
         assert vertex["region"] == "global"
         assert vertex["projectID"] == "test-project"
     agents = [r for r in resources if r["kind"] == "Agent"]
-    defaults = SYSTEM_CONFIG["agents"]["default"]["agent"]
+    defaults = system_config["agents"]["default"]["agent"]
     assert {r["metadata"]["name"] for r in agents} == {
-        SYSTEM_CONFIG["agents"][name]["agent_ref"] for name in defaults
+        system_config["agents"][name]["agent_ref"] for name in defaults
     }
     for name in defaults:
-        config = SYSTEM_CONFIG["agents"][name]
+        config = system_config["agents"][name]
         provider, model = config["description"].split("|", 1)
         agent_cr = next(
             r for r in agents if r["metadata"]["name"] == config["agent_ref"]

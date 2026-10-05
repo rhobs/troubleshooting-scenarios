@@ -29,14 +29,14 @@ agents:
   default:
     agent:
       - openai-gpt-5-4
-      - openai-gpt-5-6-luna
-      - openai-gpt-5-6-terra
-      - openai-gpt-5-6-sol
-      - google-gemini-3-5-flash-lite
-      - google-gemini-3-7-flash
-      - google-gemini-3-8-flash
+      # - openai-gpt-5-6-luna
+      # - openai-gpt-5-6-terra
+      # - openai-gpt-5-6-sol
+      # - google-gemini-3-5-flash-lite
+      # - google-gemini-3-7-flash
+      # - google-gemini-3-8-flash
       # - anthropic-sonnet-5
-      - anthropic-opus-4-6
+      # - anthropic-opus-4-6
       # - anthropic-opus-5-5
     repeat: 3
     parallel: true

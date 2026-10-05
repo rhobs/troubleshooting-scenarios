@@ -6,7 +6,6 @@
     quota' events.
     Expected: remediate the exhausted pod quota and verify onboarding-app becomes available.
   tag:
-    - agentic
     - remediation
     - difficulty_normal
 

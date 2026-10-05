@@ -6,7 +6,7 @@
     Expected: diagnose application-driven memory growth and recommend bounded
     retention or restoring a known-good release, not a limit increase alone.
   tag:
-    - classic
+    - investigation
     - alert
     - difficulty_normal
 

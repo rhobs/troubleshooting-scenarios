@@ -6,7 +6,7 @@
     shuts the VM down after boot.
     Expected: inspect cloud-init config and identify the offending command.
   tag:
-    - classic
+    - investigation
     - kubevirt
     - difficulty_normal
 

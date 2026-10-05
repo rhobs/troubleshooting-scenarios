@@ -5,7 +5,7 @@
     db-creds, but the Secret only contains the 'username' key.
     Expected: add the missing 'password' key to the db-creds Secret.
   tag:
-    - agentic
+    - investigation
     - difficulty_normal
 
 

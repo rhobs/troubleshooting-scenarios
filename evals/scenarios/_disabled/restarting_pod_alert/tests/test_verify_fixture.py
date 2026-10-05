@@ -1,6 +1,9 @@
+import io
 import json
+import subprocess
 import sys
 import unittest
+from contextlib import redirect_stdout
 from pathlib import Path
 from unittest.mock import patch
 
@@ -285,6 +288,75 @@ class VerifyFixtureTests(unittest.TestCase):
         with patch("verify_fixture.subprocess.run", return_value=completed):
             with self.assertRaises(verify_fixture.VerificationError):
                 verify_fixture.run_oc_json(["get", "pods"])
+
+    def test_healthy_window_allows_complete_final_observation(self):
+        for observation_cost in (0.5, 7.5):
+            with self.subTest(observation_cost=observation_cost):
+                clock = [0.0]
+                sample_times = []
+                baseline, later = healthy_observations()
+
+                def read_workload(_image, command_timeout):
+                    if command_timeout < 1.0:
+                        raise subprocess.TimeoutExpired("oc get deployment", command_timeout)
+                    clock[0] += 1.0
+                    return object()
+
+                def observe(_snapshot, _image, deadline, _baseline):
+                    if clock[0] + observation_cost > deadline:
+                        raise verify_fixture.VerificationError("observation deadline expired")
+                    clock[0] += observation_cost
+                    sample_times.append(clock[0])
+                    return later
+
+                def sleep(seconds):
+                    clock[0] += seconds
+
+                with (
+                    patch("verify_fixture.time.monotonic", side_effect=lambda: clock[0]),
+                    patch("verify_fixture.time.sleep", side_effect=sleep),
+                    patch("verify_fixture.wait_for_startup", return_value=baseline),
+                    patch("verify_fixture.read_workload", side_effect=read_workload),
+                    patch("verify_fixture._healthy_observation", side_effect=observe),
+                    redirect_stdout(io.StringIO()),
+                ):
+                    verify_fixture.wait_for_healthy(IMAGE, duration=30.0, timeout=180.0)
+
+                self.assertGreaterEqual(sample_times[-1], 30.0)
+                self.assertLess(clock[0], 180.0)
+
+    def test_healthy_window_requires_time_before_starting(self):
+        with (
+            patch("verify_fixture.time.monotonic", return_value=0.0),
+            patch("verify_fixture.wait_for_startup", return_value=healthy_observations()[0]),
+            patch("verify_fixture.read_workload") as read_workload,
+        ):
+            with self.assertRaisesRegex(verify_fixture.VerificationError, "insufficient time"):
+                verify_fixture.wait_for_healthy(IMAGE, duration=30.0, timeout=20.0)
+
+        read_workload.assert_not_called()
+
+    def test_healthy_window_keeps_the_overall_deadline(self):
+        clock = [0.0]
+
+        def sleep(seconds):
+            clock[0] += seconds
+
+        def read_workload(_image, command_timeout):
+            if command_timeout < 10.0:
+                raise subprocess.TimeoutExpired("oc get deployment", command_timeout)
+            clock[0] += 10.0
+            return object()
+
+        with (
+            patch("verify_fixture.time.monotonic", side_effect=lambda: clock[0]),
+            patch("verify_fixture.time.sleep", side_effect=sleep),
+            patch("verify_fixture.wait_for_startup", return_value=healthy_observations()[0]),
+            patch("verify_fixture.read_workload", side_effect=read_workload),
+            patch("verify_fixture._healthy_observation", return_value=healthy_observations()[1]),
+        ):
+            with self.assertRaises(subprocess.TimeoutExpired):
+                verify_fixture.wait_for_healthy(IMAGE, duration=30.0, timeout=31.0)
 
 
 if __name__ == "__main__":

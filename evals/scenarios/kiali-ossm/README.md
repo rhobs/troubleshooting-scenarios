@@ -16,6 +16,10 @@ Evaluation scenarios for AI-assisted diagnosis of OpenShift Service Mesh (OSSM) 
 
 ## Setup and Running
 
+All cases use `investigation` and `kiali-ossm` tags. The four `check_*` cases use
+`difficulty_normal`; the two `diagnose_*` cases and `troubleshoot_latency_trace`
+use `difficulty_medium`. See the [tag guide](../../README.md#tags) for filtering.
+
 OSSM, Kiali, Bookinfo, MCP, and scenario fixtures are set up automatically when `eval-ols-classic` runs a kiali-ossm scenario (via `setup.sh` in this directory). From the repository root:
 
 ```bash

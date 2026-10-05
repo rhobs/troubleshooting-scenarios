@@ -16,6 +16,9 @@ OpenShift Virtualization requires KVM for VM execution. On cloud environments, o
 
 ## Setup and Running
 
+All cases use `investigation`, `kubevirt`, and `difficulty_normal` tags.
+See the [tag guide](../../README.md#tags) for filtering.
+
 CNV, MCP, and scenario fixtures are set up automatically when `eval-ols-classic` runs a kubevirt scenario (via `setup.sh` in this directory). If the CNV namespace already exists, the suite preserves that installation and does not change its emulation setting or uninstall it during cleanup. From the repository root:
 
 ```bash

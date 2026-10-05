@@ -4,7 +4,7 @@
     RCA: The service path has elevated round-trip latency that should be visible in FlowRTT data.
     Expected: Use NetObserv metrics or flows to identify the affected path and cite numeric RTT evidence.
   tag:
-    - classic
+    - investigation
     - netobserv
     - difficulty_normal
   turns:

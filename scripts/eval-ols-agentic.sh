@@ -97,33 +97,61 @@ bash "$SCRIPT_DIR/show-eval-summary.sh" \
   "${SUMMARY_AGENT_ARGS[@]}" \
   --scenarios "${SCENARIOS[@]}"
 
+# shellcheck source=scripts/eval-report.sh
+source "$SCRIPT_DIR/eval-report.sh"
+
+# Invoked by the EXIT trap.
+# shellcheck disable=SC2329
+finish_evaluation() {
+  local status=$?
+  local report_status=0
+  trap - EXIT INT TERM
+  report_finalize "$status" || report_status=$?
+  if [ "$report_status" -ne 0 ]; then
+    echo "ERROR: final report update failed; keeping the last report." >&2
+    if [ "$status" -eq 0 ]; then status=$report_status; fi
+  fi
+  exit "$status"
+}
+
+report_init agentic
+trap finish_evaluation EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
 run_scenario() {
   local scenario="$1"
   local progress="$2"
-  shift 2
+  local report_output="$3"
+  shift 3
   local scenario_status=0
   local scenario_state_dir=""
+  local failure_detail=""
+
+  report_event start quiet "$scenario" "$@"
 
   echo ""
+  echo "==> $progress"
   if [ "$SETUP_MODE" != "skip" ]; then
     echo "==> Setup: $scenario"
-    scenario_state_dir="$(mktemp -d "$(cd "$EVAL_DIR" && pwd)/.scenario-state.XXXXXX")" || return $?
-    if [ -x "$scenario/setup.sh" ]; then
+    scenario_state_dir="$(mktemp -d "$(cd "$EVAL_DIR" && pwd)/.scenario-state.XXXXXX")" || scenario_status=$?
+    if [ "$scenario_status" -eq 0 ] && [ -x "$scenario/setup.sh" ]; then
       SCENARIO_STATE_DIR="$scenario_state_dir" bash "$scenario/setup.sh" || scenario_status=$?
     fi
+    if [ "$scenario_status" -ne 0 ]; then failure_detail="Setup failed (exit $scenario_status)"; fi
   else
     echo "==> Setup skipped: $scenario (SETUP_MODE=skip)"
   fi
   if [ "$scenario_status" -eq 0 ]; then
-    echo "==> Progress: $progress"
     bash "$SCRIPT_DIR/run-agentic-evals.sh" \
       --system-config "$SYSTEM_CONFIG" \
       --evals "$scenario/evals-ols-agentic.yaml" \
       --eval-dir "$EVAL_DIR" \
       "$@" \
       "${TAG_FLAGS[@]}" || scenario_status=$?
+    if [ "$scenario_status" -ne 0 ]; then failure_detail="Evaluation failed (exit $scenario_status)"; fi
   fi
-  if [ "$SETUP_MODE" != "skip" ]; then
+  if [ "$SETUP_MODE" != "skip" ] && [ -n "$scenario_state_dir" ]; then
     echo "==> Cleanup: $scenario"
     if [ -x "$scenario/cleanup.sh" ]; then
       SCENARIO_STATE_DIR="$scenario_state_dir" bash "$scenario/cleanup.sh" || echo "WARNING: cleanup failed (non-fatal)"
@@ -132,9 +160,10 @@ run_scenario() {
     if ! rmdir "$scenario_state_dir" 2>/dev/null; then
       echo "==> Namespace ownership records: $scenario_state_dir"
     fi
-  else
+  elif [ "$SETUP_MODE" = "skip" ]; then
     echo "==> Cleanup skipped: $scenario (SETUP_MODE=skip)"
   fi
+  report_event finish "$report_output" "$scenario" "$@" --exit-code "$scenario_status" --detail "$failure_detail"
   return "$scenario_status"
 }
 
@@ -157,8 +186,13 @@ if [ "$SETUP_MODE" = "run" ]; then
     for agent in "${AGENTS[@]}"; do
       for run in $(seq 1 "$REPEAT"); do
         progress_index=$((progress_index + 1))
+        report_output=quiet
+        if [ "$agent" = "${AGENTS[-1]}" ] && [ "$run" -eq "$REPEAT" ]; then
+          report_output=table
+        fi
         run_scenario "$scenario" \
-          "run $progress_index/$total_runs | ${scenario#scenarios/} | agent=$agent | repeat=$run/$REPEAT" \
+          "Progress: run $progress_index/$total_runs | ${scenario#scenarios/} | agent=$agent | repeat=$run/$REPEAT" \
+          "$report_output" \
           --agent "$agent" \
           --run-index "$run" || record_failure "$?" "$scenario (agent=$agent run=$run)"
       done
@@ -170,7 +204,7 @@ else
   for scenario in "${SCENARIOS[@]}"; do
     progress_index=$((progress_index + 1))
     run_scenario "$scenario" \
-      "scenario $progress_index/$total_scenarios | ${scenario#scenarios/}" \
+      "Scenario $progress_index/$total_scenarios" table \
       || record_failure "$?" "$scenario"
   done
 fi
@@ -180,11 +214,5 @@ if [ ${#failed_runs[@]} -gt 0 ]; then
   printf '  %s\n' "${failed_runs[@]}"
 fi
 
-echo ""
-echo "==> Generating report..."
-"$PYTHON" "$SCRIPT_DIR/generate-report-agentic.py" \
-  --parallel-runs "$PARALLEL_RUNS" \
-  "$EVAL_DIR" \
-  --output "results/report_${DATETIME}.md"
-echo "==> Report: results/report_${DATETIME}.md"
+REPORT_FINISHED=1
 exit "$overall_status"

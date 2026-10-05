@@ -83,11 +83,13 @@ match the system config. If they do not, it stops and asks you to run
 
 ```bash
 make setup-ols-agentic
-make eval-ols-agentic                                         # run all scenarios
+make eval-ols-agentic TAG=investigation                       # run investigation cases
 make eval-ols-agentic SCENARIO=stuck_rollout                  # one scenario
 make eval-ols-agentic SCENARIO=stuck_rollout,exhausted_quota  # multiple
 make eval-ols-agentic TAG=alert                               # filter by tag
 make eval-ols-agentic TAG=alert PREVIEW=1                     # preview matched scenarios
+make eval-ols-agentic TAG=investigation PREVIEW=1                  # preview investigation cases
+make eval-ols-agentic TAG=remediation SETUP_MODE=run           # run cases that apply fixes
 ```
 
 For evaluations that change cluster resources, use `SETUP_MODE=run` to reset
@@ -105,16 +107,25 @@ use OpenAI. Remove Google and Anthropic entries for an OpenAI-only run.
 
 ```bash
 make setup-ols-classic
-make eval-ols-classic                                         # run all scenarios
+make eval-ols-classic TAG=investigation                       # run investigation cases
 make eval-ols-classic SCENARIO=crashlooping_pod_alert         # one scenario
 make eval-ols-classic TAG=alert                               # filter by tag
 make eval-ols-classic TAG=alert PREVIEW=1                     # preview matched scenarios
+make eval-ols-classic TAG=difficulty_medium PREVIEW=1         # preview medium cases
 ```
 
-Setup uses the `openshift-lightspeed` namespace. Without `SCENARIO` or `TAG`,
-either evaluation target runs all scenarios supported by that mode.
+Setup uses the `openshift-lightspeed` namespace. Both evaluation targets require
+`SCENARIO`, `TAG`, or both, including with `PREVIEW=1`. Without a filter, Make
+stops before setup or evaluation starts.
 See the [eval guide](evals/README.md#running-automated-evals) for filters,
 setup modes, and failure handling.
+
+Tags describe the workflow (`investigation` or `remediation`), difficulty, and
+optional selections such as `core`, `alert`, or a scenario group. The Make
+target selects Agentic or Classic; these mode names are no longer tags.
+`TAG=alert` selects alert investigation cases. Use `TAG=remediation` for
+cases that apply fixes. Multiple tags use OR: `TAG=core,alert` selects cases
+with either tag. See the [tag guide](evals/README.md#tags) for all current tags.
 
 ## Manual setup and cleanup
 

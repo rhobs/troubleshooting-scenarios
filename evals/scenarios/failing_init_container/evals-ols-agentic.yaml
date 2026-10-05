@@ -6,7 +6,7 @@
     always fails.
     Expected: remove the obsolete init container from the deployment.
   tag:
-    - agentic
+    - investigation
     - difficulty_normal
 
   turns:

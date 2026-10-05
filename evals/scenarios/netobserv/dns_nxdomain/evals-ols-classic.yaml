@@ -4,7 +4,7 @@
     RCA: The workload sends queries for non-existent names, producing NXDOMAIN responses.
     Expected: Use NetObserv flow metrics or logs to identify failing names and explain the DNS failure pattern with evidence.
   tag:
-    - classic
+    - investigation
     - netobserv
     - difficulty_normal
   turns:

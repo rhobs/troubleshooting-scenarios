@@ -7,7 +7,7 @@
     Expected: create a namespaced Role granting get/list on pods and
     bind it to the ServiceAccount.
   tag:
-    - agentic
+    - investigation
     - difficulty_normal
 
   turns:

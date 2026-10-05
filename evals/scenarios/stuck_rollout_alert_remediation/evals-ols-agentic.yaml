@@ -5,7 +5,6 @@
     that does not exist.
     Expected: restore a working deployment revision and verify the rollout completes.
   tag:
-    - agentic
     - remediation
     - difficulty_normal
 

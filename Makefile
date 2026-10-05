@@ -88,12 +88,10 @@ _ALL_OLS_AGENTIC := \
 	orphaned_pvc \
 	oversized_requests \
 	partial_fix \
-	pending_pvc_alert \
 	pending_replicas \
 	red_herring \
 	refused_connections \
 	refused_service \
-	restarting_pod_alert \
 	stuck_rollout \
 	stuck_rollout_alert \
 	stuck_rollout_alert_remediation \
@@ -126,9 +124,7 @@ _ALL_OLS_CLASSIC := \
 	netobserv/packet_drops_policy \
 	netobserv/tcp_rtt \
 	netobserv/tls_issues \
-	pending_pvc_alert \
 	refused_connections \
-	restarting_pod_alert \
 	timeout_connections \
 	unbalanced_replicas \
 	unready_pod_alert
@@ -222,7 +218,7 @@ setup-ols-classic: setup-venv
 	@bash $(SCRIPTS_DIR)/preflight.sh
 	@bash $(SCRIPTS_DIR)/setup-ols-classic.sh
 
-eval-ols-agentic:
+eval-ols-agentic: _validate-scenario-filters
 ifeq ($(PREVIEW),1)
 	@echo "Preview only: no setup, evaluation, or cleanup will run."
 	@bash $(SCRIPTS_DIR)/show-eval-summary.sh \
@@ -240,7 +236,7 @@ else
 	  || { status=$$?; if [ "$$status" -ne 64 ]; then exit "$$status"; fi; }
 endif
 
-eval-ols-classic:
+eval-ols-classic: _validate-scenario-filters
 ifeq ($(PREVIEW),1)
 	@echo "Preview only: no setup, evaluation, or cleanup will run."
 	@bash $(SCRIPTS_DIR)/show-eval-summary.sh \

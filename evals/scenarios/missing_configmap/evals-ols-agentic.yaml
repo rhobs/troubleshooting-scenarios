@@ -5,7 +5,7 @@
     which does not exist in the namespace.
     Expected: create the app-settings ConfigMap with LOG_LEVEL=info.
   tag:
-    - agentic
+    - investigation
     - core
     - difficulty_normal
 

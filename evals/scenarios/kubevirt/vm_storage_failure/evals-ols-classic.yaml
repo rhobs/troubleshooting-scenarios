@@ -6,7 +6,7 @@
     Expected: identify the missing StorageClass and recommend switching
     to a valid one or removing storageClassName to use the default.
   tag:
-    - classic
+    - investigation
     - kubevirt
     - difficulty_normal
 

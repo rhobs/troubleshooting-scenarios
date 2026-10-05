@@ -31,7 +31,7 @@ Each scenario under `evals/scenarios/` is a self-contained directory:
 
 ### Adding or modifying scenarios
 
-When adding, removing, or renaming scenarios under `evals/scenarios/`, keep `evals/README.md` (scenario table) and the root `Makefile` (scenario variables) in sync.
+When adding, removing, or renaming scenarios under `evals/scenarios/`, keep `evals/scenarios/README.md` (scenario table) and the root `Makefile` (scenario variables) in sync.
 
 After adding or modifying a scenario, run the `review-scenario` skill to check for naming leaks, revealing comments, and unrealistic fault setups.
 
@@ -44,8 +44,8 @@ make tools              # Install local lint tools in .tools/
 make lint               # Install tools if needed, then run all linters
 make setup-ols-agentic  # Install venv + sync Agent CRs
 make setup-ols-classic  # Install venv + OLS classic
-make eval-ols-agentic   # Run OLS agentic scenarios
-make eval-ols-classic   # Run OLS classic scenarios
+make eval-ols-agentic TAG=investigation # Run OLS agentic investigation cases
+make eval-ols-classic TAG=investigation # Run OLS classic investigation cases
 make cleanup-ols-classic # Remove venv + OLS classic
 ```
 

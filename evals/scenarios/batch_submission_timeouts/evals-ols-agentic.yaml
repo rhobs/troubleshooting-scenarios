@@ -5,8 +5,8 @@
     RCA: Requests to the intake service time out during a repeated narrow UTC interval, while normal submissions succeed outside it.
     Expected: identify the repeated interval and timeout behavior from the application evidence without asserting an unverified maintenance explanation.
   tag:
-    - agentic
-    - difficulty_medium
+    - investigation
+    - difficulty_high
 
   turns:
     - turn_id: turn_1

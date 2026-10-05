@@ -6,7 +6,7 @@
     Expected: raise the emptyDir sizeLimit (e.g. to 128Mi) so the
     cache fits.
   tag:
-    - agentic
+    - investigation
     - core
     - difficulty_normal
 

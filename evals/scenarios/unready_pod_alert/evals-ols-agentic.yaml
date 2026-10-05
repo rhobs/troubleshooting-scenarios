@@ -6,10 +6,10 @@
     Expected: remove the readiness probe or replace it with an exec
     probe appropriate for the container.
   tag:
-    - agentic
+    - investigation
     - core
     - alert
-    - difficulty_normal
+    - difficulty_medium
 
 
   turns:

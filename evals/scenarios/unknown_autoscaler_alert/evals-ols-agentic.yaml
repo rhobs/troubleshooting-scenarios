@@ -5,7 +5,7 @@
     the HPA cannot compute utilization percentage.
     Expected: add CPU requests (e.g. 50m-100m) to the container spec.
   tag:
-    - agentic
+    - investigation
     - alert
     - difficulty_normal
 

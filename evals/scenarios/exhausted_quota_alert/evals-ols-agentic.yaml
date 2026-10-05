@@ -7,7 +7,7 @@
     Expected: raise the pod quota to accommodate both workloads, or
     scale down setup-worker to free a pod slot.
   tag:
-    - agentic
+    - investigation
     - alert
     - difficulty_normal
 

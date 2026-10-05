@@ -6,7 +6,7 @@
     Expected: remove the privileged and runAsUser demands from the
     container security context.
   tag:
-    - agentic
+    - investigation
     - difficulty_normal
 
 

@@ -96,7 +96,8 @@ repeat. You can open the file during `make eval-ols-agentic` or
 The CLI prints the results table after each scenario. With `SETUP_MODE=run`,
 it prints the table after all agents and repeats for that scenario finish.
 CLI cells are yellow when the Markdown correctness table shows ❌, meaning
-at least one evaluation error or failed completion check.
+at least one evaluation error or failed completion check (when output is not
+a terminal, these cells use `*` instead of color).
 
 Partial reports add one line, such as `Partial results: scenario 2/47.`
 The count shows scenarios whose agents and repeats have all finished.

@@ -344,6 +344,8 @@ def generate_markdown(
 
 def colorize(passed: int, total: int) -> str:
     value = f"{passed}/{total}"
+    if not sys.stdout.isatty():
+        return value
     if passed == total:
         return f"{GREEN}{value}{RESET}"
     if passed == 0:

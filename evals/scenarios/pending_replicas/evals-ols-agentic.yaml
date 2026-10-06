@@ -43,6 +43,3 @@
       turn_metrics:
         - "custom:openshift_agentic_run_status"
         - "custom:openshift_agentic_run_evaluation_correctness"
-      turn_metrics_metadata:
-        "custom:openshift_agentic_run_evaluation_correctness":
-          threshold: 0.75

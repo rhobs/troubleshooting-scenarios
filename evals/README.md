@@ -124,6 +124,10 @@ Use `generate-report-agentic.py` for Agentic results. Pass
 
 Both report types use the same scoring rules:
 
+- Correctness uses a default threshold of 0.75 from the matching
+  `system-ols-*.yaml`. Scenarios can override it with `turn_metrics_metadata`;
+  the Agentic `failing_api_alert` case requires 0.80. Remediation cases use
+  status checks without a correctness score.
 - Technical errors count as failed runs with score 0 in averages.
 - ❌ marks a technical error in at least one run. Otherwise, 🟢 means all runs
   passed and 🔴 means none passed. Mixed results have no icon.

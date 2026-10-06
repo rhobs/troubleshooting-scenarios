@@ -85,6 +85,10 @@ continues with other groups. Group cleanup runs after the full scenario loop.
 
 Runners save Markdown reports to `evals/results/<session>/report.md`,
 in the same directory as the session results and system config.
+Before setup starts, runners also copy the selected `evals-ols-*.yaml` files
+to `<session>/scenarios/`, keeping scenario and group subdirectories.
+Evaluations use these saved copies, so later edits to the source files do not
+change the definitions used by the session.
 The report is created before evaluation starts and updated at the start and
 end of each scenario. With `SETUP_MODE=run`, it is updated for each agent and
 repeat. You can open the file during `make eval-ols-agentic` or
@@ -92,7 +96,8 @@ repeat. You can open the file during `make eval-ols-agentic` or
 The CLI prints the results table after each scenario. With `SETUP_MODE=run`,
 it prints the table after all agents and repeats for that scenario finish.
 CLI cells are yellow when the Markdown correctness table shows ❌, meaning
-at least one evaluation error or failed completion check.
+at least one evaluation error or failed completion check (when output is not
+a terminal, these cells use `*` instead of color).
 
 Partial reports add one line, such as `Partial results: scenario 2/47.`
 The count shows scenarios whose agents and repeats have all finished.
@@ -119,6 +124,10 @@ Use `generate-report-agentic.py` for Agentic results. Pass
 
 Both report types use the same scoring rules:
 
+- Correctness uses a default threshold of 0.75 from the matching
+  `system-ols-*.yaml`. Scenarios can override it with `turn_metrics_metadata`;
+  the Agentic `failing_api_alert` case requires 0.80. Remediation cases use
+  status checks without a correctness score.
 - Technical errors count as failed runs with score 0 in averages.
 - ❌ marks a technical error in at least one run. Otherwise, 🟢 means all runs
   passed and 🔴 means none passed. Mixed results have no icon.

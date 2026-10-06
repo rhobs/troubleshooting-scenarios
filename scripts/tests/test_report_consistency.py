@@ -219,24 +219,41 @@ def test_progress_only_adds_a_partial_results_line(report_module, tmp_path, stat
     (["PASS", "ERROR"], "1/2", "YELLOW"),
     (["FAIL", "ERROR"], "0/2", "YELLOW"),
     (["PASS", "FAIL"], "1/2", None),
+    (["PASS", "FAIL", "FAIL"], "1/3", None),
+    (["PASS", "FAIL", "ERROR"], "1/3", "YELLOW"),
+    (["PASS", "ERROR", "ERROR"], "1/3", "YELLOW"),
     (["PASS"], "1/1", "GREEN"),
     (["FAIL"], "0/1", "RED"),
 ])
-def test_cli_cell_colors_match_markdown(report_module, capsys, results, expected, color):
+@pytest.mark.parametrize("is_tty", [True, False])
+def test_cli_cell_colors_match_markdown(
+    report_module, capsys, monkeypatch, results, expected, color, is_tty,
+):
     mod = report_module
+    monkeypatch.setattr(mod.sys.stdout, "isatty", lambda: is_tty)
     runs = [[metric(mod, result, 1.0 if result == "PASS" else 0.0)] for result in results]
     mod.print_correctness_table(["scenario"], ["agent"], {"agent": runs})
-    row = next(line for line in capsys.readouterr().out.splitlines() if line.startswith("| scenario"))
-    if color:
+    output = capsys.readouterr().out
+    row = next(line for line in output.splitlines() if line.startswith("| scenario"))
+    if is_tty and color:
         assert getattr(mod, color) + expected + mod.RESET in row
     else:
-        assert expected in row
+        marker = "*" if color == "YELLOW" and not is_tty else ""
+        assert row.split("|")[2].strip() == expected + marker
         assert "\033[" not in row
+    if not is_tty:
+        assert "\033[" not in output
+        rows = [line for line in output.splitlines() if line.startswith("|")]
+        assert len({len(line) for line in rows}) == 1
     assert ("❌" in mod.score_cell(runs, "scenario", "agent")) == (color == "YELLOW")
 
 
-def test_cli_failed_completion_is_yellow_and_counts_as_failed(report_module, capsys):
+@pytest.mark.parametrize("is_tty", [True, False])
+def test_cli_failed_completion_is_marked_and_counts_as_failed(
+    report_module, capsys, monkeypatch, is_tty,
+):
     mod = report_module
+    monkeypatch.setattr(mod.sys.stdout, "isatty", lambda: is_tty)
     runs = [[metric(mod, "PASS", 1.0), {
         "conversation_group_id": "scenario",
         "metric_identifier": "custom:openshift_agentic_run_status",
@@ -244,7 +261,11 @@ def test_cli_failed_completion_is_yellow_and_counts_as_failed(report_module, cap
     }]]
     mod.print_correctness_table(["scenario"], ["agent"], {"agent": runs})
     row = next(line for line in capsys.readouterr().out.splitlines() if line.startswith("| scenario"))
-    assert mod.YELLOW + "0/1" + mod.RESET in row
+    if is_tty:
+        assert mod.YELLOW + "0/1" + mod.RESET in row
+    else:
+        assert row.split("|")[2].strip() == "0/1*"
+        assert "\033[" not in row
     assert "❌" in mod.score_cell(runs, "scenario", "agent")
 
 
@@ -284,3 +305,17 @@ def test_report_agent_order_uses_saved_session_config(report_module, tmp_path):
         (tmp_path / agent / "run_1").mkdir(parents=True)
     report = report_module.generate_report(tmp_path)
     assert "| | zed | alpha |" in report
+
+
+@pytest.mark.parametrize("is_tty", [True, False])
+@pytest.mark.parametrize("passed,total", [(0, 3), (1, 3), (3, 3)])
+def test_summary_colors_only_in_a_terminal(monkeypatch, capsys, is_tty, passed, total):
+    path = Path(__file__).resolve().parent.parent / "summarize-agentic-evals.py"
+    spec = importlib.util.spec_from_file_location("summarize_agentic_evals", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    monkeypatch.setattr(mod.sys.stdout, "isatty", lambda: is_tty)
+    mod.print_table(["scenario"], ["Correctness"], [{"Correctness": (passed, total)}])
+    output = capsys.readouterr().out
+    assert f"{passed}/{total}" in output
+    assert ("\033[" in output) == (is_tty and passed in (0, total))

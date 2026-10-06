@@ -46,6 +46,13 @@ mkdir -p "$EVAL_DIR"
 cp "$SYSTEM_CONFIG" "$EVAL_DIR/system-ols-classic.yaml"
 SYSTEM_CONFIG="$EVAL_DIR/system-ols-classic.yaml"
 
+# Save the selected definitions before setup or evaluation starts.
+for scenario in "${SCENARIOS[@]}"; do
+  snapshot_dir="$EVAL_DIR/scenarios/${scenario#scenarios/}"
+  mkdir -p "$snapshot_dir"
+  cp "$scenario/evals-ols-classic.yaml" "$snapshot_dir/evals-ols-classic.yaml"
+done
+
 PARALLEL_RUNS="$("$PYTHON" -c "import yaml; c=yaml.safe_load(open('$SYSTEM_CONFIG')); print('yes' if c.get('agents',{}).get('default',{}).get('parallel',False) else 'no')")"
 if [ "$SETUP_MODE" = "run" ]; then PARALLEL_RUNS=no; fi
 
@@ -212,7 +219,7 @@ run_scenario() {
   if [ "$scenario_status" -eq 0 ]; then
     bash "$SCRIPT_DIR/run-agentic-evals.sh" \
       --system-config "$SYSTEM_CONFIG" \
-      --evals "$scenario/evals-ols-classic.yaml" \
+      --evals "$EVAL_DIR/scenarios/${scenario#scenarios/}/evals-ols-classic.yaml" \
       --eval-dir "$EVAL_DIR" \
       "$@" \
       "${TAG_FLAGS[@]}" || scenario_status=$?

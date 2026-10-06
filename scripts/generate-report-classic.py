@@ -652,6 +652,8 @@ def _scenario_pass_total(agent_runs: list, conversation_id: str) -> tuple[int, i
 
 def _colorize(passed: int, total: int, technical_failure: bool = False) -> str:
     text = f"{passed}/{total}"
+    if not sys.stdout.isatty():
+        return text + ("*" if technical_failure else "")
     if technical_failure:
         return f"{YELLOW}{text}{RESET}"
     if passed == total:
@@ -675,6 +677,15 @@ def print_correctness_table(
         row = [_scenario_pass_total(agent_runs[a], cid) for a in agent_names]
         grid.append(row)
 
+    use_color = sys.stdout.isatty()
+    technical_failures = {
+        (cid, agent): any(
+            results is not None and has_technical_failure(results, cid)
+            for results in agent_runs[agent]
+        )
+        for cid in conversations
+        for agent in agent_names
+    }
     totals = [overall_score(agent_runs[a], conversations) for a in agent_names]
     avg_scores = [mean_score(agent_runs[a], conversations) for a in agent_names]
     avg_durations = [mean_latency(agent_runs[a], conversations) for a in agent_names]
@@ -702,7 +713,11 @@ def print_correctness_table(
     col_widths = []
     for index, (agent, total) in enumerate(zip(agent_names, totals, strict=True)):
         result_width = max(
-            (len(f"{row[index][0]}/{row[index][1]}") for row in grid),
+            (
+                len(f"{row[index][0]}/{row[index][1]}")
+                + int(not use_color and technical_failures[cid, agent])
+                for cid, row in zip(conversations, grid)
+            ),
             default=0,
         )
         summary_width = max(
@@ -726,10 +741,9 @@ def print_correctness_table(
         cells = [f"{scenario_names.get(cid, cid):<{scenario_w}}"]
         for agent, (p, t), w in zip(agent_names, row, col_widths):
             plain = f"{p}/{t}"
-            technical_failure = any(
-                results is not None and has_technical_failure(results, cid)
-                for results in agent_runs[agent]
-            )
+            technical_failure = technical_failures[cid, agent]
+            if technical_failure and not use_color:
+                plain += "*"
             colored = _colorize(p, t, technical_failure)
             cells.append(f"{colored}{' ' * (w - len(plain))}")
         print("| " + " | ".join(cells) + " |")

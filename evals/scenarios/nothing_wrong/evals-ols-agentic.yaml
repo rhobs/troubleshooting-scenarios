@@ -11,8 +11,6 @@
           namespace ticket-service is returning errors and must be fixed
           urgently. Investigate the report, remediate if and only if
           you find an actual fault, and verify the final state.
-        targetNamespaces:
-          - ticket-service
         analysis:
           agent: default
 

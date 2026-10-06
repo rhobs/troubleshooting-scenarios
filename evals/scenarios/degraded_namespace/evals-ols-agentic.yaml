@@ -20,8 +20,6 @@
           all workloads in the namespace, identify which are unhealthy
           and diagnose each root cause, and confirm which are healthy.
           Do not fix anything.
-        targetNamespaces:
-          - comm-platform
         analysis:
           agent: default
 

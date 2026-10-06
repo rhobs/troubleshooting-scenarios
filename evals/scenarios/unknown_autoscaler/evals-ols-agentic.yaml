@@ -20,8 +20,6 @@
 
           Investigate why the autoscaler cannot read metrics, fix the
           configuration, and verify the HPA reports a real utilization value.
-        targetNamespaces:
-          - product-catalog
         analysis:
           agent: default
 

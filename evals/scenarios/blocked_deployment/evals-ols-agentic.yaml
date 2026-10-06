@@ -22,8 +22,6 @@
 
           Analyze the root cause, bring the app into compliance, and verify
           its pod is running.
-        targetNamespaces:
-          - analytics-dashboard
         analysis:
           agent: default
 

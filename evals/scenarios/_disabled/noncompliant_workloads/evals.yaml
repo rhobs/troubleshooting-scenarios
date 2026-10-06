@@ -13,8 +13,6 @@
           pinned image tags) and produce a prioritized list of issues
           per workload, distinguishing quick wins from bigger changes.
           Do not change anything.
-        targetNamespaces:
-          - platform-services
         analysis:
           agent: default
 

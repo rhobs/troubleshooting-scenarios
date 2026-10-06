@@ -18,8 +18,6 @@
           The service proxy-svc in namespace auth-proxy
           serves no traffic even though its backing application is
           running and healthy. Analyze the root cause and suggest a fix.
-        targetNamespaces:
-          - auth-proxy
         analysis:
           agent: default
 

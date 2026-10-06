@@ -18,8 +18,6 @@
           Description: Deployment analytics-dashboard/dashboard-app has 0 available replicas for more than 15 seconds.
           Investigate the alert, remediate the root cause, and verify the recovery.
           Use the skill at /app/skills/cluster-troubleshoot/investigate-alert.
-        targetNamespaces:
-          - analytics-dashboard
         tools:
           skills:
             - image: quay.io/openshiftanalytics/agentic-skills:latest

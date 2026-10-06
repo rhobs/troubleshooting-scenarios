@@ -22,8 +22,6 @@
           The backend pod appears to be running and healthy.
 
           Investigate the connectivity issue between frontend and backend
-        targetNamespaces:
-          - service-mesh
         analysis:
           agent: default
 

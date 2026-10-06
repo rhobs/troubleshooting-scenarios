@@ -22,8 +22,6 @@
           and fix it — if a credential value is missing, use the
           placeholder value "changeme" so the team can rotate it later.
           Verify the pod is running.
-        targetNamespaces:
-          - credential-store
         analysis:
           agent: default
 

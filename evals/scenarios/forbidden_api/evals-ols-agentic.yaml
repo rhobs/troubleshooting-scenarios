@@ -24,8 +24,6 @@
 
           Analyze the root cause, grant exactly the access the app needs
           (least privilege), and verify the app logs successful API calls.
-        targetNamespaces:
-          - pod-inspector
         analysis:
           agent: default
 

@@ -20,8 +20,6 @@
           Namespace: discovery-hub
           Description: Pod discovery-hub/catalog-index-service has been in a not-ready state for more than 15 seconds.
           Investigate using the skill at /app/skills/cluster-troubleshoot/investigate-alert
-        targetNamespaces:
-          - discovery-hub
         tools:
           skills:
             - image: quay.io/openshiftanalytics/agentic-skills:latest

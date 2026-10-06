@@ -21,8 +21,6 @@
           same namespace is intentionally never Ready (see its
           annotation) and must be left alone. Investigate the
           user-impacting issue and suggest a fix.
-        targetNamespaces:
-          - payment-gateway
         analysis:
           agent: default
 

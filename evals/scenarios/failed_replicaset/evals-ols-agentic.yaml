@@ -21,8 +21,6 @@
           is a leftover that does not exist here — the app does not need
           special scheduling priority. Analyze the root cause and suggest
           a fix.
-        targetNamespaces:
-          - job-scheduler
         analysis:
           agent: default
 

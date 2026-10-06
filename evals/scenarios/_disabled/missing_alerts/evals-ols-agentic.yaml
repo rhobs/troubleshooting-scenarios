@@ -12,8 +12,6 @@
           for the namespace's workloads (see the PrometheusRule
           event-processor-rules) and propose the high-value alerts that
           are missing. Do not modify anything.
-        targetNamespaces:
-          - event-processor
         analysis:
           agent: default
 

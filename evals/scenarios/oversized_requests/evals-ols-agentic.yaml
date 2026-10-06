@@ -19,8 +19,6 @@
           against its actual observed usage and propose right-sized
           requests and limits with an estimate of the capacity that
           would be freed. Do not change anything.
-        targetNamespaces:
-          - report-engine
         analysis:
           agent: default
 

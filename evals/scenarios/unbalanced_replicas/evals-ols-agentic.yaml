@@ -23,9 +23,6 @@
           discrepancy.
 
           Investigate and identify the root cause
-        targetNamespaces:
-          - fleet-alpha
-          - fleet-alpha1
         analysis:
           agent: default
 

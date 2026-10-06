@@ -15,8 +15,6 @@
           namespace newsletter-sender is completely down and no traffic is
           being served. Investigate why and recommend how to restore
           service.
-        targetNamespaces:
-          - newsletter-sender
         analysis:
           agent: default
 

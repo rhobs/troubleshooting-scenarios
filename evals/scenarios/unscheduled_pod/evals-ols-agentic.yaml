@@ -21,8 +21,6 @@
           and has not been scheduled to any node.
 
           Investigate and identify the root cause
-        targetNamespaces:
-          - user-imports
         analysis:
           agent: default
 

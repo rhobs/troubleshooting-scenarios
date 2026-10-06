@@ -18,8 +18,6 @@
           Its init container runs a pre-flight check against a migration
           database that has since been decommissioned. Analyze the root
           cause and suggest how to fix it.
-        targetNamespaces:
-          - onboarding-app
         analysis:
           agent: default
 

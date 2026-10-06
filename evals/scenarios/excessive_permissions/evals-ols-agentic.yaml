@@ -21,8 +21,6 @@
           ServiceAccounts, assess whether any grant more access than the
           workload needs, and propose the least-privilege replacement.
           Do not change anything.
-        targetNamespaces:
-          - fleet-dashboard
         analysis:
           agent: default
 

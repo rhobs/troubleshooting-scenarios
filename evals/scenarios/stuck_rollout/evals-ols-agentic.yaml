@@ -18,8 +18,6 @@
           for a while and the deployment reports it failed to progress.
           The previous version was healthy. Analyze what went wrong and
           recommend how to restore service.
-        targetNamespaces:
-          - shipping-tracker
         analysis:
           agent: default
 

@@ -14,8 +14,6 @@
           The gateway-proxy in the ingress-layer namespace is returning
           connection refused errors. Requests through the gateway are failing.
           Investigate what is causing the connection refused errors.
-        targetNamespaces:
-          - ingress-layer
         analysis:
           agent: default
 

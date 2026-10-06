@@ -20,9 +20,6 @@
           Description: Payment error rate is 100.00%, which exceeds the 15% threshold.
           Investigate the alert, remediate the root cause, and verify the recovery.
           Use the skill at /app/skills/cluster-troubleshoot/investigate-alert.
-        targetNamespaces:
-          - payments
-          - shared-services
         tools:
           skills:
             - image: quay.io/openshiftanalytics/agentic-skills:latest

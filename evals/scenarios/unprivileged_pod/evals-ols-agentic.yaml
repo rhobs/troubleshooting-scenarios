@@ -24,8 +24,6 @@
           must not be changed. Analyze the root cause, fix the workload
           so it runs under the cluster's standard security constraints,
           and verify the pod is running.
-        targetNamespaces:
-          - legacy-migration
         analysis:
           agent: default
 

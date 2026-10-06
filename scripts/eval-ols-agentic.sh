@@ -72,6 +72,13 @@ mkdir -p "$EVAL_DIR"
 cp "$SYSTEM_CONFIG" "$EVAL_DIR/system-ols-agentic.yaml"
 SYSTEM_CONFIG="$EVAL_DIR/system-ols-agentic.yaml"
 
+# Save the selected definitions before setup or evaluation starts.
+for scenario in "${SCENARIOS[@]}"; do
+  snapshot_dir="$EVAL_DIR/scenarios/${scenario#scenarios/}"
+  mkdir -p "$snapshot_dir"
+  cp "$scenario/evals-ols-agentic.yaml" "$snapshot_dir/evals-ols-agentic.yaml"
+done
+
 if [ ${#AGENTS[@]} -eq 0 ]; then
   read -ra AGENTS <<< "$("$PYTHON" -c "import yaml; c=yaml.safe_load(open('$SYSTEM_CONFIG')); print(' '.join(c.get('agents',{}).get('default',{}).get('agent',[])))")"
 fi
@@ -145,7 +152,7 @@ run_scenario() {
   if [ "$scenario_status" -eq 0 ]; then
     bash "$SCRIPT_DIR/run-agentic-evals.sh" \
       --system-config "$SYSTEM_CONFIG" \
-      --evals "$scenario/evals-ols-agentic.yaml" \
+      --evals "$EVAL_DIR/scenarios/${scenario#scenarios/}/evals-ols-agentic.yaml" \
       --eval-dir "$EVAL_DIR" \
       "$@" \
       "${TAG_FLAGS[@]}" || scenario_status=$?

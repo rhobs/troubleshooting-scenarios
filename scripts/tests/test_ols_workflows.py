@@ -466,6 +466,68 @@ def test_preview_summary_matches_real_run(request, mode):
     assert snapshots[0].read_text() == config_path.read_text()
 
 
+@pytest.mark.parametrize("mode", ["agentic", "classic"])
+@pytest.mark.parametrize("setup_mode", ["run", "scenario", "skip"])
+def test_eval_uses_saved_definitions(request, mode, setup_mode):
+    root = request.getfixturevalue("classic_workspace" if mode == "classic" else "workspace")
+    filename = f"evals-ols-{mode}.yaml"
+    names = ["first", "group/first"]
+    originals = {}
+    for name in names:
+        scenario = root / "evals/scenarios" / name
+        scenario.mkdir(parents=True)
+        content = f"- conversation_group_id: {name.replace('/', '_')}\n"
+        (scenario / filename).write_text(content)
+        originals[name] = content
+        (scenario / "fixtures").mkdir()
+        (scenario / "fixtures/manifest.yaml").write_text("kind: Pod\n")
+        (scenario / "notes.sh").write_text("#!/bin/bash\n")
+    # Change the source files during the first evaluation. All runs must use
+    # the copies saved before the session started.
+    evaluator = root / "evaluator.py"
+    evaluator.write_text(
+        "from pathlib import Path\nimport sys\n"
+        "args = sys.argv[1:]\n"
+        "session = Path(args[args.index('--eval-dir') + 1])\n"
+        "definition = Path(args[args.index('--evals') + 1])\n"
+        "assert definition.is_relative_to(session / 'scenarios')\n"
+        "assert definition.read_text() != 'changed\\n'\n"
+        "with (session / 'used-definitions.txt').open('a') as log:\n"
+        "    log.write(str(definition.relative_to(session)) + '\\n')\n"
+        f"for source in Path('scenarios').rglob('{filename}'):\n"
+        "    source.write_text('changed\\n')\n"
+    )
+    executable(
+        root / "scripts/run-agentic-evals.sh",
+        f'#!/bin/bash\nexec "{sys.executable}" "{evaluator}" "$@"\n',
+    )
+    (root / f"scripts/generate-report-{mode}.py").write_text(
+        'import sys\nfrom pathlib import Path\nPath(sys.argv[-1]).write_text("report\\n")\n'
+    )
+    result = subprocess.run(
+        ["bash", str(root / f"scripts/eval-ols-{mode}.sh"),
+         "--system-config", f"system-ols-{mode}.yaml", "--setup-mode", setup_mode,
+         "--scenarios", *[f"scenarios/{name}" for name in names]],
+        cwd=root / "evals",
+        env={**os.environ, "PATH": f"{root / 'bin'}:{os.environ['PATH']}"},
+        capture_output=True, text=True, timeout=30,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    session = next((root / "evals/results").iterdir())
+    for name, content in originals.items():
+        assert (session / "scenarios" / name / filename).read_text() == content
+        assert (root / "evals/scenarios" / name / filename).read_text() == "changed\n"
+    saved_files = {str(path.relative_to(session))
+                   for path in (session / "scenarios").rglob("*") if path.is_file()}
+    assert saved_files == {f"scenarios/{name}/{filename}" for name in names}
+    used = (session / "used-definitions.txt").read_text().splitlines()
+    assert set(used) == {f"scenarios/{name}/{filename}" for name in names}
+    config = yaml.safe_load((session / f"system-ols-{mode}.yaml").read_text())
+    defaults = config["agents"]["default"]
+    repeats = len(defaults["agent"]) * defaults["repeat"] if setup_mode == "run" else 1
+    assert len(used) == len(names) * repeats
+
+
 @pytest.mark.parametrize("setup_mode", ["run", "scenario", "skip"])
 @pytest.mark.parametrize("parallel", [True, False])
 def test_summary_shows_effective_parallel_setting(tmp_path, setup_mode, parallel):
@@ -524,6 +586,7 @@ def test_scenario_cleanup(
             scenario / f"{name}.sh",
             f'#!/bin/bash\necho {name} >> "$EVENT_LOG"\nexit {status}\n',
         )
+    (scenario / "evals-ols-agentic.yaml").write_text("[]\n")
     executable(
         workspace / "scripts/run-agentic-evals.sh",
         f'#!/bin/bash\necho eval >> "$EVENT_LOG"\nexit {eval_status}\n',

@@ -21,6 +21,8 @@ judge_panel:
 
 metrics_metadata:
   turn_level:
+    "custom:openshift_agentic_run_status":
+      threshold: 1.0
     "custom:openshift_agentic_run_evaluation_correctness":
       threshold: 0.75
 

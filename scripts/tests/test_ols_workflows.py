@@ -14,6 +14,19 @@ import yaml
 ROOT = Path(__file__).resolve().parents[2]
 
 
+@pytest.mark.parametrize("service", ["agentic", "classic"])
+def test_scenario_metrics_are_declared_in_system_config(service):
+    config = yaml.safe_load((ROOT / f"evals/system-ols-{service}.yaml").read_text())
+    known_metrics = config["metrics_metadata"]["turn_level"]
+    for path in (ROOT / "evals/scenarios").rglob(f"evals-ols-{service}.yaml"):
+        if "_disabled" in path.parts:
+            continue
+        for conversation in yaml.safe_load(path.read_text()) or []:
+            for turn in conversation["turns"]:
+                unknown = set(turn.get("turn_metrics", [])) - known_metrics.keys()
+                assert not unknown, f"{path}: unknown turn metrics {sorted(unknown)}"
+
+
 def executable(path, content):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content)

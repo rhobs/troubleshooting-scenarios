@@ -50,6 +50,10 @@ SCRIPTS_DIR := scripts
 SCENARIOS_DIR := evals/scenarios
 EVALS_DIR := evals
 
+# System config files (can be overridden via environment variable)
+SYSTEM_CONFIG_AGENTIC ?= $(EVALS_DIR)/system-ols-agentic.yaml
+SYSTEM_CONFIG_CLASSIC ?= $(EVALS_DIR)/system-ols-classic.yaml
+
 _ALL_OLS_AGENTIC := \
 	blocked_deployment \
 	blocked_deployment_alert \
@@ -204,8 +208,9 @@ else
 endif
 
 setup-ols-agentic: setup-venv
+	@echo "==> Using config: $(SYSTEM_CONFIG_AGENTIC)"
 	@bash $(SCRIPTS_DIR)/setup-ols-agentic.sh
-	@venv/bin/python3 $(SCRIPTS_DIR)/sync-agent-crs.py $(EVALS_DIR)/system-ols-agentic.yaml
+	@venv/bin/python3 $(SCRIPTS_DIR)/sync-agent-crs.py "$(SYSTEM_CONFIG_AGENTIC)"
 	@echo ""
 	@echo "NOTE: Install lightspeed-agentic-operator manually by following:"
 	@echo "  https://github.com/openshift/lightspeed-agentic-operator/tree/main/hack/quickstart"
@@ -215,21 +220,23 @@ setup-venv:
 	@$(SCRIPTS_DIR)/setup-venv.sh
 
 setup-ols-classic: setup-venv
+	@echo "==> Using config: $(SYSTEM_CONFIG_CLASSIC)"
 	@bash $(SCRIPTS_DIR)/preflight.sh
-	@bash $(SCRIPTS_DIR)/setup-ols-classic.sh
+	@SYSTEM_CONFIG_CLASSIC="$(SYSTEM_CONFIG_CLASSIC)" bash $(SCRIPTS_DIR)/setup-ols-classic.sh
 
 eval-ols-agentic: _validate-scenario-filters
 ifeq ($(PREVIEW),1)
 	@echo "Preview only: no setup, evaluation, or cleanup will run."
 	@bash $(SCRIPTS_DIR)/show-eval-summary.sh \
-	  --system-config $(EVALS_DIR)/system-ols-agentic.yaml \
+	  --system-config "$(SYSTEM_CONFIG_AGENTIC)" \
 	  --setup-mode $(SETUP_MODE) \
 	  --scenarios $(OLS_AGENTIC_SCENARIOS)
 else ifeq ($(OLS_AGENTIC_SCENARIOS),)
 	@echo "No scenarios match the given filters."
 else
+	@echo "==> Using config: $(SYSTEM_CONFIG_AGENTIC)"
 	@cd $(EVALS_DIR) && bash ../$(SCRIPTS_DIR)/eval-ols-agentic.sh \
-	  --system-config system-ols-agentic.yaml \
+	  --system-config "$(abspath $(SYSTEM_CONFIG_AGENTIC))" \
 	  --setup-mode $(SETUP_MODE) \
 	  $(if $(TAG),--tags $(subst $(COMMA), ,$(TAG))) \
 	  --scenarios $(addprefix scenarios/,$(OLS_AGENTIC_SCENARIOS)) \
@@ -240,14 +247,15 @@ eval-ols-classic: _validate-scenario-filters
 ifeq ($(PREVIEW),1)
 	@echo "Preview only: no setup, evaluation, or cleanup will run."
 	@bash $(SCRIPTS_DIR)/show-eval-summary.sh \
-	  --system-config $(EVALS_DIR)/system-ols-classic.yaml \
+	  --system-config "$(SYSTEM_CONFIG_CLASSIC)" \
 	  --setup-mode $(SETUP_MODE) \
 	  --scenarios $(OLS_CLASSIC_SCENARIOS)
 else ifeq ($(OLS_CLASSIC_SCENARIOS),)
 	@echo "No scenarios match the given filters."
 else
+	@echo "==> Using config: $(SYSTEM_CONFIG_CLASSIC)"
 	@cd $(EVALS_DIR) && bash ../$(SCRIPTS_DIR)/eval-ols-classic.sh \
-	  --system-config system-ols-classic.yaml \
+	  --system-config "$(abspath $(SYSTEM_CONFIG_CLASSIC))" \
 	  --setup-mode $(SETUP_MODE) \
 	  $(if $(TAG),--tags $(subst $(COMMA), ,$(TAG))) \
 	  --scenarios $(addprefix scenarios/,$(OLS_CLASSIC_SCENARIOS))

@@ -1,0 +1,148 @@
+logging:
+  source_level: ERROR
+
+core:
+  max_threads: 1
+  fail_on_invalid_data: true
+  skip_on_failure: false
+  cache_enabled: false
+
+llm_pool:
+  defaults:
+    parameters:
+      max_completion_tokens: 1000
+  models:
+    judge:
+      provider: openai
+      model: gpt-6.1-sol
+
+judge_panel:
+  judges: [judge]
+
+metrics_metadata:
+  turn_level:
+    "custom:answer_correctness":
+      threshold: 0.75
+
+agents:
+  enabled: true
+  default:
+    agent:
+      - openai-gpt-6-luna
+      # - openai-gpt-5-6-terra
+      # - openai-gpt-6-sol
+      # - openai-gpt-6.1-sol
+      # - google-gemini-3-5-flash-lite
+      # - google-gemini-3-7-flash
+      # - google-gemini-3-8-flash
+      # - anthropic-opus-4-6
+      # - anthropic-sonnet-5-5
+      # - anthropic-opus-5-5
+    repeat: 1
+    parallel: true
+    agent_config:
+      timeout: 600
+
+  # OPENAI
+  openai-gpt-5-4:
+    description: "openai|gpt-5-4"
+    type: http_api
+    api_base: https://localhost:8443
+    endpoint_type: query
+    provider: openai
+    model: gpt-5.4
+    extra_request_params:
+      mode: troubleshooting
+  openai-gpt-6-luna:
+    description: "openai|gpt-6-luna"
+    type: http_api
+    api_base: https://localhost:8443
+    endpoint_type: query
+    provider: openai
+    model: gpt-6-luna
+    extra_request_params:
+      mode: troubleshooting
+  openai-gpt-5-6-terra:
+    description: "openai|gpt-5.6-terra"
+    type: http_api
+    api_base: https://localhost:8443
+    endpoint_type: query
+    provider: openai
+    model: gpt-5.6-terra
+    extra_request_params:
+      mode: troubleshooting
+  openai-gpt-5-6-sol:
+    description: "openai|gpt-5-6-sol"
+    type: http_api
+    api_base: https://localhost:8443
+    endpoint_type: query
+    provider: openai
+    model: gpt-5.6-sol
+    extra_request_params:
+      mode: troubleshooting
+
+  # GOOGLE
+  google-gemini-3-5-flash-lite:
+    description: "google|gemini-3.5-flash-lite"
+    type: http_api
+    api_base: https://localhost:8443
+    endpoint_type: query
+    provider: google
+    model: gemini-3.5-flash-lite
+    extra_request_params:
+      mode: troubleshooting
+  google-gemini-3-7-flash:
+    description: "google|gemini-3.7-flash"
+    type: http_api
+    api_base: https://localhost:8443
+    endpoint_type: query
+    provider: google
+    model: gemini-3.7-flash
+    extra_request_params:
+      mode: troubleshooting
+  google-gemini-3-8-flash:
+    description: "google|gemini-3.8-flash"
+    type: http_api
+    api_base: https://localhost:8443
+    endpoint_type: query
+    provider: google
+    model: gemini-3.8-flash
+    extra_request_params:
+      mode: troubleshooting
+
+  # ANTHROPIC
+  anthropic-opus-4-6:
+    description: "anthropic|claude-opus-4-6"
+    type: http_api
+    api_base: https://localhost:8443
+    endpoint_type: query
+    provider: anthropic
+    model: claude-opus-4-6
+    extra_request_params:
+      mode: troubleshooting
+  anthropic-sonnet-5-5:
+    description: "anthropic|claude-sonnet-5-5"
+    type: http_api
+    api_base: https://localhost:8443
+    endpoint_type: query
+    provider: anthropic
+    model: claude-sonnet-5-5
+    extra_request_params:
+      mode: troubleshooting
+  anthropic-opus-5-5:
+    description: "anthropic|claude-opus-5-5"
+    type: http_api
+    api_base: https://localhost:8443
+    endpoint_type: query
+    provider: anthropic
+    model: claude-opus-5-5
+    extra_request_params:
+      mode: troubleshooting
+
+storage:
+  - type: file
+    output_dir: ./eval_output
+    enabled_outputs: [csv, json]
+
+environment:
+  LITELLM_LOG: ERROR

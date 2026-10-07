@@ -1,7 +1,7 @@
 #!/bin/bash
 # CI job: run OLS Classic evaluation scenarios.
 #
-# Agents and providers are read from system-ols-classic.yaml (like agentic script).
+# Agents and providers are read from the system config file (SYSTEM_CONFIG).
 # The OLSConfig is built with all providers from active agents, with OpenAI as default.
 #
 # Input environment variables:
@@ -9,6 +9,7 @@
 #   EVAL_VERTEX_CREDENTIALS - Path to GCP service account JSON (for google/anthropic, optional)
 #   EVAL_VERTEX_PROJECT_ID  - GCP project ID (auto-extracted from SA JSON if not set)
 #   ARTIFACT_DIR            - CI artifact directory (default: /tmp/artifacts)
+#   SYSTEM_CONFIG           - Path to system config file (default: ci-system-ols-classic.yaml for CI)
 #
 # Scenario filtering (mutually exclusive - use one):
 #   SCENARIO                - Comma-separated scenario list (e.g., crashlooping_pod_alert,missing_configmap)
@@ -18,13 +19,19 @@
 #   PREVIEW                 - Set to 1 to preview matched scenarios without running
 #
 # Usage:
-#   scripts/ci-ols-user-evals.sh --artifact-dir "${ARTIFACT_DIR}"
+#   scripts/ci-ols-classic-evals.sh --artifact-dir "${ARTIFACT_DIR}"
 
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ARTIFACT_DIR="${ARTIFACT_DIR:-/tmp/artifacts}"
 TAG="${TAG:-core}"
+SYSTEM_CONFIG="${SYSTEM_CONFIG:-${REPO_ROOT}/evals/ci-system-ols-classic.yaml}"
+
+# Convert SYSTEM_CONFIG to absolute path if relative
+if [[ "${SYSTEM_CONFIG}" != /* ]]; then
+  SYSTEM_CONFIG="${REPO_ROOT}/${SYSTEM_CONFIG}"
+fi
 
 while [ $# -gt 0 ]; do
   case "$1" in
@@ -48,7 +55,7 @@ fi
 # Extract first provider for JUnit filename (matches default provider in OLSConfig)
 PROVIDER=$("${REPO_ROOT}/venv/bin/python3" -c '
 import yaml
-config = yaml.safe_load(open("'"${REPO_ROOT}"'/evals/system-ols-classic.yaml"))
+config = yaml.safe_load(open("'"${SYSTEM_CONFIG}"'"))
 agents = config.get("agents", {})
 default_agents = agents.get("default", {}).get("agent", [])
 if default_agents:
@@ -70,9 +77,9 @@ function run_evals() {
         # Validate credentials before running evaluations
         : "${EVAL_OPENAI_API_KEY:?EVAL_OPENAI_API_KEY must be set (needed for judge LLM)}"
 
-        # setup-ols-classic.sh will create OLSConfig with all providers from YAML
+        # setup-ols-classic.sh will create OLSConfig with all providers from system config
         echo "==> Setting up OLS Classic..."
-        make setup-ols-classic
+        SYSTEM_CONFIG_CLASSIC="$SYSTEM_CONFIG" make setup-ols-classic
     else
         echo "==> PREVIEW mode: skipping OLS Classic setup"
     fi
@@ -95,7 +102,7 @@ function run_evals() {
 
     # Capture eval exit status without triggering set -e
     local eval_status=0
-    make eval-ols-classic "${MAKE_ARGS[@]}" || eval_status=$?
+    SYSTEM_CONFIG_CLASSIC="$SYSTEM_CONFIG" make eval-ols-classic "${MAKE_ARGS[@]}" || eval_status=$?
 
     # Collect results even if eval failed
     collect_results

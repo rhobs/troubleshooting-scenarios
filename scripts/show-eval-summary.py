@@ -2,6 +2,7 @@
 """Print the same evaluation summary for previews and real runs."""
 
 import argparse
+import os
 import sys
 
 try:
@@ -37,6 +38,15 @@ def main() -> None:
     ]
     judge = ", ".join(judge_models) or "not configured"
 
+    # Display relative path from current directory (repo root)
+    config_path = args.system_config
+    try:
+        config_path = os.path.relpath(config_path, os.getcwd())
+    except ValueError:
+        # If path can't be made relative (e.g., different drives on Windows), use as-is
+        pass
+
+    print(f"config:     {config_path}")
     print(f"setup_mode: {args.setup_mode}")
     print(f"repeats:    {repeat}")
     print(f"parallel:   {str(parallel).lower()}")

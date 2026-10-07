@@ -1,5 +1,7 @@
 # Scenarios
 
+These scenarios create faults in an OpenShift cluster for troubleshooting practice and automated evals; follow the [deployment instructions](../README.md#running-a-scenario-manually) to set up a scenario.
+
 ### Difficulty level: High
 
 Scenarios with several linked causes, used to compare model results across runs.

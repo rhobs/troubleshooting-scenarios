@@ -1,0 +1,119 @@
+logging:
+  source_level: ERROR
+
+core:
+  max_threads: 1
+  fail_on_invalid_data: true
+  skip_on_failure: false
+  cache_enabled: false
+
+llm_pool:
+  defaults:
+    parameters:
+      max_completion_tokens: 1000
+  models:
+    judge:
+      provider: openai
+      model: gpt-6.1-sol
+
+judge_panel:
+  judges: [judge]
+
+metrics_metadata:
+  turn_level:
+    "custom:openshift_agentic_run_status":
+      threshold: 1.0
+    "custom:openshift_agentic_run_evaluation_correctness":
+      threshold: 0.75
+
+agents:
+  enabled: true
+  default:
+    agent:
+      - openai-gpt-6-luna
+      # - openai-gpt-5-6-terra
+      # - openai-gpt-6-sol
+      # - openai-gpt-6.1-sol
+      # - openai-gpt-6-astra
+      # - google-gemini-3.5-flash-lite
+      # - google-gemini-3-7-flash
+      # - google-gemini-3-8-flash
+      # - anthropic-opus-4-6
+      # - anthropic-sonnet-5-5
+      # - anthropic-opus-5-5
+    repeat: 1
+    parallel: true
+    agent_config:
+      timeout: 600
+      poll_interval: 5
+      cleanup_openshift_agentic_runs: false
+
+  # OPENAI
+  openai-gpt-6-luna:
+    description: "openai|gpt-6-luna"
+    type: openshift_agentic_run
+    namespace: openshift-lightspeed
+    agent_ref: openai-gpt-6-luna
+  openai-gpt-5-6-terra:
+    description: "openai|gpt-5.6-terra"
+    type: openshift_agentic_run
+    namespace: openshift-lightspeed
+    agent_ref: openai-gpt-5.6-terra
+  openai-gpt-6-sol:
+    description: "openai|gpt-6-sol"
+    type: openshift_agentic_run
+    namespace: openshift-lightspeed
+    agent_ref: openai-gpt-6-sol
+  openai-gpt-6.1-sol:
+    description: "openai|gpt-6.1-sol"
+    type: openshift_agentic_run
+    namespace: openshift-lightspeed
+    agent_ref: openai-gpt-6.1-sol
+  openai-gpt-6-astra:
+    description: "openai|gpt-6-astra"
+    type: openshift_agentic_run
+    namespace: openshift-lightspeed
+    agent_ref: openai-gpt-6-astra
+
+  # GOOGLE
+  google-gemini-3.5-flash-lite:
+    description: "vertex-google|gemini-3.5-flash-lite"
+    type: openshift_agentic_run
+    namespace: openshift-lightspeed
+    agent_ref: google-gemini-3-5-flash-lite
+  google-gemini-3-7-flash:
+    description: "vertex-google|gemini-3.7-flash"
+    type: openshift_agentic_run
+    namespace: openshift-lightspeed
+    agent_ref: google-gemini-3-7-flash
+  google-gemini-3-8-flash:
+    description: "vertex-google|gemini-3.8-flash"
+    type: openshift_agentic_run
+    namespace: openshift-lightspeed
+    agent_ref: google-gemini-3-8-flash
+
+  # ANTHROPIC
+  anthropic-opus-4-6:
+    description: "vertex-anthropic|claude-opus-4-6"
+    type: openshift_agentic_run
+    namespace: openshift-lightspeed
+    agent_ref: anthropic-opus-4-6
+  anthropic-sonnet-5-5:
+    description: "vertex-anthropic|claude-sonnet-5-5"
+    type: openshift_agentic_run
+    namespace: openshift-lightspeed
+    agent_ref: anthropic-sonnet-5-5
+  anthropic-opus-5-5:
+    description: "vertex-anthropic|claude-opus-5-5"
+    type: openshift_agentic_run
+    namespace: openshift-lightspeed
+    agent_ref: anthropic-opus-5-5
+
+storage:
+  - type: file
+    output_dir: ./eval_output
+    summary_config_sections: [llm_pool, judge_panel]
+    enabled_outputs: [csv, json]
+
+environment:
+  LITELLM_LOG: ERROR

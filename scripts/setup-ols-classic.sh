@@ -28,8 +28,12 @@ if [ ! -x "$PYTHON" ]; then
   echo "ERROR: Evaluation venv not found. Run make setup-venv first." >&2
   exit 1
 fi
+
+# Use SYSTEM_CONFIG_CLASSIC from environment or default to system-ols-classic.yaml
+SYSTEM_CONFIG_CLASSIC="${SYSTEM_CONFIG_CLASSIC:-${SCRIPT_DIR}/../evals/system-ols-classic.yaml}"
+
 ols_config="$("$PYTHON" "$SCRIPT_DIR/build-ols-classic-config.py" \
-  "$SCRIPT_DIR/../evals/system-ols-classic.yaml")"
+  "$SYSTEM_CONFIG_CLASSIC")"
 
 # Skip operator installation if OLS is already installed and healthy
 ols_installed=false

@@ -8,6 +8,7 @@
 #   EVAL_VERTEX_PROJECT_ID          - GCP project ID (Vertex region is always global)
 #   SCENARIOS                       - Space-separated scenario list (default: all)
 #   ARTIFACT_DIR                    - CI artifact directory (default: /tmp/artifacts)
+#   SYSTEM_CONFIG                   - Path to system config file (default: ci-system-ols-agentic.yaml for CI)
 #
 # Scenario filtering (mutually exclusive - use one):
 #   SCENARIO                        - Comma-separated scenario list (e.g., stuck_rollout,exhausted_quota)
@@ -16,7 +17,7 @@
 # Options:
 #   PREVIEW                         - Set to 1 to preview matched scenarios without running
 #
-# Agents and providers are read from evals/system-ols-agentic.yaml
+# Agents and providers are read from the system config file (SYSTEM_CONFIG)
 
 set -euo pipefail
 
@@ -24,6 +25,12 @@ REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 AGENTIC_DIR="${REPO_DIR}/evals"
 ARTIFACT_DIR="${ARTIFACT_DIR:-/tmp/artifacts}"
 TAG="${TAG:-core}"
+SYSTEM_CONFIG="${SYSTEM_CONFIG:-${AGENTIC_DIR}/ci-system-ols-agentic.yaml}"
+
+# Convert SYSTEM_CONFIG to absolute path if relative
+if [[ "${SYSTEM_CONFIG}" != /* ]]; then
+  SYSTEM_CONFIG="${REPO_DIR}/${SYSTEM_CONFIG}"
+fi
 
 function install_operator() {
     echo "==> Installing lightspeed-agentic-operator..."
@@ -49,9 +56,9 @@ function run_evals() {
         # Step 1: Install operator (creates namespace via hack/quickstart/install.sh)
         install_operator
 
-        # Step 2: Configure providers and create Agent CRs from system-ols-agentic.yaml
+        # Step 2: Configure providers and create Agent CRs from system config file
         # setup-ols-agentic.sh validates env vars and creates secrets/LLMProviders
-        make setup-ols-agentic
+        SYSTEM_CONFIG_AGENTIC="$SYSTEM_CONFIG" make setup-ols-agentic
     else
         echo "==> PREVIEW mode: skipping operator installation and provider setup"
         # Still need venv for the make target to work
@@ -76,7 +83,7 @@ function run_evals() {
 
     # Capture eval exit status without triggering set -e
     local eval_status=0
-    make eval-ols-agentic "${MAKE_ARGS[@]}" || eval_status=$?
+    SYSTEM_CONFIG_AGENTIC="$SYSTEM_CONFIG" make eval-ols-agentic "${MAKE_ARGS[@]}" || eval_status=$?
 
     # Collect results even if eval failed
     collect_results

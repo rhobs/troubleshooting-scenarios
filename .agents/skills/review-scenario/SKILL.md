@@ -1,11 +1,11 @@
 ---
 name: review-scenario
-description: Review an agentic scenario for eval quality. Use when a scenario is added, modified, or the user says "review scenario".
+description: Audit a fault scenario under evals/scenarios/ for leakage from resource names, comments, manifest values and request text that reveal the diagnosis without cluster investigation, and check fault realism, conversation_group_id consistency and the description/RCA/Expected block. Use when a scenario is added, modified or renamed, before committing one, or when the user says "review scenario". Takes a scenario directory path (e.g. blocked_deployment or kubevirt/vm_storage_failure) or a scenario group name. Not for labs/ scenarios or debugging eval results.
 ---
 
-# Review agentic scenario
+# Review scenario
 
-Audit a single agentic scenario for **leakage**: anything that lets an LLM solve the problem without genuine cluster investigation.
+Audit a single scenario under `evals/scenarios/` for **leakage**: anything that lets an LLM solve the problem without genuine cluster investigation.
 
 Three leakage vectors, checked in order:
 
@@ -13,26 +13,32 @@ Three leakage vectors, checked in order:
 2. **Disclosure** - YAML comments or inline values that hand over the answer
 3. **Realism** - faults an LLM can diagnose from the manifest alone
 
-The argument is a scenario directory name under `evals/scenarios/` (e.g. `bad_command`).
+The argument is a scenario directory path under `evals/scenarios/` (e.g. `blocked_deployment` or `kubevirt/vm_storage_failure`), or a scenario group name.
 
 ## 1. Inventory
 
 Read every file in `evals/scenarios/$SCENARIO/`:
-- `fixtures/*.yaml` (all files)
-- `fixtures/*.py` (all files)
+
+- `fixtures/` (all files, including YAML and Python)
 - `setup.sh`
 - `cleanup.sh`
-- `evals-ols-agentic.yaml`
+- every `evals-*.yaml` present (`evals-ols-agentic.yaml` and/or `evals-ols-classic.yaml`)
+- `image/` and `README.md` where present
+
+For a scenario group (`kiali-ossm`, `kubevirt`, `netobserv`), read the group's own
+`setup.sh`, `cleanup.sh`, `Makefile`, `README.md` and `scripts/`, then each case
+directory the same way. When reviewing a single nested case, also read these
+shared files from its parent group.
 
 Collect every Kubernetes resource name, label value, and shell variable assignment (`NS=`, `APP=`, `DEPLOY=`).
 
 ## 2. Consistency check
 
-Verify that every `conversation_group_id` in `evals-ols-agentic.yaml` matches the scenario directory name, optionally with a `_alert` suffix (e.g. `blocked_deployment` and `blocked_deployment_alert` are both valid for directory `blocked_deployment`). Flag any other mismatch as a **FAIL**-level issue.
+Verify that every `conversation_group_id` in each `evals-*.yaml` matches the case directory name, or that name with a trailing `_alert` removed (`crashlooping_pod_alert` → `crashlooping_pod`, `unready_pod_alert` → `unready_pod`). For nested cases, use the case directory's basename, not the group path. Flag any other mismatch as a **FAIL**-level issue.
 
 ## 3. Description check
 
-Verify that the `description:` field exists in `evals-ols-agentic.yaml`, placed before `tag:`. It must follow this structure:
+Verify that the `description:` field exists in each `evals-*.yaml`, placed before `tag:`. It must follow this structure:
 
 ```
 description: |
@@ -49,8 +55,8 @@ Flag as **FAIL** if:
 
 Flag as **NEEDS WORK** if:
 - The symptom section describes the root cause instead of the observable behavior
-- The RCA section is vague or does not match the `expected_outcome`
-- The Expected section does not match the `expected_outcome`
+- The RCA section is vague or does not match the `expected_outcome` (Agentic) or `expected_response` (Classic)
+- The Expected section does not match the `expected_outcome` (Agentic) or `expected_response` (Classic)
 
 ## 4. Naming check
 
@@ -94,12 +100,17 @@ Classify:
 
 ## 7. Request text check
 
-Read the `request:` field in `evals-ols-agentic.yaml`. Flag if it:
+Read the `openshift_agentic_run_spec.request` field in `evals-ols-agentic.yaml`
+and the `query:` fields in `evals-ols-classic.yaml`. Flag if any of them:
 - States the root cause outright
 - Names the exact broken resource when the scenario has multiple candidates
 - Uses terminology that narrows the search space to one possibility
 
 The request should describe **symptoms** (alerts, user reports, observed behavior), not causes.
+
+Also read Classic's `expected_response:` fields for consistency with the fault
+and description. These are scoring references and may state the diagnosis;
+apply the symptom-only leakage rule to the agent-facing request or query.
 
 ## 8. Report
 

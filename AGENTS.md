@@ -15,25 +15,27 @@ evals/            Fault scenarios for automated evals
   system-*.yaml   Evaluation framework configs (models, repeats, scoring)
   reports/        Curated reports (tracked, manually promoted from results/)
   results/        Generated output (gitignored): eval logs and reports
-labs/             Multi-service scenarios for demos and manual troubleshooting
-scripts/          Shared shell scripts (venv, OLS, eval runners)
+labs/             Fault scenarios for demos and manual troubleshooting
+scripts/          Shared shell and Python tooling (venv, OLS, eval runners, reports, log capture)
 Makefile          Orchestrates eval runs for OLS Agentic and OLS Classic
 ```
 
 ### Scenario structure
 
-Each scenario under `evals/scenarios/` is a self-contained directory:
+Most scenarios under `evals/scenarios/` are self-contained directories:
 
 - `setup.sh` deploys fixtures to the cluster (creates namespaces, resources, faults)
 - `cleanup.sh` removes everything the scenario created
 - `fixtures/` contains the Kubernetes manifests applied by `setup.sh`
 - `evals-*.yaml` contains eval definitions, one per tool under test (e.g. `evals-ols-agentic.yaml`, `evals-ols-classic.yaml`)
 
+`kiali-ossm/`, `kubevirt/` and `netobserv/` are scenario *groups*: the parent directory holds `setup.sh`, `cleanup.sh`, a `Makefile`, `scripts/` and a `README.md` for the shared operator install and teardown, and each case lives in a nested directory with its own `setup.sh`, `cleanup.sh` and `evals-*.yaml`. `_disabled/` holds scenarios parked out of the run.
+
 ### Adding or modifying scenarios
 
 When adding, removing, or renaming scenarios under `evals/scenarios/`, keep `evals/scenarios/README.md` (scenario table) and the root `Makefile` (scenario variables) in sync.
 
-After adding or modifying a scenario, run the `review-scenario` skill to check for naming leaks, revealing comments, and unrealistic fault setups.
+After adding or modifying a scenario, run the `review-scenario` skill. It checks for naming leaks, revealing comments, unrealistic fault setups and request-text leaks, and also verifies that each `conversation_group_id` matches the case directory name (or that name with a trailing `_alert` removed) and that every `evals-*.yaml` carries a `description:` block with `RCA:` and `Expected:` lines before `tag:`.
 
 ### Root Makefile
 
@@ -156,13 +158,28 @@ Single `inventory` namespace with one application:
 
 The fault: A typo is introduced in the container image reference (`ubi9/ubi9` instead of `ubi9/ubi`), causing all pods to enter `ImagePullBackOff`. With zero healthy pods, the PDB is violated and the platform-level `PodDisruptionBudgetLimit` alert fires.
 
-No custom images or PrometheusRules are needed; this scenario relies on a standard Red Hat image and the built-in OpenShift PDB alert.
+The scenario uses a standard Red Hat image and the built-in OpenShift PDB alert. It also deploys the `inventory-alerts` PrometheusRule, which defines the `InventoryPodImagePullBackOff` warning alert with a `for: 30s` duration.
 
 ### Key Paths
 
 - `labs/image-pull-failure/README.md` -- scenario overview and components
-- `labs/image-pull-failure/manifests/` -- Kubernetes manifests (namespace, deployment, service, ServiceMonitor, PDB)
+- `labs/image-pull-failure/manifests/` -- Kubernetes manifests (namespace, deployment, PDB, PrometheusRule)
 - `labs/image-pull-failure/scripts/` -- shell scripts that implement each Make target
+
+## Architecture: labs/control-plane-alerts (Control Plane Alerts)
+
+Two independent faults affect existing cluster components:
+
+- **Insights Operator**: The `insights-config` ConfigMap in `openshift-insights` overrides the upload endpoint with an incorrect URL, causing the operator to become degraded.
+- **NTP (chronyd)**: On the first master node, `chronyd` is disabled and the clock is shifted forward by 2 minutes via `oc debug`, triggering time-synchronization alerts.
+
+Run `make break` or `make fix` from the lab directory. The fix script deletes the ConfigMap override and re-enables `chronyd` so NTP can restore the clock. This lab operates on existing control-plane components and deploys no applications.
+
+### Key Paths
+
+- `labs/control-plane-alerts/README.md` -- fault descriptions and expected alerts
+- `labs/control-plane-alerts/Makefile` -- break and fix targets
+- `labs/control-plane-alerts/scripts/` -- scripts that introduce and revert the faults
 
 ## Agent Skills
 
@@ -178,6 +195,6 @@ Agent-agnostic skills use the `.agents/skills/<skill-name>/SKILL.md` structure. 
 
 - **Eval framework**: [lightspeed-evaluation](https://github.com/lightspeed-core/lightspeed-evaluation), Python 3.11+
 - **System under test**: [OpenShift Lightspeed](https://github.com/openshift/lightspeed-service) (Agentic and Classic)
-- **Applications** (labs scenarios): Python 3.12, FastAPI, raw psycopg2
+- **Applications** (labs scenarios): Python 3.12, FastAPI and raw psycopg2 in `payments-api-failure`; Python 3.11 and Flask in `alert-storm`
 - **Infrastructure**: OpenShift 4.x/5.x, Prometheus user workload monitoring
 - **Deployment**: Raw Kubernetes YAML manifests via `oc apply`, no Helm/Kustomize

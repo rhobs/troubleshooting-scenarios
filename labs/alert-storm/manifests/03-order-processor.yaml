@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: order-processor
-          image: quay.io/afalossi/ts02-order-processor:latest
+          image: quay.io/openshiftanalytics/ts02-order-processor:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8080

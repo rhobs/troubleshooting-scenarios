@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: reporting-service
-          image: quay.io/afalossi/ts01-reporting-service:v1.0.1
+          image: quay.io/openshiftanalytics/ts01-reporting-service:v1.0.1
           imagePullPolicy: Always
           ports:
             - containerPort: 8081

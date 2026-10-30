@@ -11,7 +11,7 @@ else
 fi
 
 echo "=== Rolling out reporting-service v1.0.2 ==="
-oc -n "$SERVICES_NS" set image deployment/reporting-service reporting-service=quay.io/afalossi/ts01-reporting-service:v1.0.2
+oc -n "$SERVICES_NS" set image deployment/reporting-service reporting-service=quay.io/openshiftanalytics/ts01-reporting-service:v1.0.2
 oc -n "$SERVICES_NS" rollout status deployment/reporting-service --timeout=120s
 
 ROUTE=$(oc -n payments get route payments-api -o jsonpath='{.spec.host}')

@@ -35,65 +35,10 @@ SYSTEM_CONFIG_CLASSIC="${SYSTEM_CONFIG_CLASSIC:-${SCRIPT_DIR}/../evals/system-ol
 ols_config="$("$PYTHON" "$SCRIPT_DIR/build-ols-classic-config.py" \
   "$SYSTEM_CONFIG_CLASSIC")"
 
-# Skip operator installation if OLS is already installed and healthy
-ols_installed=false
-if oc get deployment lightspeed-app-server -n openshift-lightspeed -o name >/dev/null 2>&1; then
-  if oc rollout status deployment/lightspeed-app-server -n openshift-lightspeed --timeout=10s >/dev/null 2>&1; then
-    echo "OLS operator already installed and running in openshift-lightspeed"
-    ols_installed=true
-  fi
-fi
+# shellcheck source=scripts/install-ols-operator.sh
+source "$SCRIPT_DIR/install-ols-operator.sh"
 
-if ! $ols_installed; then
-echo "==> Installing OLS operator in openshift-lightspeed..."
-
-# 1. Namespace
-oc apply -f - <<EOF
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: openshift-lightspeed
-  labels:
-    openshift.io/cluster-monitoring: "true"
-EOF
-
-# 2. OperatorGroup
-oc apply -f - <<EOF
-apiVersion: operators.coreos.com/v1
-kind: OperatorGroup
-metadata:
-  name: openshift-lightspeed
-  namespace: openshift-lightspeed
-spec:
-  targetNamespaces:
-    - openshift-lightspeed
-EOF
-
-# 3. Subscription
-oc apply -f - <<EOF
-apiVersion: operators.coreos.com/v1alpha1
-kind: Subscription
-metadata:
-  name: lightspeed-operator
-  namespace: openshift-lightspeed
-spec:
-  channel: stable
-  name: lightspeed-operator
-  source: redhat-operators
-  sourceNamespace: openshift-marketplace
-EOF
-
-# 4. Wait for operator
-echo "==> Waiting for Subscription to resolve..."
-oc wait --for=jsonpath='{.status.state}'=AtLatestKnown \
-  subscription/lightspeed-operator -n openshift-lightspeed --timeout=480s
-
-CSV=$(oc get subscription lightspeed-operator -n openshift-lightspeed \
-  -o jsonpath='{.status.currentCSV}')
-echo "==> Waiting for CSV ${CSV}..."
-oc wait --for=jsonpath='{.status.phase}'=Succeeded \
-  csv/"${CSV}" -n openshift-lightspeed --timeout=480s
-fi
+existing_config="$(oc get olsconfig cluster --ignore-not-found -o name)"
 
 # 5. LLM credentials
 echo "==> Creating credentials secrets..."
@@ -115,9 +60,15 @@ if $has_gcp; then
     --dry-run=client -o yaml | oc apply -f -
 fi
 
-# 6. Apply OLSConfig with the default model and providers from the active agents
-echo "==> Applying OLSConfig..."
-printf '%s\n' "$ols_config" | oc apply -f -
+# 6. Update Classic settings while keeping Agentic and other shared settings.
+if [ -n "$existing_config" ]; then
+  echo "==> Updating Classic providers and defaults in the existing OLSConfig..."
+  ols_patch="$("$PYTHON" -c 'import json, sys, yaml; print(json.dumps({"spec": yaml.safe_load(sys.stdin)["spec"]}))' <<< "$ols_config")"
+  oc patch olsconfig cluster --type=merge --patch="$ols_patch"
+else
+  echo "==> Creating OLSConfig..."
+  printf '%s\n' "$ols_config" | oc apply -f -
+fi
 
 # 7. Wait for OLS to be ready
 if ! $ols_installed; then

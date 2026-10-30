@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Setup calls preflight before OLS Classic is installed, so it uses optional mode.
+# Setup calls preflight before OLS is installed, so it uses optional mode.
 MODE="optional"
 SYSTEM_CONFIG=""
 

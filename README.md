@@ -54,6 +54,11 @@ Run the commands below from the repository root. You need:
   or judges use Google or Anthropic. The credentials value is a service account
   JSON path.
 
+| OLS mode | Required OpenShift version |
+|----------|----------------------------|
+| Classic | 4.22 or newer |
+| Agentic | 5.0 or newer |
+
 ```bash
 export EVAL_OPENAI_API_KEY="<openai-api-key>"
 # Set these when selected agents or judges use Google or Anthropic:
@@ -69,23 +74,36 @@ Each scenario folder that supports OLS Agentic contains an
 `evals-ols-agentic.yaml` with the eval definitions. Configure which models to
 test and how many repeats to run per scenario in
 [`evals/system-ols-agentic.yaml`](evals/system-ols-agentic.yaml).
-The cluster needs the Lightspeed Agentic operator. Running
-`make setup-ols-agentic` reads the config selected by `SYSTEM_CONFIG_AGENTIC`
-and creates only the credentials and providers used by active agents and
-selected judges. It requires `EVAL_OPENAI_API_KEY` for OpenAI, and
-`EVAL_VERTEX_CREDENTIALS` plus `EVAL_VERTEX_PROJECT_ID` for Google or Anthropic.
-Setup checks these credentials before creating cluster resources. The Google
-and Anthropic Vertex providers use region `global`; there is no region
-variable. These are the same credential variables used by Classic setup.
+`make setup-ols-agentic` installs OLS through the same `stable` Subscription
+from `redhat-operators` as Classic setup. Agentic needs OpenShift 5.0 or newer;
+the catalog install also needs OLS 2.0 or newer with Agentic support.
 
-It then syncs the Agent CRs on the cluster with the agents
-defined in the system config; it does not install the operator. Before a real
-evaluation, `make eval-ols-agentic` checks that these Agent CRs are present and
-match the system config. If they do not, it stops and asks you to run
+After installation, setup keeps an existing `OLSConfig/cluster`, including
+Classic providers, default model, and other settings. If the config is absent,
+it creates one with an empty Classic provider list and
+`agenticOLS.sandboxMode: bare-pod`. It waits for the Agentic operator and
+sandbox configuration. It then reads the config selected by
+`SYSTEM_CONFIG_AGENTIC`, creates credentials and providers for active agents
+and selected judges, and syncs the Agent CRs. OpenAI needs
+`EVAL_OPENAI_API_KEY`; Google and Anthropic need `EVAL_VERTEX_CREDENTIALS` and
+`EVAL_VERTEX_PROJECT_ID`. Setup checks credentials before changing resources.
+The Vertex providers use region `global`.
+
+`SKIP_OLS_INSTALL=1` skips Namespace, OperatorGroup, and Subscription
+creation. It supports both an existing full OLS installation and the standalone
+Agentic quickstart in `openshift-lightspeed`. With the quickstart, setup reuses
+the existing operator and sandbox configuration without creating or changing
+`OLSConfig`. No migration to OLM is needed. To use images built from `main`,
+install with the [Agentic quickstart](https://github.com/openshift/lightspeed-agentic-operator/tree/main/hack/quickstart),
+then run `make setup-ols-agentic SKIP_OLS_INSTALL=1`.
+
+Before a real evaluation, `make eval-ols-agentic` checks that these Agent CRs
+are present and match the system config. If they do not, it stops and asks you to run
 `make setup-ols-agentic` again.
 
 ```bash
 make setup-ols-agentic
+make setup-ols-agentic SKIP_OLS_INSTALL=1 # use OLS or the Agentic quickstart
 make setup-ols-agentic SYSTEM_CONFIG_AGENTIC=evals/custom-system.yaml # custom config
 make eval-ols-agentic TAG=investigation                       # run investigation cases
 make eval-ols-agentic SCENARIO=stuck_rollout                  # one scenario
@@ -102,6 +120,8 @@ it uses `scenario`. You can set the mode explicitly to override this choice.
 
 ### OLS Classic
 
+Classic needs OpenShift 4.22 or newer. OpenShift 5 is not required.
+
 Each scenario folder that supports OLS Classic contains an
 `evals-ols-classic.yaml` with the eval definitions. Choose the agents to run
 in the `agents.default.agent` list in
@@ -111,14 +131,36 @@ Setup registers the active agents and judge models in OLS, using each entry's
 model. OpenAI, Google, or Anthropic can be first. Remove Google and Anthropic
 entries for an OpenAI-only run.
 
+When `OLSConfig/cluster` exists, Classic setup patches only its providers and
+default provider and model. It keeps Agentic settings and other shared options.
+Classic setup does not change Agentic `Agent`, `LLMProvider`, or credential
+Secrets. Agentic setup keeps the existing Classic configuration. You can run
+the two setup targets in either order.
+
 ```bash
 make setup-ols-classic
+make setup-ols-classic SKIP_OLS_INSTALL=1 # use an existing operator
 make eval-ols-classic TAG=investigation                       # run investigation cases
 make eval-ols-classic SCENARIO=crashlooping_pod_alert         # one scenario
 make eval-ols-classic TAG=alert                               # filter by tag
 make eval-ols-classic TAG=alert PREVIEW=1                     # preview matched scenarios
 make eval-ols-classic TAG=difficulty_medium PREVIEW=1         # preview medium cases
 ```
+
+`SKIP_OLS_INSTALL=1` skips operator installation, including Namespace,
+OperatorGroup, and Subscription creation. The operator and the
+`openshift-lightspeed` namespace must already exist. Setup still creates
+credential Secrets, creates or updates `OLSConfig`, and waits for the
+app-server to be ready. Without this flag, setup skips installation only when the existing
+app-server rollout is complete.
+
+`make cleanup-ols-agentic` and `make cleanup-ols-classic` run the same uninstall.
+Both remove the local `venv/`, `OLSConfig/cluster`, the OLM Subscription and CSV,
+the OperatorGroup, and the entire `openshift-lightspeed` namespace. This removes
+the deployments and namespaced resources for both Classic and Agentic,
+including a quickstart installation. `SKIP_OLS_INSTALL=1` does not skip cleanup.
+The uninstall keeps CRDs and does not remove cluster-scoped resources created
+by quickstart, such as its ClusterRoles and ClusterRoleBindings.
 
 Setup uses the `openshift-lightspeed` namespace. Both evaluation targets require
 `SCENARIO`, `TAG`, or both, including with `PREVIEW=1`. Without a filter, Make

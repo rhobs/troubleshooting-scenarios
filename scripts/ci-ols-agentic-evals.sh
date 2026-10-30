@@ -1,5 +1,5 @@
 #!/bin/bash
-# CI job: install lightspeed-agentic-operator, configure LLM providers,
+# CI job: install OLS, configure LLM providers,
 # and run agentic troubleshooting evaluations.
 #
 # Input environment variables:
@@ -16,6 +16,7 @@
 #
 # Options:
 #   PREVIEW                         - Set to 1 to preview matched scenarios without running
+#   SKIP_OLS_INSTALL                - Set to 1 to use an existing OLS operator
 #
 # Agents and providers are read from the system config file (SYSTEM_CONFIG)
 
@@ -32,32 +33,12 @@ if [[ "${SYSTEM_CONFIG}" != /* ]]; then
   SYSTEM_CONFIG="${REPO_DIR}/${SYSTEM_CONFIG}"
 fi
 
-function install_operator() {
-    echo "==> Installing lightspeed-agentic-operator..."
-    local tmpdir
-    tmpdir="$(mktemp -d)"
-    git clone --depth 1 https://github.com/openshift/lightspeed-agentic-operator.git "$tmpdir"
-    bash "$tmpdir/hack/quickstart/install.sh"
-    rm -rf "$tmpdir"
-    echo "==> Operator installed."
-}
-
 function run_evals() {
     cd "$REPO_DIR"
 
     # In preview mode, skip infrastructure setup and just show what would run
     if [[ "${PREVIEW:-0}" != "1" ]]; then
-        # Force openshift-lightspeed namespace (override CI's auto-generated ci-op-* namespace)
-        # The install.sh script respects NAMESPACE env var: NAMESPACE="${NAMESPACE:-openshift-lightspeed}"
-        # Scoped to this function to avoid polluting the global environment
-        local NAMESPACE=openshift-lightspeed
-        export NAMESPACE
-
-        # Step 1: Install operator (creates namespace via hack/quickstart/install.sh)
-        install_operator
-
-        # Step 2: Configure providers and create Agent CRs from system config file
-        # setup-ols-agentic.sh validates env vars and creates secrets/LLMProviders
+        # Install OLS and configure providers and Agent CRs from the system config.
         SYSTEM_CONFIG_AGENTIC="$SYSTEM_CONFIG" make setup-ols-agentic
     else
         echo "==> PREVIEW mode: skipping operator installation and provider setup"
@@ -65,7 +46,7 @@ function run_evals() {
         make setup-venv
     fi
 
-    # Step 3: Run all default agents from the system config.
+    # Run all default agents from the system config.
     local -a MAKE_ARGS=()
 
     # Scenario filtering (priority: SCENARIO > TAG)

@@ -218,12 +218,9 @@ endif
 
 setup-ols-agentic: setup-venv
 	@echo "==> Using config: $(SYSTEM_CONFIG_AGENTIC)"
+	@bash $(SCRIPTS_DIR)/preflight.sh
 	@SYSTEM_CONFIG_AGENTIC="$(SYSTEM_CONFIG_AGENTIC)" bash $(SCRIPTS_DIR)/setup-ols-agentic.sh
 	@venv/bin/python3 $(SCRIPTS_DIR)/sync-agent-crs.py "$(SYSTEM_CONFIG_AGENTIC)"
-	@echo ""
-	@echo "NOTE: Install lightspeed-agentic-operator manually by following:"
-	@echo "  https://github.com/openshift/lightspeed-agentic-operator/tree/main/hack/quickstart"
-	@echo "This will be automated in the future."
 
 setup-venv:
 	@$(SCRIPTS_DIR)/setup-venv.sh
@@ -276,10 +273,7 @@ cleanup-venv:
 	@rm -rf venv
 	@echo "venv removed."
 
-cleanup-ols-agentic: cleanup-venv
-	@echo ""
-	@echo "NOTE: Remove lightspeed-agentic-operator manually for now."
-	@echo "This will be automated in the future."
+cleanup-ols-agentic: cleanup-ols-classic
 
 cleanup-ols-classic: cleanup-venv
 	@bash $(SCRIPTS_DIR)/cleanup-ols.sh
@@ -293,8 +287,8 @@ help: ## Show available targets
 	@echo ""
 	@echo "Setup:"
 	@echo "  setup-scenario       Deploy selected scenario(s) in the cluster"
-	@echo "  setup-ols-agentic    Install venv, configure providers, and sync Agent CRs (operator is manual)"
-	@echo "  setup-ols-classic    Install venv and OLS classic"
+	@echo "  setup-ols-agentic    Install venv and OLS, configure agentic"
+	@echo "  setup-ols-classic    Install venv and OLS, configure classic"
 	@echo ""
 	@echo "Evals:"
 	@echo "  eval-ols-agentic     Run OLS agentic scenarios"
@@ -303,13 +297,14 @@ help: ## Show available targets
 	@echo "Cleanup:"
 	@echo "  cleanup-scenario     Remove selected scenario(s)"
 	@echo "  cleanup-venv         Remove only venv"
-	@echo "  cleanup-ols-agentic  Remove venv (OLS agentic operator is manual for now)"
-	@echo "  cleanup-ols-classic  Remove venv and OLS classic"
+	@echo "  cleanup-ols-agentic  Remove venv and the shared OLS installation"
+	@echo "  cleanup-ols-classic  Remove venv and the shared OLS installation"
 	@echo ""
 	@echo "Options:"
 	@echo "  SCENARIO=...              Comma-separated scenarios (required unless TAG is set)"
 	@echo "  TAG=...                   Filter by tag (required unless SCENARIO is set)"
 	@echo "  PREVIEW=1                 List matched scenarios without running them"
+	@echo "  SKIP_OLS_INSTALL=1        Skip OLS installation"
 	@echo "  NOTE=...                  Optional memo before the first report table"
 	@echo "  SETUP_MODE=auto|run|scenario|skip Setup/cleanup lifecycle (default: auto)"
 	@echo "    auto: run if any selected scenario has remediation; otherwise scenario"

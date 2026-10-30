@@ -43,7 +43,7 @@ def workspace(tmp_path):
     )
     for name in (
         "eval-ols-agentic.sh", "ci-ols-agentic-evals.sh", "sync-agent-crs.py",
-        "setup-ols-agentic.sh",
+        "setup-ols-agentic.sh", "install-ols-operator.sh",
         "show-eval-summary.py", "show-eval-summary.sh",
         "resolve-setup-mode.sh",
         "eval-report.sh", "report_progress.py",
@@ -1238,6 +1238,269 @@ def test_interrupted_run_keeps_results_and_updates_report(
     assert not (root / "snapshots/third-1.md").exists()
 
 
+@pytest.mark.parametrize("service,existing_config", [
+    ("classic", False), ("classic", True), ("agentic", False), ("agentic", True),
+])
+@pytest.mark.parametrize("skip_install", ["0", "1"])
+@pytest.mark.parametrize("server_state", ["missing", "pending", "ready"])
+@pytest.mark.parametrize("rollout_status", [0, 1])
+def test_setup_can_skip_operator_install(
+    workspace, service, existing_config, skip_install, server_state, rollout_status,
+):
+    root = workspace
+    for name in ("setup-ols-classic.sh", "build-ols-classic-config.py"):
+        shutil.copy(ROOT / "scripts" / name, root / "scripts" / name)
+    executable(root / "scripts/setup-venv.sh", "#!/bin/bash\nexit 0\n")
+    config_path = root / "system.yaml"
+    config_path.write_text(yaml.safe_dump({
+        "agents": {
+            "enabled": True,
+            "default": {"agent": ["selected"]},
+            "selected": {"provider": "openai", "model": "test-model",
+                         "description": "openai|test-model", "agent_ref": "selected"},
+        },
+        "judge_panel": {"judges": ["judge"]},
+        "llm_pool": {"models": {"judge": {"provider": "openai", "model": "judge-model"}}},
+    }))
+    executable(root / "bin/oc", f"#!{sys.executable}\n" + r'''
+import json
+import os
+from pathlib import Path
+import sys
+import yaml
+
+root = Path(os.environ["CLASSIC_SETUP_ROOT"])
+args = sys.argv[1:]
+with (root / "oc.log").open("a") as log:
+    log.write(json.dumps(args) + "\n")
+if args[0] == "apply":
+    resource = yaml.safe_load(sys.stdin)
+    with (root / "resources.jsonl").open("a") as log:
+        log.write(json.dumps(resource) + "\n")
+    if resource["kind"] == "OLSConfig":
+        (root / "configured").touch()
+elif args[:2] == ["create", "secret"]:
+    print(yaml.safe_dump({"kind": "Secret", "metadata": {"name": args[3]}}))
+elif args[:2] == ["get", "deployment"]:
+    if args[2] == "lightspeed-operator-controller-manager":
+        print("deployment.apps/lightspeed-operator-controller-manager")
+        sys.exit(0)
+    sys.exit(0 if (root / "configured").exists() or os.environ["SERVER_STATE"] != "missing" else 1)
+elif args[:2] == ["get", "olsconfig"]:
+    if os.environ["EXISTING_CONFIG"] == "1":
+        print("olsconfig.ols.openshift.io/cluster")
+elif args[:2] == ["patch", "olsconfig"]:
+    assert args[2] == "cluster" and "--type=merge" in args
+    patch = json.loads(next(arg.split("=", 1)[1] for arg in args if arg.startswith("--patch=")))
+    assert set(patch) == {"spec"}
+    assert set(patch["spec"]) == {"llm", "ols"}
+    assert set(patch["spec"]["llm"]) == {"providers"}
+    assert set(patch["spec"]["ols"]) == {"defaultModel", "defaultProvider"}
+    with (root / "resources.jsonl").open("a") as log:
+        log.write(json.dumps({"kind": "OLSConfig", **patch}) + "\n")
+    (root / "configured").touch()
+elif args[:2] == ["rollout", "status"]:
+    if "--timeout=10s" in args:
+        sys.exit(0 if os.environ["SERVER_STATE"] == "ready" else 1)
+    if args[2] != "deployment/lightspeed-operator-controller-manager":
+        assert (root / "configured").exists() or os.environ["EXISTING_CONFIG"] == "1"
+        sys.exit(int(os.environ["ROLLOUT_STATUS"]))
+elif args[:2] == ["get", "subscription"]:
+    print("test-csv")
+elif args[:2] == ["get", "crd"]:
+    sys.exit(0 if (root / "configured").exists() or os.environ["EXISTING_CONFIG"] == "1" else 1)
+elif args[0] == "wait" and any(arg.startswith("crd/") for arg in args):
+    assert (root / "configured").exists() or os.environ["EXISTING_CONFIG"] == "1"
+    assert len([arg for arg in args if arg.startswith("crd/")]) == 1
+elif args[0] == "explain":
+    pass
+elif args[0] != "wait":
+    sys.exit(9)
+''')
+    result = subprocess.run(
+        ["make", f"setup-ols-{service}", f"SKIP_OLS_INSTALL={skip_install}",
+         f"SYSTEM_CONFIG_{service.upper()}={config_path}"],
+        cwd=root, capture_output=True, text=True, timeout=15,
+        env={**os.environ, "PATH": f"{root / 'bin'}:{os.environ['PATH']}",
+             "CLASSIC_SETUP_ROOT": str(root), "SERVER_STATE": server_state,
+             "EXISTING_CONFIG": "1" if existing_config else "0",
+             "ROLLOUT_STATUS": str(rollout_status), "EVAL_OPENAI_API_KEY": "test-key",
+             "EVAL_VERTEX_CREDENTIALS": "", "EVAL_VERTEX_PROJECT_ID": ""},
+    )
+    assert (result.returncode == 0) == (rollout_status == 0), result.stdout + result.stderr
+    resources_path = root / "resources.jsonl"
+    resource_lines = resources_path.read_text().splitlines() if resources_path.exists() else []
+    resources = [json.loads(line) for line in resource_lines]
+    kinds = [resource["kind"] for resource in resources]
+    expected = ["Secret", "OLSConfig"] if service == "classic" else [
+        *([] if existing_config else ["OLSConfig"]),
+        *(["Secret", "LLMProvider", "Agent"] if rollout_status == 0 else []),
+    ]
+    if skip_install == "0" and server_state != "ready":
+        expected = ["Namespace", "OperatorGroup", "Subscription", *expected]
+    assert kinds == expected
+    commands = [json.loads(line) for line in (root / "oc.log").read_text().splitlines()]
+    assert any(command[0] == "wait" and "subscription/lightspeed-operator" in command
+               for command in commands) == ("Subscription" in kinds)
+    if service == "classic":
+        assert commands[-1][:2] == ["rollout", "status"]
+        assert any(command[:2] == ["patch", "olsconfig"] for command in commands) == existing_config
+        config = next(resource for resource in resources if resource["kind"] == "OLSConfig")
+        assert config["spec"]["ols"] == {"defaultProvider": "openai", "defaultModel": "test-model"}
+        assert config["spec"]["llm"]["providers"][0]["credentialsSecretRef"]["name"] == "creds-classic-openai"
+    else:
+        if existing_config:
+            assert "OLSConfig" not in kinds
+            assert "keeping Classic providers and other settings" in result.stdout
+        else:
+            config = next(resource for resource in resources if resource["kind"] == "OLSConfig")
+            assert config["spec"]["llm"]["providers"] == []
+            assert config["spec"]["agenticOLS"]["sandboxMode"] == "bare-pod"
+        assert any(command[:3] == ["rollout", "status", "deployment/lightspeed-agentic-operator-controller-manager"]
+                   for command in commands)
+        crd_waits = [command for command in commands
+                     if command[0] == "wait" and any(arg.startswith("crd/") for arg in command)]
+        assert len(crd_waits) == 4
+        for index, crd in enumerate(("agents", "llmproviders")):
+            assert "--for=create" in crd_waits[index * 2]
+            assert "--for=condition=Established" in crd_waits[index * 2 + 1]
+            assert f"crd/{crd}.agentic.openshift.io" in crd_waits[index * 2]
+            assert f"crd/{crd}.agentic.openshift.io" in crd_waits[index * 2 + 1]
+    assert ("SKIP_OLS_INSTALL=1" in result.stdout) == (skip_install == "1")
+    assert not any(command[0] == "delete" for command in commands)
+
+
+@pytest.mark.parametrize("failure", [None, "discovery", "operator", "handoff"])
+def test_agentic_setup_reuses_quickstart(workspace, failure):
+    config_path = workspace / "system.yaml"
+    config_path.write_text(yaml.safe_dump({
+        "agents": {
+            "enabled": True,
+            "default": {"agent": ["selected"]},
+            "selected": {"description": "openai|test-model", "agent_ref": "selected"},
+        },
+        "judge_panel": {"judges": ["judge"]},
+        "llm_pool": {"models": {"judge": {"provider": "openai", "model": "judge-model"}}},
+    }))
+    executable(workspace / "scripts/setup-venv.sh", "#!/bin/bash\nexit 0\n")
+    executable(workspace / "bin/oc", f"#!{sys.executable}\n" + r'''
+import json
+import os
+from pathlib import Path
+import sys
+import yaml
+
+args = sys.argv[1:]
+failure = os.environ["SETUP_FAILURE"]
+with Path(os.environ["OC_LOG"]).open("a") as log:
+    log.write(json.dumps(args) + "\n")
+if args[:2] == ["get", "deployment"]:
+    if args[2] == "lightspeed-app-server":
+        sys.exit(1)
+    assert args[2] == "lightspeed-operator-controller-manager" and "--ignore-not-found" in args
+    sys.exit(1 if failure == "discovery" else 0)
+elif args[:2] == ["get", "crd"]:
+    pass
+elif args[:2] == ["rollout", "status"]:
+    assert args[2] == "deployment/lightspeed-agentic-operator"
+    sys.exit(1 if failure == "operator" else 0)
+elif args[0] == "wait":
+    if "configmap/lightspeed-agentic-configuration" in args:
+        sys.exit(1 if failure == "handoff" else 0)
+    else:
+        assert len([arg for arg in args if arg.startswith("crd/")]) == 1
+elif args[:2] == ["create", "secret"]:
+    print(yaml.safe_dump({"kind": "Secret", "metadata": {"name": args[3]}}))
+elif args[0] == "apply":
+    resource = yaml.safe_load(sys.stdin)
+    assert resource["kind"] in ("Secret", "LLMProvider", "Agent")
+    with Path(os.environ["CR_LOG"]).open("a") as log:
+        log.write(json.dumps(resource) + "\n")
+else:
+    sys.exit(9)
+''')
+    resources_path = workspace / "resources.jsonl"
+    result = subprocess.run(
+        ["make", "setup-ols-agentic", "SKIP_OLS_INSTALL=1",
+         f"SYSTEM_CONFIG_AGENTIC={config_path}"],
+        cwd=workspace, capture_output=True, text=True, timeout=15,
+        env={**os.environ, "PATH": f"{workspace / 'bin'}:{os.environ['PATH']}",
+             "EVAL_OPENAI_API_KEY": "test-key", "SETUP_FAILURE": failure or "",
+             "CR_LOG": str(resources_path), "OC_LOG": str(workspace / "oc.log")},
+    )
+    assert (result.returncode == 0) == (failure is None), result.stdout + result.stderr
+    if failure is None:
+        resources = [json.loads(line) for line in resources_path.read_text().splitlines()]
+        assert [resource["kind"] for resource in resources] == ["Secret", "LLMProvider", "Agent"]
+        assert "existing Agentic quickstart" in result.stdout
+    else:
+        assert not resources_path.exists()
+    commands = [json.loads(line) for line in (workspace / "oc.log").read_text().splitlines()]
+    assert not any(command[0] == "delete" or "olsconfig" in command for command in commands)
+
+
+@pytest.mark.parametrize("failure", ["crd-create", "crd-established", "schema", "operator", "config-read", "handoff"])
+def test_agentic_setup_stops_when_ols_is_not_ready(workspace, failure):
+    config_path = workspace / "system.yaml"
+    config_path.write_text(yaml.safe_dump({
+        "agents": {
+            "enabled": True,
+            "default": {"agent": ["selected"]},
+            "selected": {"description": "openai|test-model", "agent_ref": "selected"},
+        },
+        "judge_panel": {"judges": ["judge"]},
+        "llm_pool": {"models": {"judge": {"provider": "openai", "model": "judge-model"}}},
+    }))
+    executable(workspace / "scripts/setup-venv.sh", "#!/bin/bash\nexit 0\n")
+    executable(workspace / "bin/oc", f"#!{sys.executable}\n" + r'''
+import json
+import os
+from pathlib import Path
+import sys
+import yaml
+
+args = sys.argv[1:]
+failure = os.environ["SETUP_FAILURE"]
+if args[:3] == ["get", "deployment", "lightspeed-operator-controller-manager"]:
+    print("deployment.apps/lightspeed-operator-controller-manager")
+if args[0] == "wait" and "crd/agents.agentic.openshift.io" in args and (
+    (failure == "crd-create" and "--for=create" in args)
+    or (failure == "crd-established" and "--for=condition=Established" in args)
+):
+    sys.exit(1)
+if args[0] == "explain" and failure == "schema":
+    sys.exit(1)
+if args[:3] == ["rollout", "status", "deployment/lightspeed-operator-controller-manager"] and failure == "operator":
+    sys.exit(1)
+if args[:2] == ["get", "olsconfig"] and failure == "config-read":
+    print("Error from server (Forbidden)", file=sys.stderr)
+    sys.exit(1)
+if args[0] == "wait" and "configmap/lightspeed-agentic-configuration" in args and failure == "handoff":
+    sys.exit(1)
+if args[0] == "apply":
+    resource = yaml.safe_load(sys.stdin)
+    with Path(os.environ["CR_LOG"]).open("a") as log:
+        log.write(json.dumps(resource) + "\n")
+''')
+    resources_path = workspace / "resources.jsonl"
+    result = subprocess.run(
+        ["make", "setup-ols-agentic", "SKIP_OLS_INSTALL=1",
+         f"SYSTEM_CONFIG_AGENTIC={config_path}"],
+        cwd=workspace, capture_output=True, text=True, timeout=15,
+        env={**os.environ, "PATH": f"{workspace / 'bin'}:{os.environ['PATH']}",
+             "EVAL_OPENAI_API_KEY": "test-key", "SETUP_FAILURE": failure,
+             "CR_LOG": str(resources_path)},
+    )
+    assert result.returncode != 0
+    if failure in ("crd-create", "crd-established", "handoff"):
+        resources = [json.loads(line) for line in resources_path.read_text().splitlines()]
+        assert [resource["kind"] for resource in resources] == ["OLSConfig"]
+    else:
+        assert not resources_path.exists()
+        if failure != "operator":
+            assert ("Forbidden" if failure == "config-read" else "ERROR:") in result.stderr
+
+
 @pytest.mark.parametrize("variant", ["classic", "agentic"])
 def test_setup_dependencies(variant):
     result = subprocess.run(
@@ -1263,11 +1526,6 @@ def test_ci_agent_provisioning(workspace, agent, active_subset):
         ]
     config_path.write_text(yaml.safe_dump(system_config))
     bin_dir = workspace / "bin"
-    executable(
-        bin_dir / "git",
-        '#!/bin/bash\nmkdir -p "${@: -1}/hack/quickstart"\n'
-        'touch "${@: -1}/hack/quickstart/install.sh"\n',
-    )
     executable(
         bin_dir / "oc",
         f"#!{sys.executable}\n"
@@ -1395,6 +1653,7 @@ if sys.argv[1] == "apply":
         **os.environ,
         "PATH": f"{workspace / 'bin'}:{os.environ['PATH']}",
         "EVAL_OPENAI_API_KEY": "test-key",
+        "SKIP_OLS_INSTALL": "1",
         "EVAL_VERTEX_CREDENTIALS": str(credentials) if credentials_present else "",
         "EVAL_VERTEX_PROJECT_ID": "test-project" if credentials_present else "",
         "OC_LOG": str(workspace / "oc.log"),

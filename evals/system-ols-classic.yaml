@@ -35,6 +35,8 @@ agents:
       # - google-gemini-3-7-flash
       # - google-gemini-3-8-flash
       # - anthropic-opus-4-6
+      # - anthropic-opus-4-8
+      # - anthropic-sonnet-5
       # - anthropic-sonnet-5-5
       # - anthropic-opus-5-5
     repeat: 1
@@ -117,6 +119,24 @@ agents:
     endpoint_type: query
     provider: anthropic
     model: claude-opus-4-6
+    extra_request_params:
+      mode: troubleshooting
+  anthropic-opus-4-8:
+    description: "anthropic|claude-opus-4-8"
+    type: http_api
+    api_base: https://localhost:8443
+    endpoint_type: query
+    provider: anthropic
+    model: claude-opus-4-8
+    extra_request_params:
+      mode: troubleshooting
+  anthropic-sonnet-5:
+    description: "anthropic|claude-sonnet-5"
+    type: http_api
+    api_base: https://localhost:8443
+    endpoint_type: query
+    provider: anthropic
+    model: claude-sonnet-5
     extra_request_params:
       mode: troubleshooting
   anthropic-sonnet-5-5:

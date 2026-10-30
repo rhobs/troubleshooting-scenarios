@@ -44,7 +44,7 @@ The root Makefile has all targets. Run `make help` for the full list.
 ```bash
 make tools              # Install local lint tools in .tools/
 make lint               # Install tools if needed, then run all linters
-make setup-ols-agentic  # Install venv + sync Agent CRs
+make setup-ols-agentic  # Install venv + OLS + sync Agent CRs
 make setup-ols-classic  # Install venv + OLS classic
 make eval-ols-agentic TAG=investigation # Run OLS agentic investigation cases
 make eval-ols-classic TAG=investigation # Run OLS classic investigation cases

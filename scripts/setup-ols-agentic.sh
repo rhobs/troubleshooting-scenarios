@@ -43,6 +43,63 @@ fi
 
 NAMESPACE="openshift-lightspeed"
 
+# shellcheck source=scripts/install-ols-operator.sh
+source "$SCRIPT_DIR/install-ols-operator.sh"
+
+agentic_deployment="lightspeed-agentic-operator-controller-manager"
+full_operator="installed"
+if [ "${SKIP_OLS_INSTALL:-0}" = "1" ]; then
+    full_operator="$(oc get deployment lightspeed-operator-controller-manager \
+        -n "$NAMESPACE" --ignore-not-found -o name)"
+fi
+
+if [ -z "$full_operator" ]; then
+    echo "==> Using the existing Agentic quickstart operator and sandbox configuration."
+    agentic_deployment="lightspeed-agentic-operator"
+else
+    if ! oc explain olsconfig.spec.agenticOLS --api-version=ols.openshift.io/v1alpha1 >/dev/null; then
+        echo "ERROR: OLSConfig with Agentic support is required. Install OLS 2.0 or newer." >&2
+        exit 1
+    fi
+    oc rollout status deployment/lightspeed-operator-controller-manager -n "$NAMESPACE" --timeout=480s
+
+    existing_config="$(oc get olsconfig cluster --ignore-not-found -o name)"
+    if [ -n "$existing_config" ]; then
+        echo "==> Using existing OLSConfig; keeping Classic providers and other settings."
+    else
+        echo "==> Creating OLSConfig for Agentic..."
+        oc apply -f - <<EOF
+apiVersion: ols.openshift.io/v1alpha1
+kind: OLSConfig
+metadata:
+  name: cluster
+spec:
+  llm:
+    providers: []
+  ols:
+    defaultModel: ""
+    defaultProvider: ""
+  agenticOLS:
+    sandboxMode: bare-pod
+EOF
+    fi
+fi
+
+# Wait for each CRD separately: oc can fail early when several are missing.
+for crd in agents.agentic.openshift.io llmproviders.agentic.openshift.io; do
+    if ! oc wait --for=create "crd/$crd" --timeout=480s || \
+        ! oc wait --for=condition=Established "crd/$crd" --timeout=480s; then
+        echo "ERROR: Agentic CRD $crd is not ready. Check OLS operator logs and cluster support." >&2
+        exit 1
+    fi
+done
+
+echo "==> Waiting for the Agentic operator and sandbox configuration..."
+oc rollout status "deployment/$agentic_deployment" -n "$NAMESPACE" --timeout=480s
+oc wait --for=create configmap/lightspeed-agentic-configuration -n "$NAMESPACE" --timeout=480s
+oc wait --for=jsonpath='{.data.sandbox-pod-spec}' \
+    configmap/lightspeed-agentic-configuration -n "$NAMESPACE" --timeout=480s
+
 function setup_openai_secret() {
     echo "==> Setting up OpenAI secret for the agent..."
     : "${EVAL_OPENAI_API_KEY:?EVAL_OPENAI_API_KEY must be set}"

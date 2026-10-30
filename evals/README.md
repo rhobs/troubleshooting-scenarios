@@ -22,6 +22,7 @@ For a single scenario without group dependencies, you can also run its
 ## Running automated evals
 
 Follow the [root README](../README.md) to set up OLS Agentic or OLS Classic.
+Classic needs OpenShift 4.22 or newer; Agentic needs OpenShift 5.0 or newer.
 Run Make commands from the repository root.
 
 | Option | Purpose |

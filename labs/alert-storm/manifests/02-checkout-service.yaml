@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: checkout-service
-          image: quay.io/afalossi/ts02-checkout-service:latest
+          image: quay.io/openshiftanalytics/ts02-checkout-service:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8080

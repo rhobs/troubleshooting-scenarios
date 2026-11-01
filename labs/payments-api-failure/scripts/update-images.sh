@@ -1,11 +1,12 @@
 #!/bin/bash
 set -e
 
-if [ -z "$1" ]; then
-  echo "Error: REGISTRY is required. Usage: make update-images REGISTRY=quay.io/..." >&2
+# Manifests, break.sh and fix.sh pull from this registry, so pushing elsewhere has no effect.
+REGISTRY="quay.io/openshiftanalytics"
+if [ -n "$1" ] && [ "$1" != "$REGISTRY" ]; then
+  echo "Error: REGISTRY must be $REGISTRY (got: $1). Update the manifests and scripts first to use another one." >&2
   exit 1
 fi
-REGISTRY="$1"
 
 echo "Scenario 01 — Payments API Failure"
 echo ""

@@ -22,7 +22,7 @@ spec:
     spec:
       containers:
         - name: payments-api
-          image: quay.io/afalossi/ts02-payments-api:latest
+          image: quay.io/openshiftanalytics/ts02-payments-api:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8080

@@ -4,7 +4,7 @@ help:
 	@echo "Payments API Failure Scenario"
 	@echo ""
 	@echo "Available targets:"
-	@echo "  update-images     Build and push container images (REGISTRY=quay.io/...)"
+	@echo "  update-images     Build and push container images to quay.io/openshiftanalytics"
 	@echo "  deploy            Deploy the initial state"
 	@echo "  deploy-easy       Easy mode: single namespace, per-service DB users, fewer alerts, no red herring"
 	@echo "  break             Roll out buggy reporting-service v1.0.2 and wait for failure"

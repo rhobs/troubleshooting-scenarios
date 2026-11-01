@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: notification-service
-          image: quay.io/afalossi/ts02-notification-service:latest
+          image: quay.io/openshiftanalytics/ts02-notification-service:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8080

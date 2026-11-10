@@ -3,6 +3,8 @@ set -euo pipefail
 
 SCENARIO_DIR="$(cd "$(dirname "$0")" && pwd)"
 SCRIPT_DIR="$(cd "$SCENARIO_DIR/../../../scripts" && pwd)"
+# shellcheck source=scripts/scenario-namespace.sh
+source "$SCRIPT_DIR/scenario-namespace.sh"
 FIXTURE_DIR="$SCENARIO_DIR/fixtures"
 
 "$SCRIPT_DIR/check-prerequisites.sh"
@@ -10,6 +12,15 @@ FIXTURE_DIR="$SCENARIO_DIR/fixtures"
 NS="batch-processor"
 DEPLOYMENT="report-generator"
 CLEANUP_TIMEOUT="${CLEANUP_TIMEOUT:-300}"
+
+# Check if we own this namespace before cleaning up
+if scenario_namespace_owned "$NS" oc; then
+  :
+else
+  status=$?
+  if [ "$status" -eq 1 ]; then exit 0; fi
+  exit "$status"
+fi
 
 echo "Cleaning up $NS namespace..."
 
@@ -44,16 +55,14 @@ fi
 
 # Wait for namespace to be fully gone
 echo "Verifying namespace deletion..."
-ELAPSED=0
-while [ "$ELAPSED" -lt 180 ]; do
+for _ in $(seq 1 90); do
   if ! oc get namespace "$NS" >/dev/null 2>&1; then
-    echo "Cleanup complete: removed $NS namespace and resources"
+    rm -f "$SCENARIO_STATE_DIR/$NS.uid"
+    echo "Cleanup complete: namespace/$NS removed"
     exit 0
   fi
-  sleep 5
-  ELAPSED=$((ELAPSED + 5))
+  sleep 2
 done
 
-echo "WARNING: Namespace $NS may still exist. Manual cleanup may be required." >&2
-oc get namespace "$NS" 2>/dev/null || true
+echo "ERROR: namespace/$NS is still present after cleanup" >&2
 exit 1

@@ -3,6 +3,8 @@ set -euo pipefail
 
 SCENARIO_DIR="$(cd "$(dirname "$0")" && pwd)"
 SCRIPT_DIR="$(cd "$SCENARIO_DIR/../../../scripts" && pwd)"
+# shellcheck source=scripts/scenario-namespace.sh
+source "$SCRIPT_DIR/scenario-namespace.sh"
 FIXTURE_DIR="$SCENARIO_DIR/fixtures"
 
 "$SCRIPT_DIR/check-prerequisites.sh"
@@ -17,8 +19,12 @@ echo "Finding worker node with smallest allocatable capacity..."
 TARGET_NODE=$("$SCRIPT_DIR/find-smallest-node.sh")
 echo "Selected node: $TARGET_NODE"
 
-# Apply namespace and deployment
+# Create namespace with ownership tracking
 echo "Creating namespace $NS..."
+scenario_create_namespace "$NS" "$FIXTURE_DIR/namespace.yaml" oc
+
+# Apply deployment
+echo "Applying deployment..."
 oc apply -f "$FIXTURE_DIR/deployment.yaml"
 
 # Patch deployment with nodeSelector to pin pods to target node
@@ -44,8 +50,9 @@ check_alert() {
   thanos_host=$(oc -n openshift-monitoring get route thanos-querier -o jsonpath='{.spec.host}')
 
   # First check if TargetDown alert is firing for kubelet
+  # Note: -k (insecure) is used as clusters typically use self-signed ingress certs
   local alert_firing
-  alert_firing=$(curl -sk -H "Authorization: Bearer ${token}" \
+  alert_firing=$(curl -sk --max-time 10 -H "Authorization: Bearer ${token}" \
     "https://${thanos_host}/api/v1/alerts" 2>/dev/null |
     python3 -c "
 import sys, json
@@ -68,7 +75,8 @@ except Exception:
   fi
 
   # Alert is firing, now check if our specific node's kubelet target is down
-  curl -sk -H "Authorization: Bearer ${token}" \
+  # Note: -k (insecure) is used as clusters typically use self-signed ingress certs
+  curl -sk --max-time 10 -H "Authorization: Bearer ${token}" \
     "https://${thanos_host}/api/v1/targets" 2>/dev/null |
     python3 -c "
 import sys, json
@@ -110,7 +118,7 @@ while true; do
 
   # Scale to 100 replicas
   echo "Scaling $DEPLOYMENT to 100 replicas..."
-  oc scale deployment/"$DEPLOYMENT" -n "$NS" --replicas=100 --timeout=30s 2>/dev/null || {
+  oc scale deployment/"$DEPLOYMENT" -n "$NS" --replicas=100 --timeout=30s --request-timeout=35s 2>/dev/null || {
     echo "WARNING: Scale command timed out or failed, continuing..."
   }
 
@@ -118,7 +126,7 @@ while true; do
   echo "Waiting for pods to be created..."
   WAIT_PODS=0
   while [ "$WAIT_PODS" -lt 60 ]; do
-    POD_COUNT=$(oc get pods -n "$NS" -l "$APP_LABEL" --no-headers 2>/dev/null | wc -l)
+    POD_COUNT=$(oc get pods -n "$NS" -l "$APP_LABEL" --no-headers --request-timeout=10s 2>/dev/null | wc -l)
     if [ "$POD_COUNT" -ge 50 ]; then
       echo "Found $POD_COUNT pods"
       break
@@ -129,7 +137,7 @@ while true; do
 
   # Delete all pods by label (respects pod's terminationGracePeriodSeconds)
   echo "Deleting all pods with label $APP_LABEL..."
-  oc delete pods -n "$NS" -l "$APP_LABEL" --wait=false 2>/dev/null || true
+  oc delete pods -n "$NS" -l "$APP_LABEL" --wait=false --request-timeout=30s 2>/dev/null || true
 
   # Give it a moment for the kubelet stress to build up
   sleep 5

@@ -90,6 +90,7 @@ _ALL_OLS_AGENTIC := \
 	imagepull_missing \
 	imagepull_private \
 	inactive_deployment \
+	kubelet_target_down \
 	missing_configmap \
 	missing_pvc \
 	missing_secret_key \

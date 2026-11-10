@@ -34,7 +34,7 @@ if [ "$REPLICAS" != "0" ]; then
   exit 1
 fi
 
-# Function to check if TargetDown alert is firing for our target kubelet
+# Function to check if TargetDown alert is firing for kubelet and our node is unhealthy
 check_alert() {
   local target_node="$1"
   local token
@@ -43,30 +43,43 @@ check_alert() {
   token=$(oc whoami -t 2>/dev/null || oc create token prometheus-k8s -n openshift-monitoring --duration=10m)
   thanos_host=$(oc -n openshift-monitoring get route thanos-querier -o jsonpath='{.spec.host}')
 
-  curl -sk -H "Authorization: Bearer ${token}" \
+  # First check if TargetDown alert is firing for kubelet
+  local alert_firing
+  alert_firing=$(curl -sk -H "Authorization: Bearer ${token}" \
     "https://${thanos_host}/api/v1/alerts" 2>/dev/null |
+    python3 -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+    for alert in data.get('data', {}).get('alerts', []):
+        if alert.get('state') == 'firing':
+            labels = alert.get('labels', {})
+            if labels.get('alertname') == 'TargetDown' and labels.get('job') == 'kubelet':
+                print('1')
+                sys.exit(0)
+    print('0')
+except Exception:
+    print('0')
+" 2>/dev/null || echo "0")
+
+  if [ "$alert_firing" != "1" ]; then
+    echo "0"
+    return
+  fi
+
+  # Alert is firing, now check if our specific node's kubelet target is down
+  curl -sk -H "Authorization: Bearer ${token}" \
+    "https://${thanos_host}/api/v1/targets" 2>/dev/null |
     python3 -c "
 import sys, json
 try:
     data = json.load(sys.stdin)
     target_node = '${target_node}'
 
-    for alert in data.get('data', {}).get('alerts', []):
-        if alert.get('state') != 'firing':
-            continue
-
-        labels = alert.get('labels', {})
-        if labels.get('alertname') != 'TargetDown':
-            continue
-
-        # Check if this alert is for a kubelet on our target node
-        job = labels.get('job', '')
-        instance = labels.get('instance', '')
-        node = labels.get('node', '')
-
-        # Check if job contains 'kubelet' and node/instance matches our target
-        if 'kubelet' in job.lower():
-            if node == target_node or target_node in instance:
+    for target in data.get('data', {}).get('activeTargets', []):
+        labels = target.get('labels', {})
+        if labels.get('job') == 'kubelet' and labels.get('node') == target_node:
+            if target.get('health') != 'up':
                 print('1')
                 sys.exit(0)
 

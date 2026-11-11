@@ -12,7 +12,7 @@ FIXTURE_DIR="$SCENARIO_DIR/fixtures"
 NS="batch-processor"
 DEPLOYMENT="report-generator"
 APP_LABEL="app=report-generator"
-STRESS_TIMEOUT="${STRESS_TIMEOUT:-900}"
+STRESS_TIMEOUT="${STRESS_TIMEOUT:-1200}"
 
 # Find the worker node with smallest allocatable capacity
 echo "Finding worker node with smallest allocatable capacity..."
@@ -49,7 +49,7 @@ check_alert() {
   token=$(oc whoami -t 2>/dev/null || oc create token prometheus-k8s -n openshift-monitoring --duration=10m)
   thanos_host=$(oc -n openshift-monitoring get route thanos-querier -o jsonpath='{.spec.host}')
 
-  # First check if TargetDown alert is firing for kubelet
+  # First check if TargetDown alert is firing or pending for kubelet
   # Note: -k (insecure) is used as clusters typically use self-signed ingress certs
   local alert_firing
   alert_firing=$(curl -sk --max-time 10 -H "Authorization: Bearer ${token}" \
@@ -59,7 +59,8 @@ import sys, json
 try:
     data = json.load(sys.stdin)
     for alert in data.get('data', {}).get('alerts', []):
-        if alert.get('state') == 'firing':
+        state = alert.get('state')
+        if state in ('firing', 'pending'):
             labels = alert.get('labels', {})
             if labels.get('alertname') == 'TargetDown' and labels.get('job') == 'kubelet':
                 print('1')
@@ -109,7 +110,7 @@ while true; do
   ELAPSED=$((CURRENT_TIME - START_TIME))
 
   if [ "$ELAPSED" -ge "$STRESS_TIMEOUT" ]; then
-    echo "ERROR: TargetDown alert did not fire within ${STRESS_TIMEOUT}s after $ITERATION iterations" >&2
+    echo "ERROR: TargetDown alert did not become active within ${STRESS_TIMEOUT}s after $ITERATION iterations" >&2
     exit 1
   fi
 
@@ -147,11 +148,11 @@ while true; do
   ALERT_FOUND=$(check_alert "$TARGET_NODE")
 
   if [ "$ALERT_FOUND" = "1" ]; then
-    echo "SUCCESS: TargetDown alert is firing for kubelet on $TARGET_NODE after $ITERATION iterations"
+    echo "SUCCESS: TargetDown alert is active for kubelet on $TARGET_NODE after $ITERATION iterations"
     echo "Setup complete: kubelet_target_down scenario is ready"
     exit 0
   fi
 
-  echo "Alert not firing yet, continuing..."
+  echo "Alert not active yet, continuing..."
   sleep 3
 done

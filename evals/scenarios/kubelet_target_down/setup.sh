@@ -60,7 +60,7 @@ try:
     data = json.load(sys.stdin)
     for alert in data.get('data', {}).get('alerts', []):
         state = alert.get('state')
-        if state in ('firing', 'pending'):
+        if state == 'firing':
             labels = alert.get('labels', {})
             if labels.get('alertname') == 'TargetDown' and labels.get('job') == 'kubelet':
                 print('1')
@@ -127,7 +127,7 @@ while true; do
   echo "Waiting for pods to be created..."
   WAIT_PODS=0
   while [ "$WAIT_PODS" -lt 60 ]; do
-    POD_COUNT=$(oc get pods -n "$NS" -l "$APP_LABEL" --no-headers --request-timeout=10s 2>/dev/null | wc -l)
+    POD_COUNT=$(oc get pods -n "$NS" -l "$APP_LABEL" --no-headers --request-timeout=10s 2>/dev/null | wc -l || echo "0")
     if [ "$POD_COUNT" -ge 50 ]; then
       echo "Found $POD_COUNT pods"
       break

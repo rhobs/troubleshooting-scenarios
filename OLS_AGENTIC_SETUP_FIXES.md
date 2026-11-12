@@ -59,6 +59,14 @@ oc get configmap -n openshift-lightspeed lightspeed-agentic-configuration
 
 Without this, all AgenticRuns wait indefinitely for manual approval.
 
+**⚠️ WARNING - Shared Cluster Impact:**  
+The ApprovalPolicy resource named `cluster` is a singleton that affects **all AgenticRuns cluster-wide**. On a shared cluster, this configuration will auto-approve Analysis, Execution, Verification, and Escalation phases for every AgenticRun from any namespace, not just evaluation runs.
+
+**Recommendation:** Only apply this on isolated evaluation clusters. On shared clusters, either:
+1. Use manual approval (don't create this resource)
+2. Back up any existing policy first: `oc get approvalpolicy cluster -o yaml > policy-backup.yaml`
+3. Restore after evaluations: `oc apply -f policy-backup.yaml`
+
 ```bash
 cat <<'EOF' | oc apply -f -
 apiVersion: agentic.openshift.io/v1alpha1
@@ -140,9 +148,15 @@ oc get clusterrolebinding | grep lightspeed-a
 
 ## Testing the Configuration
 
-Create a test AgenticRun to verify everything works:
+**First, check which agents are configured:**
+```bash
+oc get agent -n openshift-lightspeed -o jsonpath='{.items[*].metadata.name}'
+```
+
+Create a test AgenticRun using any configured agent name:
 
 ```bash
+# Replace <AGENT_NAME> with an agent from the list above
 cat <<'EOF' | oc apply -f -
 apiVersion: agentic.openshift.io/v1alpha1
 kind: AgenticRun
@@ -151,7 +165,7 @@ metadata:
   namespace: openshift-lightspeed
 spec:
   analysis:
-    agent: openai-gpt-6-luna
+    agent: <AGENT_NAME>  # e.g., openai-gpt-6-luna, google-gemini-3-8-flash
   request: "Test: List all namespaces in the cluster."
 EOF
 ```
@@ -292,26 +306,37 @@ echo "==> Configuration complete!"
 echo "==> Verify with: oc get configmap,approvalpolicy,sa -n $NAMESPACE"
 ```
 
-Make it executable:
+**Save the script above to `scripts/fix-agentic-config.sh`, then make it executable:**
 ```bash
 chmod +x scripts/fix-agentic-config.sh
 ```
 
 ## Integration into Makefile
 
-Add to `setup-ols-agentic` target:
+**Note:** The ConfigMap must exist before `setup-ols-agentic.sh` waits for it, so the fix script cannot be added to the end of the Makefile target. Instead, either:
 
-```makefile
-setup-ols-agentic: setup-venv
-	@echo "==> Using config: $(SYSTEM_CONFIG_AGENTIC)"
-	@bash $(SCRIPTS_DIR)/preflight.sh
-	@SYSTEM_CONFIG_AGENTIC="$(SYSTEM_CONFIG_AGENTIC)" bash $(SCRIPTS_DIR)/setup-ols-agentic.sh
-	@venv/bin/python3 $(SCRIPTS_DIR)/sync-agent-crs.py "$(SYSTEM_CONFIG_AGENTIC)"
-	@bash $(SCRIPTS_DIR)/fix-agentic-config.sh  # <-- Add this line
-```
+1. **Run manually after initial setup failure:**
+   ```bash
+   make setup-ols-agentic  # Will timeout waiting for ConfigMap
+   ./scripts/fix-agentic-config.sh
+   # Operator will reconcile and setup can proceed
+   ```
 
-Or run manually after setup:
+2. **Or create a two-phase setup:**
+   ```makefile
+   setup-ols-agentic-prereqs:
+       @bash $(SCRIPTS_DIR)/fix-agentic-config.sh
+
+   setup-ols-agentic: setup-venv setup-ols-agentic-prereqs
+       @echo "==> Using config: $(SYSTEM_CONFIG_AGENTIC)"
+       @bash $(SCRIPTS_DIR)/preflight.sh
+       @SYSTEM_CONFIG_AGENTIC="$(SYSTEM_CONFIG_AGENTIC)" bash $(SCRIPTS_DIR)/setup-ols-agentic.sh
+       @venv/bin/python3 $(SCRIPTS_DIR)/sync-agent-crs.py "$(SYSTEM_CONFIG_AGENTIC)"
+   ```
+
+**For now, run manually:**
 ```bash
-make setup-ols-agentic
-./scripts/fix-agentic-config.sh
+# First-time setup
+./scripts/fix-agentic-config.sh  # Create ConfigMap, ApprovalPolicy, RBAC
+make setup-ols-agentic            # Now proceeds without timeout
 ```

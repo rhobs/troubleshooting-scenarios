@@ -56,7 +56,8 @@ fi
 # Wait for namespace to be fully gone
 echo "Verifying namespace deletion..."
 for _ in $(seq 1 90); do
-  if ! oc get namespace "$NS" >/dev/null 2>&1; then
+  NS_UID=$(oc get namespace "$NS" --ignore-not-found -o jsonpath='{.metadata.uid}' 2>/dev/null)
+  if [ -z "$NS_UID" ]; then
     rm -f "$SCENARIO_STATE_DIR/$NS.uid"
     echo "Cleanup complete: namespace/$NS removed"
     exit 0

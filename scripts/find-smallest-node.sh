@@ -7,24 +7,25 @@ set -euo pipefail
 # Output: Node name to stdout
 # Exit: 0 on success, 1 if no worker nodes found
 
-# Get all worker nodes with their allocatable resources and roles
-WORKERS=$(oc get nodes -l node-role.kubernetes.io/worker \
-  -o jsonpath='{range .items[*]}{.metadata.name}{" "}{.status.allocatable.cpu}{" "}{.status.allocatable.memory}{" "}{.metadata.labels.node-role\.kubernetes\.io/control-plane}{"\n"}{end}')
+# Get all worker nodes with their allocatable resources and both possible control-plane role labels
+# Note: OpenShift 4.x transitioned from 'master' to 'control-plane' label
+WORKERS=$(oc get nodes -l node-role.kubernetes.io/worker -o json | \
+  jq -r '.items[] | "\(.metadata.name) \(.status.allocatable.cpu) \(.status.allocatable.memory) \(if .metadata.labels["node-role.kubernetes.io/control-plane"] or .metadata.labels["node-role.kubernetes.io/master"] then "dual-role" else "" end)"')
 
 if [ -z "$WORKERS" ]; then
   echo "ERROR: No worker nodes found" >&2
   exit 1
 fi
 
-# Separate pure worker nodes from dual-role (worker+control-plane) nodes
+# Separate pure worker nodes from dual-role (worker+control-plane/master) nodes
 PURE_WORKERS=""
 DUAL_ROLE_WORKERS=""
 while IFS= read -r line; do
   if [[ "$line" =~ ^([^\ ]+)\ ([^\ ]+)\ ([^\ ]+)\ *$ ]]; then
-    # No control-plane label (pure worker)
+    # No dual-role marker (pure worker)
     PURE_WORKERS="${PURE_WORKERS}${line}\n"
-  elif [[ "$line" =~ ^([^\ ]+)\ ([^\ ]+)\ ([^\ ]+)\ .+$ ]]; then
-    # Has control-plane label (dual-role)
+  elif [[ "$line" =~ ^([^\ ]+)\ ([^\ ]+)\ ([^\ ]+)\ dual-role$ ]]; then
+    # Has dual-role marker
     DUAL_ROLE_WORKERS="${DUAL_ROLE_WORKERS}${line}\n"
   fi
 done <<< "$WORKERS"

@@ -319,7 +319,7 @@ chmod +x scripts/fix-agentic-config.sh
    ```bash
    make setup-ols-agentic  # Will timeout waiting for ConfigMap
    ./scripts/fix-agentic-config.sh
-   # Operator will reconcile and setup can proceed
+   make setup-ols-agentic  # Run again to complete setup
    ```
 
 2. **Or create a two-phase setup:**
@@ -337,6 +337,7 @@ chmod +x scripts/fix-agentic-config.sh
 **For now, run manually:**
 ```bash
 # First-time setup
-./scripts/fix-agentic-config.sh  # Create ConfigMap, ApprovalPolicy, RBAC
-make setup-ols-agentic            # Now proceeds without timeout
+make setup-ols-agentic            # Install OLS/Agentic operators (will timeout waiting for ConfigMap)
+./scripts/fix-agentic-config.sh   # Create ConfigMap, ApprovalPolicy, RBAC
+make setup-ols-agentic            # Run again to complete setup
 ```

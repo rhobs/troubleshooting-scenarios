@@ -90,6 +90,7 @@ _ALL_OLS_AGENTIC := \
 	imagepull_missing \
 	imagepull_private \
 	inactive_deployment \
+	kubelet_target_down \
 	missing_configmap \
 	missing_pvc \
 	missing_secret_key \
@@ -125,6 +126,7 @@ _ALL_OLS_CLASSIC := \
 	kiali-ossm/diagnose_bookinfo_fault_injection \
 	kiali-ossm/diagnose_bookinfo_routing \
 	kiali-ossm/troubleshoot_latency_trace \
+	kubelet_target_down \
 	kubevirt/vm_crashloop \
 	kubevirt/vm_migration_failure \
 	kubevirt/vm_storage_failure \

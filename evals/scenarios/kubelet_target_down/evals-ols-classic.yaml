@@ -1,0 +1,40 @@
+- conversation_group_id: kubelet_target_down
+  description: |
+    TargetDown warning alert fires for a kubelet endpoint.
+    RCA: Deployment with excessive termination grace period (28800 seconds / 8
+    hours) causes pods to accumulate in Terminating state when repeatedly
+    deleted. This overwhelms the kubelet on the targeted node, making it
+    unreachable.
+    Expected: Identify the deployment with excessive terminationGracePeriodSeconds
+    (28800s), recommend reducing it to a reasonable value (e.g., 30-60 seconds),
+    and explain that the accumulation of terminating pods is overwhelming the
+    kubelet.
+  tag:
+    - investigation
+    - core
+    - alert
+    - difficulty_medium
+    - kubelet
+
+  turns:
+    - turn_id: investigate_kubelet_down
+      query: >-
+        Alert: TargetDown (warning)
+        Namespace: batch-processor
+        Description: A kubelet endpoint on one of the worker nodes is
+        unreachable. The Prometheus target scrape is failing.
+
+        Can you investigate the root cause of this alert?
+      expected_response: >-
+        The deployment report-generator in namespace batch-processor has an
+        excessive terminationGracePeriodSeconds of 28800 seconds (8 hours).
+        When pods are repeatedly deleted or scaled down, they accumulate in
+        Terminating state for hours instead of terminating quickly. This
+        accumulation overwhelms the kubelet on the targeted node with stuck
+        processes, causing the kubelet to become unreachable and triggering
+        the TargetDown warning alert. Fix: Reduce the
+        terminationGracePeriodSeconds in the deployment spec to a reasonable
+        value such as 30 seconds, and delete the stuck Terminating pods to
+        allow the kubelet to recover.
+      turn_metrics:
+        - custom:answer_correctness

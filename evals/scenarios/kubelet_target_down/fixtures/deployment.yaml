@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: report-generator
+  namespace: batch-processor
+  labels:
+    app: report-generator
+spec:
+  progressDeadlineSeconds: 28800
+  replicas: 0
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: report-generator
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      deletionGracePeriodSeconds: 1200
+      labels:
+        app: report-generator
+        deployment: report-generator
+    spec:
+      # nodeSelector will be added dynamically by setup.sh to target smallest worker node
+      containers:
+      - command:
+        - /bin/sh
+        - -c
+        - sleep 1d
+        image: docker.io/alpine/curl@sha256:df4d40ffe0bb401d0ed820d00cec452145c4399c5dc52f9d14d327116f1b9b9d
+        name: report-generator
+        resources:
+          limits:
+            memory: 10Mi
+          requests:
+            cpu: 10m
+            memory: 10Mi
+        securityContext:
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      terminationGracePeriodSeconds: 28800

@@ -76,6 +76,11 @@ if [ "$MODE" = "agentic" ]; then
   fi
   printf '\033[0;32m  OK:\033[0m OpenShift Lightspeed is available\n'
 
+  if ! "$python" "$script_dir/agentic-rbac.py"; then
+    printf '\033[0;31mFAIL:\033[0m Agentic RBAC check failed\n'
+    exit 1
+  fi
+
   if ! "$python" "$script_dir/sync-agent-crs.py" --check "$SYSTEM_CONFIG"; then
     printf '\033[0;31mFAIL:\033[0m Agent CR check failed\n'
     exit 1

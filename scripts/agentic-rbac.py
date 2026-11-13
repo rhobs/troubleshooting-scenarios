@@ -67,10 +67,14 @@ def setup(bindings, requirements):
             or not has_role(existing, role)
         ):
             raise ValueError(f"ClusterRoleBinding {name} exists with a different owner or role")
-        # Keep sandbox accounts that the controller added to the binding.
-        subjects = list(existing.get("subjects", [])) if existing else []
-        if not existing or not has_subject(existing, account):
-            subjects.append(subject(account))
+        # Only the active controller belongs in our managed admin binding.
+        # Reader bindings keep the sandbox accounts added by the controller.
+        if role == "cluster-admin":
+            subjects = [subject(account)]
+        else:
+            subjects = list(existing.get("subjects", [])) if existing else []
+            if not existing or not has_subject(existing, account):
+                subjects.append(subject(account))
         resource = {
             "apiVersion": "rbac.authorization.k8s.io/v1", "kind": "ClusterRoleBinding",
             "metadata": {"name": name, "labels": {LABEL: LABEL_VALUE}},
@@ -78,6 +82,8 @@ def setup(bindings, requirements):
                         "kind": "ClusterRole", "name": role},
             "subjects": subjects,
         }
+        if existing:
+            resource["metadata"]["resourceVersion"] = existing["metadata"]["resourceVersion"]
         oc("apply", "-f", "-", resource=resource)
 
 

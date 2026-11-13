@@ -99,8 +99,14 @@ for test clusters; each execution sandbox still gets its own task permissions.
 
 The bindings use the `troubleshooting-scenarios-agentic-` name prefix and the
 label `troubleshooting-scenarios/rbac=agentic`. Setup can run again and keeps
-sandbox accounts already added to these bindings. Both OLS cleanup targets
-remove these labeled bindings, which would remain after namespace deletion.
+sandbox accounts already added to the reader and monitoring bindings. The
+managed admin binding contains only the current controller service account;
+setup removes old subjects from this binding when the controller changes.
+Updates include the binding's resource version. If another process changes
+the binding after setup reads it, setup stops with a conflict. Run setup
+again to use the latest subjects.
+Both OLS cleanup targets remove these labeled bindings, which would remain
+after namespace deletion.
 Bindings created outside this repository are kept.
 
 `SKIP_OLS_INSTALL=1` skips Namespace, OperatorGroup, and Subscription
@@ -172,6 +178,9 @@ app-server to be ready. Without this flag, setup skips installation only when th
 app-server rollout is complete.
 
 `make cleanup-ols-agentic` and `make cleanup-ols-classic` run the same uninstall.
+Run both cleanup targets with cluster-admin access. Cleanup stops if it cannot
+remove the managed Agentic bindings, so an admin binding is not silently left
+behind. Fix the access problem and run cleanup again.
 Both remove the local `venv/`, `OLSConfig/cluster`, the OLM Subscription and CSV,
 the OperatorGroup, and the entire `openshift-lightspeed` namespace. This removes
 the deployments and namespaced resources for both Classic and Agentic,

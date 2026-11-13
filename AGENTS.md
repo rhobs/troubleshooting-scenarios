@@ -57,6 +57,11 @@ read from its Deployment. This applies to OLM and quickstart installs,
 including `SKIP_OLS_INSTALL=1`. Preflight checks these bindings and key
 permissions before scenario setup. Both OLS cleanup targets remove bindings
 with `troubleshooting-scenarios/rbac=agentic`; other bindings are kept.
+Setup keeps sandbox subjects in reader and monitoring bindings. The managed
+admin binding contains only the current controller account. Binding updates
+use `resourceVersion`; rerun setup after a conflict to read current subjects.
+Both cleanup targets require cluster-admin access and stop if managed binding
+removal fails. Fix the access problem and rerun cleanup.
 
 ## Reading and debugging eval results
 

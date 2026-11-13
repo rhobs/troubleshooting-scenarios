@@ -89,6 +89,20 @@ and selected judges, and syncs the Agent CRs. OpenAI needs
 `EVAL_VERTEX_PROJECT_ID`. Setup checks credentials before changing resources.
 The Vertex providers use region `global`.
 
+Setup also creates three ClusterRoleBindings for Agentic evals. The
+`lightspeed-agent` service account gets `cluster-reader` and
+`cluster-monitoring-view`. The controller gets `cluster-admin` so it can
+create and bind roles for remediation sandboxes. Setup reads the controller
+service account from its Deployment, for both OLM and quickstart installs.
+Run setup with cluster-admin access. These broad controller permissions are
+for test clusters; each execution sandbox still gets its own task permissions.
+
+The bindings use the `troubleshooting-scenarios-agentic-` name prefix and the
+label `troubleshooting-scenarios/rbac=agentic`. Setup can run again and keeps
+sandbox accounts already added to these bindings. Both OLS cleanup targets
+remove these labeled bindings, which would remain after namespace deletion.
+Bindings created outside this repository are kept.
+
 `SKIP_OLS_INSTALL=1` skips Namespace, OperatorGroup, and Subscription
 creation. It supports both an existing full OLS installation and the standalone
 Agentic quickstart in `openshift-lightspeed`. With the quickstart, setup reuses
@@ -98,8 +112,11 @@ install with the [Agentic quickstart](https://github.com/openshift/lightspeed-ag
 then run `make setup-ols-agentic SKIP_OLS_INSTALL=1`.
 
 Before a real evaluation, `make eval-ols-agentic` checks that these Agent CRs
-are present and match the system config. If they do not, it stops and asks you to run
-`make setup-ols-agentic` again.
+are present and match the system config. It also checks reader, monitoring,
+and controller role bindings and key read and RBAC permissions. Existing
+bindings can use other names if their roles and subjects match. If a check
+fails, it stops before scenario setup and asks you to run
+`make setup-ols-agentic` again. `SKIP_OLS_INSTALL=1` still configures RBAC.
 
 ```bash
 make setup-ols-agentic

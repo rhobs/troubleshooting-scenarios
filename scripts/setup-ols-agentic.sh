@@ -100,6 +100,9 @@ oc wait --for=create configmap/lightspeed-agentic-configuration -n "$NAMESPACE" 
 oc wait --for=jsonpath='{.data.sandbox-pod-spec}' \
     configmap/lightspeed-agentic-configuration -n "$NAMESPACE" --timeout=480s
 
+echo "==> Configuring Agentic investigation and execution permissions..."
+"$PYTHON" "$SCRIPT_DIR/agentic-rbac.py" --setup --deployment "$agentic_deployment"
+
 function setup_openai_secret() {
     echo "==> Setting up OpenAI secret for the agent..."
     : "${EVAL_OPENAI_API_KEY:?EVAL_OPENAI_API_KEY must be set}"

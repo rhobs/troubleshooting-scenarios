@@ -44,12 +44,19 @@ The root Makefile has all targets. Run `make help` for the full list.
 ```bash
 make tools              # Install local lint tools in .tools/
 make lint               # Install tools if needed, then run all linters
-make setup-ols-agentic  # Install venv + OLS + sync Agent CRs
+make setup-ols-agentic  # Install venv + OLS + Agentic RBAC + sync Agent CRs
 make setup-ols-classic  # Install venv + OLS classic
 make eval-ols-agentic TAG=investigation # Run OLS agentic investigation cases
 make eval-ols-classic TAG=investigation # Run OLS classic investigation cases
 make cleanup-ols-classic # Remove venv + OLS classic
 ```
+
+Agentic setup grants `cluster-reader` and `cluster-monitoring-view` to
+`lightspeed-agent`, and `cluster-admin` to the controller service account
+read from its Deployment. This applies to OLM and quickstart installs,
+including `SKIP_OLS_INSTALL=1`. Preflight checks these bindings and key
+permissions before scenario setup. Both OLS cleanup targets remove bindings
+with `troubleshooting-scenarios/rbac=agentic`; other bindings are kept.
 
 ## Reading and debugging eval results
 

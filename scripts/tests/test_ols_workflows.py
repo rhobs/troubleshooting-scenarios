@@ -43,7 +43,7 @@ def workspace(tmp_path):
     )
     for name in (
         "eval-ols-agentic.sh", "ci-ols-agentic-evals.sh", "sync-agent-crs.py",
-        "setup-ols-agentic.sh", "install-ols-operator.sh",
+        "setup-ols-agentic.sh", "install-ols-operator.sh", "agentic-rbac.py",
         "show-eval-summary.py", "show-eval-summary.sh",
         "resolve-setup-mode.sh",
         "eval-report.sh", "report_progress.py",
@@ -350,7 +350,8 @@ exit 42
 
 
 @pytest.mark.parametrize("mode", ["agentic", "classic"])
-def test_preflight_checks_the_selected_service(tmp_path, mode):
+@pytest.mark.parametrize("rbac_ready", [False, True])
+def test_preflight_checks_the_selected_service(tmp_path, mode, rbac_ready):
     scripts = tmp_path / "scripts"
     scripts.mkdir()
     shutil.copy(ROOT / "scripts/preflight.sh", scripts / "preflight.sh")
@@ -371,7 +372,8 @@ def test_preflight_checks_the_selected_service(tmp_path, mode):
     )
     executable(
         tmp_path / "venv/bin/python3",
-        '#!/bin/bash\necho "$*" >> "$PREFLIGHT_LOG"\n',
+        '#!/bin/bash\necho "$*" >> "$PREFLIGHT_LOG"\n'
+        'if [[ "$1" == */agentic-rbac.py && "$RBAC_READY" == 0 ]]; then exit 1; fi\n',
     )
     executable(tmp_path / "venv/bin/lightspeed-eval", "#!/bin/bash\n")
     log = tmp_path / "preflight.log"
@@ -385,9 +387,15 @@ def test_preflight_checks_the_selected_service(tmp_path, mode):
             "PATH": f"{tmp_path / 'bin'}:{os.environ['PATH']}",
             "EVAL_OPENAI_API_KEY": "test-key",
             "PREFLIGHT_LOG": str(log),
+            "RBAC_READY": "1" if rbac_ready else "0",
         },
         capture_output=True, text=True,
     )
+    if mode == "agentic" and not rbac_ready:
+        assert result.returncode != 0
+        assert "Agentic RBAC check failed" in result.stdout
+        assert "sync-agent-crs.py" not in log.read_text()
+        return
     assert result.returncode == 0, result.stdout + result.stderr
     for message in ("oc available", "logged in as test-user", "evaluation tools available",
                     "EVAL_OPENAI_API_KEY set", "Preflight complete"):
@@ -395,6 +403,7 @@ def test_preflight_checks_the_selected_service(tmp_path, mode):
     calls = log.read_text()
     if mode == "agentic":
         assert "--api-group=agentic.openshift.io" in calls
+        assert "agentic-rbac.py" in calls
         assert "sync-agent-crs.py --check system-ols-agentic.yaml" in calls
         assert "Agent CRs match" in result.stdout
         assert "--api-group=ols.openshift.io" not in calls
@@ -1281,7 +1290,16 @@ if args[0] == "apply":
         (root / "configured").touch()
 elif args[:2] == ["create", "secret"]:
     print(yaml.safe_dump({"kind": "Secret", "metadata": {"name": args[3]}}))
+elif args[:2] == ["get", "clusterrolebindings"]:
+    path = root / "resources.jsonl"
+    resources = [json.loads(line) for line in path.read_text().splitlines()] if path.exists() else []
+    print(json.dumps({"items": [item for item in resources if item["kind"] == "ClusterRoleBinding"]}))
+elif args[:2] == ["auth", "can-i"]:
+    print("yes")
 elif args[:2] == ["get", "deployment"]:
+    if args[-1] == "json":
+        print(json.dumps({"spec": {"template": {"spec": {"serviceAccountName": "full-controller"}}}}))
+        sys.exit(0)
     if args[2] == "lightspeed-operator-controller-manager":
         print("deployment.apps/lightspeed-operator-controller-manager")
         sys.exit(0)
@@ -1334,7 +1352,7 @@ elif args[0] != "wait":
     kinds = [resource["kind"] for resource in resources]
     expected = ["Secret", "OLSConfig"] if service == "classic" else [
         *([] if existing_config else ["OLSConfig"]),
-        *(["Secret", "LLMProvider", "Agent"] if rollout_status == 0 else []),
+        *(["ClusterRoleBinding"] * 3 + ["Secret", "LLMProvider", "Agent"] if rollout_status == 0 else []),
     ]
     if skip_install == "0" and server_state != "ready":
         expected = ["Namespace", "OperatorGroup", "Subscription", *expected]
@@ -1394,7 +1412,16 @@ args = sys.argv[1:]
 failure = os.environ["SETUP_FAILURE"]
 with Path(os.environ["OC_LOG"]).open("a") as log:
     log.write(json.dumps(args) + "\n")
-if args[:2] == ["get", "deployment"]:
+if args[:2] == ["get", "clusterrolebindings"]:
+    path = Path(os.environ["CR_LOG"])
+    resources = [json.loads(line) for line in path.read_text().splitlines()] if path.exists() else []
+    print(json.dumps({"items": [item for item in resources if item["kind"] == "ClusterRoleBinding"]}))
+elif args[:2] == ["auth", "can-i"]:
+    print("yes")
+elif args[:2] == ["get", "deployment"]:
+    if args[-1] == "json":
+        print(json.dumps({"spec": {"template": {"spec": {"serviceAccountName": "quickstart-controller"}}}}))
+        sys.exit(0)
     if args[2] == "lightspeed-app-server":
         sys.exit(1)
     assert args[2] == "lightspeed-operator-controller-manager" and "--ignore-not-found" in args
@@ -1413,7 +1440,7 @@ elif args[:2] == ["create", "secret"]:
     print(yaml.safe_dump({"kind": "Secret", "metadata": {"name": args[3]}}))
 elif args[0] == "apply":
     resource = yaml.safe_load(sys.stdin)
-    assert resource["kind"] in ("Secret", "LLMProvider", "Agent")
+    assert resource["kind"] in ("ClusterRoleBinding", "Secret", "LLMProvider", "Agent")
     with Path(os.environ["CR_LOG"]).open("a") as log:
         log.write(json.dumps(resource) + "\n")
 else:
@@ -1431,7 +1458,8 @@ else:
     assert (result.returncode == 0) == (failure is None), result.stdout + result.stderr
     if failure is None:
         resources = [json.loads(line) for line in resources_path.read_text().splitlines()]
-        assert [resource["kind"] for resource in resources] == ["Secret", "LLMProvider", "Agent"]
+        assert [resource["kind"] for resource in resources] == ["ClusterRoleBinding"] * 3 + ["Secret", "LLMProvider", "Agent"]
+        assert resources[2]["subjects"][0]["name"] == "quickstart-controller"
         assert "existing Agentic quickstart" in result.stdout
     else:
         assert not resources_path.exists()
@@ -1552,7 +1580,13 @@ def test_ci_agent_provisioning(workspace, agent, active_subset):
         "        with open(os.environ['CR_STATE']) as f: resources = json.load(f)\n"
         "    except FileNotFoundError:\n"
         "        resources = []\n"
-        "    print(json.dumps({'items': [r for r in resources if r.get('kind') == 'Agent']}))\n",
+        "    if sys.argv[2] == 'deployment':\n"
+        "        print(json.dumps({'spec': {'template': {'spec': {'serviceAccountName': 'test-controller'}}}}))\n"
+        "    else:\n"
+        "        kind = 'ClusterRoleBinding' if sys.argv[2] == 'clusterrolebindings' else 'Agent'\n"
+        "        print(json.dumps({'items': [r for r in resources if r.get('kind') == kind]}))\n"
+        "elif sys.argv[1:3] == ['auth', 'can-i']:\n"
+        "    print('yes')\n",
     )
     executable(
         workspace / "scripts/setup-venv.sh", "#!/bin/bash\nexit 0\n"
@@ -1646,6 +1680,17 @@ if sys.argv[1] == "apply":
         for resource in yaml.safe_load_all(sys.stdin):
             if resource:
                 log.write(json.dumps(resource) + "\\n")
+elif sys.argv[1:3] == ["get", "deployment"] and sys.argv[-1] == "json":
+    print(json.dumps({"spec": {"template": {"spec": {"serviceAccountName": "test-controller"}}}}))
+elif sys.argv[1:3] == ["get", "clusterrolebindings"]:
+    try:
+        with open(os.environ["CR_LOG"]) as log:
+            resources = [json.loads(line) for line in log]
+    except FileNotFoundError:
+        resources = []
+    print(json.dumps({"items": [r for r in resources if r["kind"] == "ClusterRoleBinding"]}))
+elif sys.argv[1:3] == ["auth", "can-i"]:
+    print("yes")
 ''')
     credentials = workspace / "credentials.json"
     credentials.write_text("{}")

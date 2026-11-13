@@ -3,6 +3,9 @@ set -euo pipefail
 
 echo "==> Removing OLS from openshift-lightspeed..."
 
+# ClusterRoleBindings remain after namespace deletion. Remove only our bindings.
+oc delete clusterrolebinding -l troubleshooting-scenarios/rbac=agentic --ignore-not-found
+
 oc delete olsconfig cluster --ignore-not-found 2>/dev/null || true
 oc delete secret creds-classic-openai -n openshift-lightspeed --ignore-not-found 2>/dev/null || true
 

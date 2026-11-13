@@ -53,8 +53,12 @@ cluster connection or eval environment. Without Python 3 or PyYAML, config
 values appear as placeholders.
 
 Before a real run, both runners check cluster access, evaluation tools, and
-`EVAL_OPENAI_API_KEY`. Agentic also checks that Agent CRs match the config;
-Classic checks its operator CRD and server deployment.
+`EVAL_OPENAI_API_KEY`. Agentic also checks that Agent CRs match the config
+and that the reader, monitoring, and controller RBAC are ready. Missing
+bindings stop the run before scenario setup. Run `make setup-ols-agentic`
+with cluster-admin access to create the required bindings. This also works
+with `SKIP_OLS_INSTALL=1`; see the [Agentic setup guide](../README.md#ols-agentic)
+for roles and cleanup. Classic checks its operator CRD and server deployment.
 
 ### Setup modes
 

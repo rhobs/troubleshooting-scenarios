@@ -1,0 +1,43 @@
+- conversation_group_id: kubelet_target_down_alert
+  description: |
+    TargetDown warning alert fires for a kubelet endpoint.
+
+    **OpenShift Version Requirement: This scenario is designed for OCP 4.x only.**
+    It works reliably on OCP 4.22 but does NOT trigger kubelet TargetDown on OCP 5.0+
+    due to kubelet resilience improvements in newer versions.
+
+    RCA: Deployment with excessive termination grace period (28800 seconds / 8
+    hours) and continuous disk I/O operations cause pods to accumulate in
+    Terminating state when repeatedly deleted. Combined with sustained disk I/O
+    load, this overwhelms the kubelet on the targeted node, making it unreachable.
+    Expected: Identify the deployment with excessive terminationGracePeriodSeconds
+    (28800s), recommend reducing it to a reasonable value (e.g., 30-60 seconds),
+    and explain that the accumulation of terminating pods combined with disk I/O
+    pressure is overwhelming the kubelet.
+  tag:
+    - investigation
+    - alert
+    - difficulty_medium
+    - kubelet
+
+  turns:
+    - turn_id: investigate_kubelet_down
+      query: >-
+        We're getting a TargetDown alert for a kubelet on one of our worker nodes.
+        Prometheus can't scrape the kubelet endpoint and the alert started about
+        10 minutes ago. The node is running workloads in the batch-processor
+        namespace. Can you help figure out what's causing this?
+      expected_response: >-
+        The deployment report-generator in namespace batch-processor has an
+        excessive terminationGracePeriodSeconds of 28800 seconds (8 hours) and
+        performs continuous disk I/O operations across multiple emptyDir volumes.
+        When pods are repeatedly deleted or scaled down, they accumulate in
+        Terminating state for hours instead of terminating quickly. The
+        combination of sustained disk I/O load and accumulation of terminating
+        pods overwhelms the kubelet on the targeted node, causing the kubelet to
+        become unreachable and triggering the TargetDown warning alert. Fix:
+        Reduce the terminationGracePeriodSeconds in the deployment spec to a
+        reasonable value such as 30 seconds, and delete the stuck Terminating
+        pods to allow the kubelet to recover.
+      turn_metrics:
+        - custom:answer_correctness

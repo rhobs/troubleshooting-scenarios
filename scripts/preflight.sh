@@ -7,7 +7,7 @@ SYSTEM_CONFIG=""
 
 while [ $# -gt 0 ]; do
   case "$1" in
-    --require-ols) MODE="classic"; shift ;;
+    --require-ols) MODE="chat"; shift ;;
     --require-agentic) MODE="agentic"; shift ;;
     --system-config)
       if [ $# -lt 2 ] || [ -z "$2" ]; then
@@ -87,29 +87,29 @@ if [ "$MODE" = "agentic" ]; then
   fi
   printf '\033[0;32m  OK:\033[0m Agent CRs match %s\n' "$SYSTEM_CONFIG"
 elif ! oc api-resources --api-group=ols.openshift.io 2>/dev/null | grep -q olsconfigs; then
-  if [ "$MODE" = "classic" ]; then
-    printf '\033[0;31mFAIL:\033[0m OpenShift Lightspeed not available: run make setup-ols-classic\n'
+  if [ "$MODE" = "chat" ]; then
+    printf '\033[0;31mFAIL:\033[0m OpenShift Lightspeed not available: run make setup-ols-chat\n'
     exit 1
   fi
 else
   printf '\033[0;32m  OK:\033[0m OpenShift Lightspeed is available\n'
 
-  # Check whether the OLS Classic server is available.
+  # Check whether the OLS Chat server is available.
   if oc get deployment lightspeed-app-server -n openshift-lightspeed -o name >/dev/null 2>&1; then
     avail="$(oc get deployment lightspeed-app-server -n openshift-lightspeed \
       -o jsonpath='{.status.conditions[?(@.type=="Available")].status}' 2>/dev/null || true)"
     if [ "$avail" = "True" ]; then
       printf '\033[0;32m  OK:\033[0m lightspeed-app-server is Available\n'
     else
-      if [ "$MODE" = "classic" ]; then
+      if [ "$MODE" = "chat" ]; then
         printf '\033[0;31mFAIL:\033[0m lightspeed-app-server exists but is not Available\n'
         exit 1
       fi
       printf '\033[0;33mWARN:\033[0m lightspeed-app-server exists but is not Available\n'
     fi
   else
-    if [ "$MODE" = "classic" ]; then
-      printf '\033[0;31mFAIL:\033[0m lightspeed-app-server deployment not found in openshift-lightspeed (run make setup-ols-classic)\n'
+    if [ "$MODE" = "chat" ]; then
+      printf '\033[0;31mFAIL:\033[0m lightspeed-app-server deployment not found in openshift-lightspeed (run make setup-ols-chat)\n'
       exit 1
     fi
     printf '\033[0;33mWARN:\033[0m lightspeed-app-server deployment not found in openshift-lightspeed\n'

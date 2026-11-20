@@ -14,7 +14,7 @@ import yaml
 ROOT = Path(__file__).resolve().parents[2]
 
 
-@pytest.mark.parametrize("service", ["agentic", "classic"])
+@pytest.mark.parametrize("service", ["agentic", "chat"])
 def test_scenario_metrics_are_declared_in_system_config(service):
     config = yaml.safe_load((ROOT / f"evals/system-ols-{service}.yaml").read_text())
     known_metrics = config["metrics_metadata"]["turn_level"]
@@ -48,7 +48,7 @@ def workspace(tmp_path):
         "resolve-setup-mode.sh",
         "eval-report.sh", "report_progress.py",
         "capture-config-crs.py",
-        "capture-classic-logs.py",
+        "capture-chat-logs.py",
     ):
         shutil.copy(ROOT / "scripts" / name, scripts / name)
     executable(scripts / "preflight.sh", "#!/bin/bash\nexit 0\n")
@@ -74,20 +74,20 @@ def workspace(tmp_path):
 
 
 @pytest.fixture
-def classic_workspace(workspace):
-    shutil.copy(ROOT / "scripts/eval-ols-classic.sh", workspace / "scripts/eval-ols-classic.sh")
+def chat_workspace(workspace):
+    shutil.copy(ROOT / "scripts/eval-ols-chat.sh", workspace / "scripts/eval-ols-chat.sh")
     executable(workspace / "bin/curl", "#!/bin/bash\nexit 0\n")
     executable(
         workspace / "bin/oc",
         '#!/bin/bash\nif [ "$1" = whoami ]; then echo test-token; fi\n',
     )
-    (workspace / "evals/system-ols-classic.yaml").write_text(yaml.safe_dump({
+    (workspace / "evals/system-ols-chat.yaml").write_text(yaml.safe_dump({
         "agents": {
             "default": {"agent": ["test-agent"], "repeat": 2},
             "test-agent": {"description": "test|model"},
         },
     }))
-    (workspace / "scripts/generate-report-classic.py").write_text(
+    (workspace / "scripts/generate-report-chat.py").write_text(
         'import os, sys\n'
         'with open(os.environ["EVENT_LOG"], "a") as f:\n'
         '    f.write("report\\n")\n'
@@ -98,14 +98,14 @@ def classic_workspace(workspace):
 
 
 @pytest.fixture
-def namespace_workspace(classic_workspace):
-    root = classic_workspace
+def namespace_workspace(chat_workspace):
+    root = chat_workspace
     for name in ("scenario-namespace.sh", "check-prerequisites.sh"):
         shutil.copy(ROOT / "scripts" / name, root / "scripts" / name)
     executable(root / "scripts/enable-uwm.sh", "#!/bin/bash\nexit 0\n")
     executable(root / "scripts/run-agentic-evals.sh", "#!/bin/bash\nexit 0\n")
     shutil.copy(
-        root / "scripts/generate-report-classic.py",
+        root / "scripts/generate-report-chat.py",
         root / "scripts/generate-report-agentic.py",
     )
     for name in ("_disabled/restarting_pod_alert", "batch_submission_timeouts"):
@@ -154,7 +154,7 @@ elif args[:2] == ["registry", "login"]:
     return root
 
 
-@pytest.mark.parametrize("service", ["agentic", "classic"])
+@pytest.mark.parametrize("service", ["agentic", "chat"])
 @pytest.mark.parametrize("setup_mode", ["scenario", "run"])
 @pytest.mark.parametrize("scenario_name,namespace", [
     ("_disabled/restarting_pod_alert", "data-processing"),
@@ -349,7 +349,7 @@ exit 42
         assert not temporary_output.exists()
 
 
-@pytest.mark.parametrize("mode", ["agentic", "classic"])
+@pytest.mark.parametrize("mode", ["agentic", "chat"])
 @pytest.mark.parametrize("rbac_ready", [False, True])
 def test_preflight_checks_the_selected_service(tmp_path, mode, rbac_ready):
     scripts = tmp_path / "scripts"
@@ -377,7 +377,7 @@ def test_preflight_checks_the_selected_service(tmp_path, mode, rbac_ready):
     )
     executable(tmp_path / "venv/bin/lightspeed-eval", "#!/bin/bash\n")
     log = tmp_path / "preflight.log"
-    args = ["--require-ols"] if mode == "classic" else [
+    args = ["--require-ols"] if mode == "chat" else [
         "--require-agentic", "--system-config", "system-ols-agentic.yaml",
     ]
     result = subprocess.run(
@@ -414,7 +414,7 @@ def test_preflight_checks_the_selected_service(tmp_path, mode, rbac_ready):
         assert "sync-agent-crs.py" not in calls
 
 
-@pytest.mark.parametrize("mode", ["agentic", "classic"])
+@pytest.mark.parametrize("mode", ["agentic", "chat"])
 @pytest.mark.parametrize("preview", ["0", "1"])
 @pytest.mark.parametrize("filters", [[], ["SCENARIO=", "TAG="], ["SCENARIO= ", "TAG= "]])
 def test_eval_requires_a_filter_before_running(workspace, mode, preview, filters):
@@ -436,9 +436,9 @@ def test_eval_requires_a_filter_before_running(workspace, mode, preview, filters
     assert not (workspace / "evals/results").exists()
 
 
-@pytest.mark.parametrize("mode", ["agentic", "classic"])
+@pytest.mark.parametrize("mode", ["agentic", "chat"])
 def test_eval_accepts_a_tag_filter(request, mode):
-    workspace = request.getfixturevalue("classic_workspace" if mode == "classic" else "workspace")
+    workspace = request.getfixturevalue("chat_workspace" if mode == "chat" else "workspace")
     name = "crashlooping_pod_alert"
     scenario = workspace / "evals/scenarios" / name
     scenario.mkdir(parents=True)
@@ -454,7 +454,7 @@ def test_eval_accepts_a_tag_filter(request, mode):
     assert f"scenarios:  1\n  {name}" in result.stdout
 
 
-@pytest.mark.parametrize("mode", ["agentic", "classic"])
+@pytest.mark.parametrize("mode", ["agentic", "chat"])
 @pytest.mark.parametrize("setup_mode,remediation,effective_mode", [
     ("run", False, "run"),
     ("auto", False, "scenario"),
@@ -463,7 +463,7 @@ def test_eval_accepts_a_tag_filter(request, mode):
     ("skip", True, "skip"),
 ])
 def test_preview_summary_matches_real_run(request, mode, setup_mode, remediation, effective_mode):
-    root = request.getfixturevalue("classic_workspace" if mode == "classic" else "workspace")
+    root = request.getfixturevalue("chat_workspace" if mode == "chat" else "workspace")
     config_path = root / "evals" / f"system-ols-{mode}.yaml"
     config = yaml.safe_load(config_path.read_text())
     config["agents"]["default"]["parallel"] = True
@@ -519,10 +519,10 @@ def test_preview_summary_matches_real_run(request, mode, setup_mode, remediation
     assert not list(session.glob(".capture-logs-ready.*"))
 
 
-@pytest.mark.parametrize("mode", ["agentic", "classic"])
+@pytest.mark.parametrize("mode", ["agentic", "chat"])
 @pytest.mark.parametrize("olsconfig_error", [False, True])
 def test_eval_saves_config_crs(request, mode, olsconfig_error):
-    root = request.getfixturevalue("classic_workspace" if mode == "classic" else "workspace")
+    root = request.getfixturevalue("chat_workspace" if mode == "chat" else "workspace")
     resources = {
         "olsconfigs.ols.openshift.io": [{
             "apiVersion": "ols.openshift.io/v1alpha1", "kind": "OLSConfig",
@@ -607,10 +607,10 @@ print(json.dumps({"items": resources[args[1]]}))
         assert "Saved OLSConfig" in log
 
 
-@pytest.mark.parametrize("mode", ["agentic", "classic"])
+@pytest.mark.parametrize("mode", ["agentic", "chat"])
 @pytest.mark.parametrize("setup_mode", ["auto", "run", "scenario", "skip"])
 def test_eval_uses_saved_definitions(request, mode, setup_mode):
-    root = request.getfixturevalue("classic_workspace" if mode == "classic" else "workspace")
+    root = request.getfixturevalue("chat_workspace" if mode == "chat" else "workspace")
     filename = f"evals-ols-{mode}.yaml"
     names = ["first", "group/first"]
     originals = {}
@@ -686,9 +686,9 @@ def test_summary_shows_effective_parallel_setting(tmp_path, setup_mode, parallel
     assert f"parallel:   {str(expected).lower()}" in result.stdout
 
 
-@pytest.mark.parametrize("mode", ["agentic", "classic"])
+@pytest.mark.parametrize("mode", ["agentic", "chat"])
 def test_preview_works_without_python_yaml(request, mode):
-    root = request.getfixturevalue("classic_workspace" if mode == "classic" else "workspace")
+    root = request.getfixturevalue("chat_workspace" if mode == "chat" else "workspace")
     executable(root / "bin/python3", "#!/bin/bash\nexit 1\n")
     result = subprocess.run(
         ["make", f"eval-ols-{mode}", "SCENARIO=crashlooping_pod_alert", "PREVIEW=1",
@@ -828,11 +828,11 @@ def test_failed_scenario_allows_later_scenarios_and_report(
 
 
 @pytest.mark.parametrize("failure_step,expected_status", [("setup", 23), ("eval", 42)])
-def test_classic_failed_scenario_allows_later_scenarios_and_report(
-    classic_workspace, failure_step, expected_status
+def test_chat_failed_scenario_allows_later_scenarios_and_report(
+    chat_workspace, failure_step, expected_status
 ):
     for name in ("first", "second"):
-        scenario = classic_workspace / "evals/scenarios" / name
+        scenario = chat_workspace / "evals/scenarios" / name
         setup_status = 23 if name == "first" and failure_step == "setup" else 0
         executable(
             scenario / "setup.sh",
@@ -842,27 +842,27 @@ def test_classic_failed_scenario_allows_later_scenarios_and_report(
             scenario / "cleanup.sh",
             f'#!/bin/bash\necho cleanup:{name} >> "$EVENT_LOG"\n',
         )
-        (scenario / "evals-ols-classic.yaml").write_text("[]\n")
+        (scenario / "evals-ols-chat.yaml").write_text("[]\n")
 
     executable(
-        classic_workspace / "scripts/run-agentic-evals.sh",
+        chat_workspace / "scripts/run-agentic-evals.sh",
         '#!/bin/bash\n'
         'scenario="$(basename "$(dirname "$4")")"\n'
         'echo "eval:$scenario" >> "$EVENT_LOG"\n'
         'if [ "$scenario" = first ] && [ "$FAILURE_STEP" = eval ]; then exit 42; fi\n',
     )
-    log = classic_workspace / "events"
+    log = chat_workspace / "events"
     result = subprocess.run(
         [
-            "bash", str(classic_workspace / "scripts/eval-ols-classic.sh"),
-            "--system-config", "system-ols-classic.yaml",
+            "bash", str(chat_workspace / "scripts/eval-ols-chat.sh"),
+            "--system-config", "system-ols-chat.yaml",
             "--tags", "alert",
             "--scenarios", "scenarios/first", "scenarios/second",
         ],
-        cwd=classic_workspace / "evals",
+        cwd=chat_workspace / "evals",
         env={
             **os.environ,
-            "PATH": f"{classic_workspace / 'bin'}:{os.environ['PATH']}",
+            "PATH": f"{chat_workspace / 'bin'}:{os.environ['PATH']}",
             "EVENT_LOG": str(log),
             "FAILURE_STEP": failure_step,
         },
@@ -884,29 +884,29 @@ def test_classic_failed_scenario_allows_later_scenarios_and_report(
     assert recorded[0] == recorded[-1] == "report"
     # Initial report, two finished scenarios, and final report.
     assert recorded.count("report") == 4
-    assert list((classic_workspace / "evals/results").glob("*/report.md"))
+    assert list((chat_workspace / "evals/results").glob("*/report.md"))
 
 
 @pytest.mark.parametrize("setup_mode", ["run", "auto"])
-def test_classic_run_mode_sets_up_each_agent_repeat(classic_workspace, setup_mode):
-    (classic_workspace / "evals/system-ols-classic.yaml").write_text(yaml.safe_dump({
+def test_chat_run_mode_sets_up_each_agent_repeat(chat_workspace, setup_mode):
+    (chat_workspace / "evals/system-ols-chat.yaml").write_text(yaml.safe_dump({
         "agents": {
             "default": {"agent": ["first", "second"], "repeat": 2},
             "first": {"description": "test|first"},
             "second": {"description": "test|second"},
         },
     }))
-    group = classic_workspace / "evals/scenarios/group"
+    group = chat_workspace / "evals/scenarios/group"
     executable(group / "setup.sh", '#!/bin/bash\necho group-setup >> "$EVENT_LOG"\n')
     executable(group / "cleanup.sh", '#!/bin/bash\necho group-cleanup >> "$EVENT_LOG"\n')
     scenario = group / "first"
     executable(scenario / "setup.sh", '#!/bin/bash\necho setup >> "$EVENT_LOG"\n')
     executable(scenario / "cleanup.sh", '#!/bin/bash\necho cleanup >> "$EVENT_LOG"\n')
-    (scenario / "evals-ols-classic.yaml").write_text(
+    (scenario / "evals-ols-chat.yaml").write_text(
         "- conversation_group_id: example\n  tag:\n    - remediation\n"
     )
     executable(
-        classic_workspace / "scripts/run-agentic-evals.sh",
+        chat_workspace / "scripts/run-agentic-evals.sh",
         '#!/bin/bash\n'
         'while [ $# -gt 0 ]; do\n'
         '  case "$1" in\n'
@@ -918,18 +918,18 @@ def test_classic_run_mode_sets_up_each_agent_repeat(classic_workspace, setup_mod
         'echo "eval:$agent:$run" >> "$EVENT_LOG"\n'
         'if [ "$agent" = first ] && [ "$run" = 1 ]; then exit 42; fi\n',
     )
-    log = classic_workspace / "events"
+    log = chat_workspace / "events"
     result = subprocess.run(
         [
-            "bash", str(classic_workspace / "scripts/eval-ols-classic.sh"),
-            "--system-config", "system-ols-classic.yaml",
+            "bash", str(chat_workspace / "scripts/eval-ols-chat.sh"),
+            "--system-config", "system-ols-chat.yaml",
             *(["--setup-mode", setup_mode] if setup_mode != "auto" else []),
             "--scenarios", "scenarios/group/first",
         ],
-        cwd=classic_workspace / "evals",
+        cwd=chat_workspace / "evals",
         env={
             **os.environ,
-            "PATH": f"{classic_workspace / 'bin'}:{os.environ['PATH']}",
+            "PATH": f"{chat_workspace / 'bin'}:{os.environ['PATH']}",
             "EVENT_LOG": str(log),
         },
         capture_output=True, text=True,
@@ -952,13 +952,13 @@ def test_classic_run_mode_sets_up_each_agent_repeat(classic_workspace, setup_mod
     assert recorded[0] == recorded[-1] == "report"
     # Initial report, four finished runs, and final report.
     assert recorded.count("report") == 6
-    assert list((classic_workspace / "evals/results").glob("*/report.md"))
+    assert list((chat_workspace / "evals/results").glob("*/report.md"))
 
 
-def test_classic_failed_group_setup_skips_group_and_reports_other_scenarios(
-    classic_workspace,
+def test_chat_failed_group_setup_skips_group_and_reports_other_scenarios(
+    chat_workspace,
 ):
-    group = classic_workspace / "evals/scenarios/group"
+    group = chat_workspace / "evals/scenarios/group"
     executable(
         group / "setup.sh",
         '#!/bin/bash\necho group-setup >> "$EVENT_LOG"\nexit 31\n',
@@ -968,7 +968,7 @@ def test_classic_failed_group_setup_skips_group_and_reports_other_scenarios(
         '#!/bin/bash\necho group-cleanup >> "$EVENT_LOG"\n',
     )
     for name in ("group/first", "group/second", "other/third"):
-        scenario = classic_workspace / "evals/scenarios" / name
+        scenario = chat_workspace / "evals/scenarios" / name
         executable(
             scenario / "setup.sh",
             f'#!/bin/bash\necho setup:{name} >> "$EVENT_LOG"\n',
@@ -977,24 +977,24 @@ def test_classic_failed_group_setup_skips_group_and_reports_other_scenarios(
             scenario / "cleanup.sh",
             f'#!/bin/bash\necho cleanup:{name} >> "$EVENT_LOG"\n',
         )
-        (scenario / "evals-ols-classic.yaml").write_text("[]\n")
+        (scenario / "evals-ols-chat.yaml").write_text("[]\n")
 
     executable(
-        classic_workspace / "scripts/run-agentic-evals.sh",
+        chat_workspace / "scripts/run-agentic-evals.sh",
         '#!/bin/bash\necho eval >> "$EVENT_LOG"\n',
     )
-    log = classic_workspace / "events"
+    log = chat_workspace / "events"
     result = subprocess.run(
         [
-            "bash", str(classic_workspace / "scripts/eval-ols-classic.sh"),
-            "--system-config", "system-ols-classic.yaml",
+            "bash", str(chat_workspace / "scripts/eval-ols-chat.sh"),
+            "--system-config", "system-ols-chat.yaml",
             "--scenarios", "scenarios/group/first", "scenarios/group/second",
             "scenarios/other/third",
         ],
-        cwd=classic_workspace / "evals",
+        cwd=chat_workspace / "evals",
         env={
             **os.environ,
-            "PATH": f"{classic_workspace / 'bin'}:{os.environ['PATH']}",
+            "PATH": f"{chat_workspace / 'bin'}:{os.environ['PATH']}",
             "EVENT_LOG": str(log),
         },
         capture_output=True, text=True,
@@ -1009,15 +1009,15 @@ def test_classic_failed_group_setup_skips_group_and_reports_other_scenarios(
     # Initial report, two skipped scenarios, one finished scenario, and final report.
     assert recorded.count("report") == 5
     assert "Skipping scenarios/group/second" in result.stderr
-    assert list((classic_workspace / "evals/results").glob("*/report.md"))
+    assert list((chat_workspace / "evals/results").glob("*/report.md"))
 
 
-@pytest.fixture(params=["agentic", "classic"])
-def live_report_workspace(request, classic_workspace):
+@pytest.fixture(params=["agentic", "chat"])
+def live_report_workspace(request, chat_workspace):
     """Use the real reports with a small evaluator that needs no cluster."""
-    root = classic_workspace
+    root = chat_workspace
     service = request.param
-    for name in ("generate-report-agentic.py", "generate-report-classic.py", "report_common.py", "agentic_crs.py"):
+    for name in ("generate-report-agentic.py", "generate-report-chat.py", "report_common.py", "agentic_crs.py"):
         shutil.copy(ROOT / "scripts" / name, root / "scripts" / name)
     (root / f"evals/system-ols-{service}.yaml").write_text(yaml.safe_dump({
         "agents": {"default": {"agent": ["test-agent"], "repeat": 2}},
@@ -1078,7 +1078,7 @@ if scenario == "second":
     env = {
         **os.environ, "PATH": f"{root / 'bin'}:{os.environ['PATH']}",
         "SNAPSHOT_DIR": str(snapshots),
-        "METRIC": "custom:answer_correctness" if service == "classic" else
+        "METRIC": "custom:answer_correctness" if service == "chat" else
         "custom:openshift_agentic_run_evaluation_correctness",
     }
     return root, service, env
@@ -1248,7 +1248,7 @@ def test_interrupted_run_keeps_results_and_updates_report(
 
 
 @pytest.mark.parametrize("service,existing_config", [
-    ("classic", False), ("classic", True), ("agentic", False), ("agentic", True),
+    ("chat", False), ("chat", True), ("agentic", False), ("agentic", True),
 ])
 @pytest.mark.parametrize("skip_install", ["0", "1"])
 @pytest.mark.parametrize("server_state", ["missing", "pending", "ready"])
@@ -1257,7 +1257,7 @@ def test_setup_can_skip_operator_install(
     workspace, service, existing_config, skip_install, server_state, rollout_status,
 ):
     root = workspace
-    for name in ("setup-ols-classic.sh", "build-ols-classic-config.py"):
+    for name in ("setup-ols-chat.sh", "build-ols-chat-config.py"):
         shutil.copy(ROOT / "scripts" / name, root / "scripts" / name)
     executable(root / "scripts/setup-venv.sh", "#!/bin/bash\nexit 0\n")
     config_path = root / "system.yaml"
@@ -1278,7 +1278,7 @@ from pathlib import Path
 import sys
 import yaml
 
-root = Path(os.environ["CLASSIC_SETUP_ROOT"])
+root = Path(os.environ["CHAT_SETUP_ROOT"])
 args = sys.argv[1:]
 with (root / "oc.log").open("a") as log:
     log.write(json.dumps(args) + "\n")
@@ -1340,7 +1340,7 @@ elif args[0] != "wait":
          f"SYSTEM_CONFIG_{service.upper()}={config_path}"],
         cwd=root, capture_output=True, text=True, timeout=15,
         env={**os.environ, "PATH": f"{root / 'bin'}:{os.environ['PATH']}",
-             "CLASSIC_SETUP_ROOT": str(root), "SERVER_STATE": server_state,
+             "CHAT_SETUP_ROOT": str(root), "SERVER_STATE": server_state,
              "EXISTING_CONFIG": "1" if existing_config else "0",
              "ROLLOUT_STATUS": str(rollout_status), "EVAL_OPENAI_API_KEY": "test-key",
              "EVAL_VERTEX_CREDENTIALS": "", "EVAL_VERTEX_PROJECT_ID": ""},
@@ -1350,7 +1350,7 @@ elif args[0] != "wait":
     resource_lines = resources_path.read_text().splitlines() if resources_path.exists() else []
     resources = [json.loads(line) for line in resource_lines]
     kinds = [resource["kind"] for resource in resources]
-    expected = ["Secret", "OLSConfig"] if service == "classic" else [
+    expected = ["Secret", "OLSConfig"] if service == "chat" else [
         *([] if existing_config else ["OLSConfig"]),
         *(["ClusterRoleBinding"] * 3 + ["Secret", "LLMProvider", "Agent"] if rollout_status == 0 else []),
     ]
@@ -1360,16 +1360,16 @@ elif args[0] != "wait":
     commands = [json.loads(line) for line in (root / "oc.log").read_text().splitlines()]
     assert any(command[0] == "wait" and "subscription/lightspeed-operator" in command
                for command in commands) == ("Subscription" in kinds)
-    if service == "classic":
+    if service == "chat":
         assert commands[-1][:2] == ["rollout", "status"]
         assert any(command[:2] == ["patch", "olsconfig"] for command in commands) == existing_config
         config = next(resource for resource in resources if resource["kind"] == "OLSConfig")
         assert config["spec"]["ols"] == {"defaultProvider": "openai", "defaultModel": "test-model"}
-        assert config["spec"]["llm"]["providers"][0]["credentialsSecretRef"]["name"] == "creds-classic-openai"
+        assert config["spec"]["llm"]["providers"][0]["credentialsSecretRef"]["name"] == "creds-chat-openai"
     else:
         if existing_config:
             assert "OLSConfig" not in kinds
-            assert "keeping Classic providers and other settings" in result.stdout
+            assert "keeping Chat providers and other settings" in result.stdout
         else:
             config = next(resource for resource in resources if resource["kind"] == "OLSConfig")
             assert config["spec"]["llm"]["providers"] == []
@@ -1529,7 +1529,7 @@ if args[0] == "apply":
             assert ("Forbidden" if failure == "config-read" else "ERROR:") in result.stderr
 
 
-@pytest.mark.parametrize("variant", ["classic", "agentic"])
+@pytest.mark.parametrize("variant", ["chat", "agentic"])
 def test_setup_dependencies(variant):
     result = subprocess.run(
         ["make", "--dry-run", f"setup-ols-{variant}"],
@@ -1537,7 +1537,7 @@ def test_setup_dependencies(variant):
     )
     assert result.stdout.count("setup-venv.sh") == 1
     assert ("sync-agent-crs.py" in result.stdout) == (variant == "agentic")
-    assert ("setup-ols-classic.sh" in result.stdout) == (variant == "classic")
+    assert ("setup-ols-chat.sh" in result.stdout) == (variant == "chat")
 
 
 @pytest.mark.parametrize("agent", [None, "invalid"])
@@ -1723,8 +1723,8 @@ elif sys.argv[1:3] == ["auth", "can-i"]:
     assert [r["metadata"]["name"] for r in resources if r["kind"] == "Agent"] == ["selected"]
 
 
-def install_classic_log_server(root):
-    """Give the Classic runner a small app-server log source."""
+def install_chat_log_server(root):
+    """Give the Chat runner a small app-server log source."""
     executable(root / "bin/oc", f"#!{sys.executable}\n" + r'''
 from datetime import datetime, timezone
 import json
@@ -1767,17 +1767,17 @@ with (root / (name + ".log")).open("a") as output:
     evaluator.write_text(text)
 
 
-@pytest.mark.parametrize("live_report_workspace", ["classic"], indirect=True)
+@pytest.mark.parametrize("live_report_workspace", ["chat"], indirect=True)
 @pytest.mark.parametrize("extra_env,exit_code", [
     ({}, 0), ({"EVAL_STATUS": "42"}, 42),
     ({"INTERRUPT": "2"}, 130), ({"INTERRUPT": "15"}, 143),
 ])
 @pytest.mark.parametrize("capture_failure", [False, True])
-def test_classic_logs_saved_on_success_failure_and_interrupt(
+def test_chat_logs_saved_on_success_failure_and_interrupt(
     live_report_workspace, extra_env, exit_code, capture_failure,
 ):
     root, _, _ = live_report_workspace
-    install_classic_log_server(root)
+    install_chat_log_server(root)
     result, session = run_live_report(
         live_report_workspace, **extra_env,
         LOG_CAPTURE_FAIL="1" if capture_failure else "",
@@ -1800,11 +1800,11 @@ def test_classic_logs_saved_on_success_failure_and_interrupt(
             assert "] eval:first:" not in second
 
 
-@pytest.mark.parametrize("live_report_workspace", ["classic"], indirect=True)
-def test_classic_run_mode_names_each_agent_repeat(live_report_workspace):
+@pytest.mark.parametrize("live_report_workspace", ["chat"], indirect=True)
+def test_chat_run_mode_names_each_agent_repeat(live_report_workspace):
     root, _, _ = live_report_workspace
-    install_classic_log_server(root)
-    config = root / "evals/system-ols-classic.yaml"
+    install_chat_log_server(root)
+    config = root / "evals/system-ols-chat.yaml"
     config.write_text(yaml.safe_dump({
         "agents": {"default": {"agent": ["test-agent", "other-agent"], "repeat": 2}},
     }))
@@ -1820,10 +1820,10 @@ def test_classic_run_mode_names_each_agent_repeat(live_report_workspace):
                 assert f"] eval:{scenario}:{agent}:run_{repeat}\n" in text
 
 
-@pytest.mark.parametrize("live_report_workspace", ["classic"], indirect=True)
-def test_classic_captures_before_group_rollouts(live_report_workspace):
+@pytest.mark.parametrize("live_report_workspace", ["chat"], indirect=True)
+def test_chat_captures_before_group_rollouts(live_report_workspace):
     root, _, env = live_report_workspace
-    install_classic_log_server(root)
+    install_chat_log_server(root)
     group = root / "evals/scenarios/group"
     group.mkdir()
     for name in ("first", "second"):
@@ -1838,8 +1838,8 @@ rm "$TEST_ROOT/server-new.log"
 echo server-after-cleanup > "$TEST_ROOT/server-name"
 ''')
     result = subprocess.run(
-        ["bash", str(root / "scripts/eval-ols-classic.sh"),
-         "--system-config", "system-ols-classic.yaml", "--setup-mode", "scenario",
+        ["bash", str(root / "scripts/eval-ols-chat.sh"),
+         "--system-config", "system-ols-chat.yaml", "--setup-mode", "scenario",
          "--scenarios", "scenarios/group/first", "scenarios/group/second"],
         cwd=root / "evals", capture_output=True, text=True, timeout=30,
         env={**env, "TEST_ROOT": str(root), "EVENT_LOG": str(root / "events")},

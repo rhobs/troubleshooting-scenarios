@@ -1,6 +1,6 @@
 # KubeVirt Evaluation Scenarios
 
-Evaluation scenarios for AI-assisted diagnosis of OpenShift Virtualization (KubeVirt) problems. These scenarios deploy broken VMs on a live cluster and evaluate OLS responses using the `kubevirt` MCP toolset. Currently OLS-classic only; agentic support is planned.
+Evaluation scenarios for AI-assisted diagnosis of OpenShift Virtualization (KubeVirt) problems. These scenarios deploy broken VMs on a live cluster and evaluate OLS responses using the `kubevirt` MCP toolset. Currently OLS-chat only; agentic support is planned.
 
 ### KVM Requirements
 
@@ -19,16 +19,16 @@ OpenShift Virtualization requires KVM for VM execution. On cloud environments, o
 All cases use `investigation`, `kubevirt`, and `difficulty_normal` tags.
 See the [tag guide](../../README.md#tags) for filtering.
 
-CNV, MCP, and scenario fixtures are set up automatically when `eval-ols-classic` runs a kubevirt scenario (via `setup.sh` in this directory). If the CNV namespace already exists, the suite preserves that installation and does not change its emulation setting or uninstall it during cleanup. From the repository root:
+CNV, MCP, and scenario fixtures are set up automatically when `eval-ols-chat` runs a kubevirt scenario (via `setup.sh` in this directory). If the CNV namespace already exists, the suite preserves that installation and does not change its emulation setting or uninstall it during cleanup. From the repository root:
 
 ```bash
-make setup-ols-classic
+make setup-ols-chat
 
 # All kubevirt scenarios
-make eval-ols-classic TAG=kubevirt
+make eval-ols-chat TAG=kubevirt
 
 # Single scenario
-make eval-ols-classic SCENARIO=kubevirt/vm_storage_failure
+make eval-ols-chat SCENARIO=kubevirt/vm_storage_failure
 ```
 
 To manage CNV independently, use its scenario Makefile:

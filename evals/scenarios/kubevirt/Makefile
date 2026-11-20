@@ -26,5 +26,5 @@ help:
 	@echo "  make setup-cnv      Install + verify CNV"
 	@echo ""
 	@echo "To run evals, from the parent directory:"
-	@echo "  make setup-ols-classic"
-	@echo "  make eval-ols-classic SCENARIO=kubevirt/vm_storage_failure"
+	@echo "  make setup-ols-chat"
+	@echo "  make eval-ols-chat SCENARIO=kubevirt/vm_storage_failure"

@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 
-@pytest.fixture(params=["classic", "agentic"])
+@pytest.fixture(params=["chat", "agentic"])
 def report_module(request):
     path = Path(__file__).resolve().parent.parent / f"generate-report-{request.param}.py"
     spec = importlib.util.spec_from_file_location(f"report_{request.param}", path)
@@ -154,7 +154,7 @@ def test_failed_report_replace_keeps_previous_file(report_module, tmp_path, monk
 
 
 def test_scenario_names_use_directory_paths(report_module, tmp_path):
-    filename = "evals-ols-classic.yaml"
+    filename = "evals-ols-chat.yaml"
     for directory, cid in (
         ("kiali-ossm/check_mesh_status", "check_mesh_status"),
         ("crashlooping_pod_alert", "crashlooping_pod"),

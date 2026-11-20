@@ -22,7 +22,7 @@ Read every file in `evals/scenarios/$SCENARIO/`:
 - `fixtures/` (all files, including YAML and Python)
 - `setup.sh`
 - `cleanup.sh`
-- every `evals-*.yaml` present (`evals-ols-agentic.yaml` and/or `evals-ols-classic.yaml`)
+- every `evals-*.yaml` present (`evals-ols-agentic.yaml` and/or `evals-ols-chat.yaml`)
 - `image/` and `README.md` where present
 
 For a scenario group (`kiali-ossm`, `kubevirt`, `netobserv`), read the group's own
@@ -55,8 +55,8 @@ Flag as **FAIL** if:
 
 Flag as **NEEDS WORK** if:
 - The symptom section describes the root cause instead of the observable behavior
-- The RCA section is vague or does not match the `expected_outcome` (Agentic) or `expected_response` (Classic)
-- The Expected section does not match the `expected_outcome` (Agentic) or `expected_response` (Classic)
+- The RCA section is vague or does not match the `expected_outcome` (Agentic) or `expected_response` (Chat)
+- The Expected section does not match the `expected_outcome` (Agentic) or `expected_response` (Chat)
 
 ## 4. Naming check
 
@@ -101,14 +101,14 @@ Classify:
 ## 7. Request text check
 
 Read the `openshift_agentic_run_spec.request` field in `evals-ols-agentic.yaml`
-and the `query:` fields in `evals-ols-classic.yaml`. Flag if any of them:
+and the `query:` fields in `evals-ols-chat.yaml`. Flag if any of them:
 - States the root cause outright
 - Names the exact broken resource when the scenario has multiple candidates
 - Uses terminology that narrows the search space to one possibility
 
 The request should describe **symptoms** (alerts, user reports, observed behavior), not causes.
 
-Also read Classic's `expected_response:` fields for consistency with the fault
+Also read Chat's `expected_response:` fields for consistency with the fault
 and description. These are scoring references and may state the diagnosis;
 apply the symptom-only leakage rule to the agent-facing request or query.
 

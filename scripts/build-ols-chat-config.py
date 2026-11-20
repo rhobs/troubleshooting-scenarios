@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build an OLS Classic config from active agents and judges."""
+"""Build an OLS Chat config from active agents and judges."""
 
 import os
 import sys
@@ -83,7 +83,7 @@ def main(config_path: str) -> None:
         providers.append({
             "name": "openai",
             "type": "openai",
-            "credentialsSecretRef": {"name": "creds-classic-openai"},
+            "credentialsSecretRef": {"name": "creds-chat-openai"},
             "credentialKey": "apitoken",
             "url": "https://api.openai.com/v1",
             "models": [{"name": model} for model in models["openai"]],
@@ -92,7 +92,7 @@ def main(config_path: str) -> None:
         providers.append({
             "name": "google",
             "type": "google_vertex",
-            "credentialsSecretRef": {"name": "creds-classic-vertex-google"},
+            "credentialsSecretRef": {"name": "creds-chat-vertex-google"},
             "credentialKey": "apitoken",
             "googleVertexConfig": {"projectID": project_id, "location": "global"},
             "models": [{"name": model} for model in models["google"]],
@@ -101,7 +101,7 @@ def main(config_path: str) -> None:
         providers.append({
             "name": "anthropic",
             "type": "google_vertex_anthropic",
-            "credentialsSecretRef": {"name": "creds-classic-vertex-anthropic"},
+            "credentialsSecretRef": {"name": "creds-chat-vertex-anthropic"},
             "credentialKey": "apitoken",
             "googleVertexAnthropicConfig": {"projectID": project_id, "location": "global"},
             "models": [{"name": model} for model in models["anthropic"]],
@@ -123,8 +123,8 @@ def main(config_path: str) -> None:
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
-        sys.exit("Usage: build-ols-classic-config.py SYSTEM_CONFIG")
+        sys.exit("Usage: build-ols-chat-config.py SYSTEM_CONFIG")
     try:
         main(sys.argv[1])
     except (OSError, ValueError, yaml.YAMLError) as error:
-        sys.exit(f"ERROR: Cannot build OLS Classic config: {error}")
+        sys.exit(f"ERROR: Cannot build OLS Chat config: {error}")

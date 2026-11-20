@@ -10,7 +10,7 @@ This scenario benchmarks analysis-only troubleshooting for a report-processing w
 
 The scenario is **Normal difficulty** and measures a focused capability: distinguishing application-driven memory growth from a container memory limit that is merely too small. Passing this case does not demonstrate broad senior-engineer troubleshooting competence.
 
-The scenario runs in the dedicated `data-processing` namespace and uses the `DataProcessingPodRestarting` critical alert. Both OpenShift Lightspeed Agentic and OLS Classic use the same fixture and separate analysis-only evaluation definitions. Neither evaluation asks the agent to mutate the cluster or verify a recovery.
+The scenario runs in the dedicated `data-processing` namespace and uses the `DataProcessingPodRestarting` critical alert. Both OpenShift Lightspeed Agentic and OLS Chat use the same fixture and separate analysis-only evaluation definitions. Neither evaluation asks the agent to mutate the cluster or verify a recovery.
 
 ## Architecture
 
@@ -48,7 +48,7 @@ root, the analysis-only entrypoints will then be:
 
 ```bash
 make eval-ols-agentic SCENARIO=restarting_pod_alert SETUP_MODE=run
-make eval-ols-classic SCENARIO=restarting_pod_alert
+make eval-ols-chat SCENARIO=restarting_pod_alert
 ```
 
 The scenario lifecycle is:
@@ -128,7 +128,7 @@ This README records the status of the implementation and qualification gates. It
 |---|---|---|
 | Repeated setup/cleanup runs | Partial | On 2026-10-04, setup failed before the timeout fix and passed after it. Both attempts were cleaned up. More runs are needed to measure timing variability. |
 | Equivalent-load healthy qualification | Not run | Healthy release remains stable for several measured affected-release failure intervals with bounded cache and no restarts. |
-| Evaluator evidence access | Not run | Actual Agentic and Classic tools can read current status, previous logs, and rollout history with their assigned permissions. |
+| Evaluator evidence access | Not run | Actual Agentic and Chat tools can read current status, previous logs, and rollout history with their assigned permissions. |
 | Alert identity qualification | Not run | Firing alert labels correspond to a current affected pod/container, not merely the alert name. |
 | Rubric calibration | Not run | Incomplete, incorrect, strong, and equivalent correct answers are assessed consistently. |
 | Multi-model benchmark | Not run | Fresh runs distinguish reasoning outcomes from inaccessible evidence or inconsistent fixture state. |

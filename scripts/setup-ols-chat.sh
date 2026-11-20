@@ -29,11 +29,11 @@ if [ ! -x "$PYTHON" ]; then
   exit 1
 fi
 
-# Use SYSTEM_CONFIG_CLASSIC from environment or default to system-ols-classic.yaml
-SYSTEM_CONFIG_CLASSIC="${SYSTEM_CONFIG_CLASSIC:-${SCRIPT_DIR}/../evals/system-ols-classic.yaml}"
+# Use SYSTEM_CONFIG_CHAT from environment or default to system-ols-chat.yaml
+SYSTEM_CONFIG_CHAT="${SYSTEM_CONFIG_CHAT:-${SCRIPT_DIR}/../evals/system-ols-chat.yaml}"
 
-ols_config="$("$PYTHON" "$SCRIPT_DIR/build-ols-classic-config.py" \
-  "$SYSTEM_CONFIG_CLASSIC")"
+ols_config="$("$PYTHON" "$SCRIPT_DIR/build-ols-chat-config.py" \
+  "$SYSTEM_CONFIG_CHAT")"
 
 # shellcheck source=scripts/install-ols-operator.sh
 source "$SCRIPT_DIR/install-ols-operator.sh"
@@ -42,27 +42,27 @@ existing_config="$(oc get olsconfig cluster --ignore-not-found -o name)"
 
 # 5. LLM credentials
 echo "==> Creating credentials secrets..."
-oc create secret generic creds-classic-openai \
+oc create secret generic creds-chat-openai \
   --namespace openshift-lightspeed \
   --from-literal=apitoken="${EVAL_OPENAI_API_KEY}" \
   --type=Opaque \
   --dry-run=client -o yaml | oc apply -f -
 if $has_gcp; then
-  oc create secret generic creds-classic-vertex-google \
+  oc create secret generic creds-chat-vertex-google \
     --namespace openshift-lightspeed \
     --from-file=apitoken="${EVAL_VERTEX_CREDENTIALS}" \
     --type=Opaque \
     --dry-run=client -o yaml | oc apply -f -
-  oc create secret generic creds-classic-vertex-anthropic \
+  oc create secret generic creds-chat-vertex-anthropic \
     --namespace openshift-lightspeed \
     --from-file=apitoken="${EVAL_VERTEX_CREDENTIALS}" \
     --type=Opaque \
     --dry-run=client -o yaml | oc apply -f -
 fi
 
-# 6. Update Classic settings while keeping Agentic and other shared settings.
+# 6. Update Chat settings while keeping Agentic and other shared settings.
 if [ -n "$existing_config" ]; then
-  echo "==> Updating Classic providers and defaults in the existing OLSConfig..."
+  echo "==> Updating Chat providers and defaults in the existing OLSConfig..."
   ols_patch="$("$PYTHON" -c 'import json, sys, yaml; print(json.dumps({"spec": yaml.safe_load(sys.stdin)["spec"]}))' <<< "$ols_config")"
   oc patch olsconfig cluster --type=merge --patch="$ols_patch"
 else

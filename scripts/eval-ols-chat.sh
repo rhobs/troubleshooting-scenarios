@@ -34,13 +34,13 @@ VENV_DIR="${SCRIPT_DIR}/../venv"
 PYTHON="${VENV_DIR}/bin/python3"
 
 for scenario in "${SCENARIOS[@]}"; do
-  if [ ! -f "$scenario/evals-ols-classic.yaml" ]; then
-    echo "ERROR: $scenario/evals-ols-classic.yaml not found" >&2
+  if [ ! -f "$scenario/evals-ols-chat.yaml" ]; then
+    echo "ERROR: $scenario/evals-ols-chat.yaml not found" >&2
     exit 1
   fi
 done
 
-SETUP_MODE="$(bash "$SCRIPT_DIR/resolve-setup-mode.sh" "$SETUP_MODE" evals-ols-classic.yaml "${SCENARIOS[@]}")"
+SETUP_MODE="$(bash "$SCRIPT_DIR/resolve-setup-mode.sh" "$SETUP_MODE" evals-ols-chat.yaml "${SCENARIOS[@]}")"
 
 bash "$SCRIPT_DIR/preflight.sh" --require-ols
 
@@ -48,8 +48,8 @@ DATETIME="$(date +%Y%m%d_%H%M%S)"
 LOG_START_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 EVAL_DIR="results/${DATETIME}"
 mkdir -p "$EVAL_DIR"
-cp "$SYSTEM_CONFIG" "$EVAL_DIR/system-ols-classic.yaml"
-SYSTEM_CONFIG="$EVAL_DIR/system-ols-classic.yaml"
+cp "$SYSTEM_CONFIG" "$EVAL_DIR/system-ols-chat.yaml"
+SYSTEM_CONFIG="$EVAL_DIR/system-ols-chat.yaml"
 
 if ! "$PYTHON" "$SCRIPT_DIR/capture-config-crs.py" "$EVAL_DIR/crs" \
     2> "$EVAL_DIR/capture-config-crs.log"; then
@@ -60,7 +60,7 @@ fi
 for scenario in "${SCENARIOS[@]}"; do
   snapshot_dir="$EVAL_DIR/scenarios/${scenario#scenarios/}"
   mkdir -p "$snapshot_dir"
-  cp "$scenario/evals-ols-classic.yaml" "$snapshot_dir/evals-ols-classic.yaml"
+  cp "$scenario/evals-ols-chat.yaml" "$snapshot_dir/evals-ols-chat.yaml"
 done
 
 PARALLEL_RUNS="$("$PYTHON" -c "import yaml; c=yaml.safe_load(open('$SYSTEM_CONFIG')); print('yes' if c.get('agents',{}).get('default',{}).get('parallel',False) else 'no')")"
@@ -82,13 +82,13 @@ bash "$SCRIPT_DIR/show-eval-summary.sh" \
   --scenarios "${SCENARIOS[@]}"
 
 pf_pid=""
-eval_sa="ols-classic-eval"
+eval_sa="ols-chat-eval"
 eval_sa_created=0
 eval_role_bound=0
 
 # Invoked indirectly by the EXIT trap below.
 # shellcheck disable=SC2329
-cleanup_ols_classic() {
+cleanup_ols_chat() {
   if [ -n "$pf_pid" ]; then kill "$pf_pid" 2>/dev/null || true; fi
   if [ "$eval_role_bound" -eq 1 ]; then
     oc adm policy remove-cluster-role-from-user cluster-reader -z "$eval_sa" -n openshift-lightspeed >/dev/null 2>&1 || true
@@ -101,7 +101,7 @@ cleanup_ols_classic() {
 source "$SCRIPT_DIR/eval-report.sh"
 
 capture_app_logs() {
-  if ! "$PYTHON" "$SCRIPT_DIR/capture-classic-logs.py" "$EVAL_DIR" \
+  if ! "$PYTHON" "$SCRIPT_DIR/capture-chat-logs.py" "$EVAL_DIR" \
       --since-time "$LOG_START_TIME" "$@" 2>> "$EVAL_DIR/capture-logs.log"; then
     echo "WARNING: app-server log capture failed; see $EVAL_DIR/capture-logs.log." >&2
   fi
@@ -119,11 +119,11 @@ finish_evaluation() {
     echo "ERROR: final report update failed; keeping the last report." >&2
     if [ "$status" -eq 0 ]; then status=$report_status; fi
   fi
-  cleanup_ols_classic
+  cleanup_ols_chat
   exit "$status"
 }
 
-report_init classic
+report_init chat
 trap finish_evaluation EXIT
 trap 'exit 130' INT
 trap 'exit 143' TERM
@@ -242,7 +242,7 @@ run_scenario() {
   if [ "$scenario_status" -eq 0 ]; then
     bash "$SCRIPT_DIR/run-agentic-evals.sh" \
       --system-config "$SYSTEM_CONFIG" \
-      --evals "$EVAL_DIR/scenarios/${scenario#scenarios/}/evals-ols-classic.yaml" \
+      --evals "$EVAL_DIR/scenarios/${scenario#scenarios/}/evals-ols-chat.yaml" \
       --eval-dir "$EVAL_DIR" \
       "$@" \
       "${TAG_FLAGS[@]}" || scenario_status=$?

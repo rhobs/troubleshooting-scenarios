@@ -1,4 +1,4 @@
-"""Shared helpers for the Classic and Agentic evaluation reports."""
+"""Shared helpers for the Chat and Agentic evaluation reports."""
 
 import json
 import re

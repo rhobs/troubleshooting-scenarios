@@ -21,8 +21,8 @@ For a single scenario without group dependencies, you can also run its
 
 ## Running automated evals
 
-Follow the [root README](../README.md) to set up OLS Agentic or OLS Classic.
-Classic needs OpenShift 4.22 or newer; Agentic needs OpenShift 5.0 or newer.
+Follow the [root README](../README.md) to set up OLS Agentic or OLS Chat.
+Chat needs OpenShift 4.22 or newer; Agentic needs OpenShift 5.0 or newer.
 Run Make commands from the repository root.
 
 | Option | Purpose |
@@ -42,9 +42,9 @@ tags filter the named scenarios.
 make eval-ols-agentic TAG=core PREVIEW=1
 make eval-ols-agentic TAG=investigation PREVIEW=1
 make eval-ols-agentic TAG=remediation
-make eval-ols-classic TAG=difficulty_medium PREVIEW=1
+make eval-ols-chat TAG=difficulty_medium PREVIEW=1
 make eval-ols-agentic SCENARIO=blocked_deployment,refused_service
-make eval-ols-classic SCENARIO=crashlooping_pod_alert PREVIEW=1
+make eval-ols-chat SCENARIO=crashlooping_pod_alert PREVIEW=1
 ```
 
 The preview and real run show the same summary: setup mode, repeat count,
@@ -58,7 +58,7 @@ and that the reader, monitoring, and controller RBAC are ready. Missing
 bindings stop the run before scenario setup. Run `make setup-ols-agentic`
 with cluster-admin access to create the required bindings. This also works
 with `SKIP_OLS_INSTALL=1`; see the [Agentic setup guide](../README.md#ols-agentic)
-for roles and cleanup. Classic checks its operator CRD and server deployment.
+for roles and cleanup. Chat checks its operator CRD and server deployment.
 
 ### Setup modes
 
@@ -71,7 +71,7 @@ for roles and cleanup. Classic checks its operator CRD and server deployment.
 
 ```bash
 make eval-ols-agentic SCENARIO=blocked_deployment_alert_remediation
-make eval-ols-classic SCENARIO=crashlooping_pod_alert SETUP_MODE=skip
+make eval-ols-chat SCENARIO=crashlooping_pod_alert SETUP_MODE=skip
 ```
 
 The automatic choice applies to the whole session, including selections that
@@ -80,7 +80,7 @@ fresh fault, so a previous fix does not change the next evaluation. An explicit
 `SETUP_MODE=run`, `scenario`, or `skip` overrides the automatic choice. Preview
 and real runs show the selected mode.
 
-Classic group setup and cleanup run once per selected group in `scenario` and
+Chat group setup and cleanup run once per selected group in `scenario` and
 `run` modes. In `skip` mode, group setup and cleanup are skipped too.
 
 MCP setup applies the config and Deployment before waiting for the rollout.
@@ -101,12 +101,12 @@ next run or scenario. Cleanup failures are logged without stopping the loop.
 The runner updates the report from available results and returns a failure
 status if setup or evaluation failed.
 
-If Classic group setup fails, the runner skips that group's scenarios and
+If Chat group setup fails, the runner skips that group's scenarios and
 continues with other groups. Group cleanup runs after the full scenario loop.
 
-## Classic app-server logs
+## Chat app-server logs
 
-`make eval-ols-classic` downloads logs from the `lightspeed-service-api`
+`make eval-ols-chat` downloads logs from the `lightspeed-service-api`
 container after each evaluation, before scenario cleanup. It also downloads
 logs before group setup and group cleanup can replace the app pod, and at
 session start and exit, including failure, Ctrl+C, or termination. It uses
@@ -130,7 +130,7 @@ has a timestamp, pod name, and container restart number. The collector reads
 all matching app-server pods and requests both current and previous container
 logs after a restart. A cursor per pod UID and container instance avoids
 duplicate lines across downloads. Cursor data is saved in
-`.classic-log-state.json`; capture status and errors go to `capture-logs.log`.
+`.chat-log-state.json`; capture status and errors go to `capture-logs.log`.
 Capture errors produce warnings and do not change the evaluation exit status.
 
 Snapshots cannot recover logs lost through rotation, deleted pods, or several
@@ -143,7 +143,7 @@ DEBUG runs or unexpected pod replacement. Preview runs do not capture logs.
 of new sandbox pods in `openshift-lightspeed` during the session. The watcher
 starts before the first scenario and skips pods already present at startup.
 It stops at the end of the session, including on failure, Ctrl+C, or termination.
-This capture applies to Agentic evaluations; Classic and preview runs do not
+This capture applies to Agentic evaluations; Chat and preview runs do not
 start a watcher.
 
 Sandbox logs are saved in `evals/results/<session>/logs/` alongside all existing
@@ -176,7 +176,7 @@ Both the standalone command and the Agentic runner use the shared
 
 ## Reports
 
-Both Classic and Agentic runners save full `OLSConfig` CRs at session start
+Both Chat and Agentic runners save full `OLSConfig` CRs at session start
 under `<session>/crs/`. Agentic also saves full `LLMProvider` and `Agent` CRs.
 These configuration snapshots are read across namespaces, once per session,
 before scenario setup. Cluster-scoped CRs use `KIND-NAME.yaml`; namespaced
@@ -242,7 +242,7 @@ change the definitions used by the session.
 The report is created before evaluation starts and updated at the end of each
 scenario. With `SETUP_MODE=run`, it is updated for each agent and
 repeat. You can open the file during `make eval-ols-agentic` or
-`make eval-ols-classic` to see partial results.
+`make eval-ols-chat` to see partial results.
 Run starts update only `progress.json`, which records the active run.
 The CLI prints the results table after each scenario, before cleanup starts.
 With `SETUP_MODE=run`, it prints the updated table after each agent and repeat,
@@ -268,7 +268,7 @@ final update returns an error without replacing an earlier evaluation error.
 To regenerate a report from saved results, run from the repository root:
 
 ```bash
-venv/bin/python3 scripts/generate-report-classic.py "evals/results/<session>" \
+venv/bin/python3 scripts/generate-report-chat.py "evals/results/<session>" \
   --output "evals/results/<session>/report.md"
 ```
 
@@ -340,7 +340,7 @@ target to select matching scenarios. The two eval definitions for one scenario
 may have different tags.
 
 Eval mode is selected by the Make target and file name (`evals-ols-agentic.yaml`
-or `evals-ols-classic.yaml`). `agentic` and `classic` are no longer tags.
+or `evals-ols-chat.yaml`). `agentic` and `chat` are no longer tags.
 Use `investigation` for investigation and `remediation` for cases that apply a fix.
 Each case also has one difficulty tag. `core`, `alert`, and group tags add
 other ways to select cases.
@@ -358,6 +358,6 @@ alert remediation variants use `remediation` instead.
 | `difficulty_normal` | One isolated problem with a direct link between symptom and cause. |
 | `difficulty_medium` | More reasoning is needed, such as several steps, a decoy, or domain knowledge. |
 | `difficulty_high` | A complex cause chain that can lead to varied results across runs. |
-| `kiali-ossm` | Classic service mesh cases that use Kiali and OSSM. |
-| `kubevirt` | Classic OpenShift Virtualization cases. |
-| `netobserv` | Classic network observability cases. |
+| `kiali-ossm` | Chat service mesh cases that use Kiali and OSSM. |
+| `kubevirt` | Chat OpenShift Virtualization cases. |
+| `netobserv` | Chat network observability cases. |

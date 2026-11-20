@@ -1,6 +1,6 @@
 # Evaluation Summary
 
-2026-09-29 05:52:06 UTC | **OLS Classic** | 7 scenarios, 8 agents, 3 repeats (parallel) | Judge: gpt-5.4 | [System config](#system-config)
+2026-09-29 05:52:06 UTC | **OLS Chat** | 7 scenarios, 8 agents, 3 repeats (parallel) | Judge: gpt-5.4 | [System config](#system-config)
 
 | | openai-gpt-5-4 | openai-gpt-5-6-luna | openai-gpt-5-6-terra | openai-gpt-5-6-sol | google-gemini-3-5-flash-lite | google-gemini-3-7-flash | google-gemini-3-8-flash | anthropic-opus-4-6 |
 |---|---|---|---|---|---|---|---|---|
@@ -67,7 +67,7 @@ variable DEPLOY_ENV is missing from the deployment.
 Expected: add the DEPLOY_ENV environment variable to the container
 spec.
 
-**Tags**: `core`, `classic`, `difficulty_normal`, `alert`
+**Tags**: `core`, `chat`, `difficulty_normal`, `alert`
 
 ### Query
 
@@ -1086,7 +1086,7 @@ service is either missing or misconfigured.
 Expected: identify the connection failure as root cause and
 recommend fixing the database endpoint.
 
-**Tags**: `core`, `classic`, `difficulty_normal`
+**Tags**: `core`, `chat`, `difficulty_normal`
 
 ### Query
 
@@ -1812,7 +1812,7 @@ Expected: identify shared-services/reporting-service as the root cause;
 shared-services/reconciliation-service CrashLooping is a separate issue,
 not the cause.
 
-**Tags**: `difficulty_hard`, `core`, `classic`, `alert`
+**Tags**: `difficulty_hard`, `core`, `chat`, `alert`
 
 ### Query
 
@@ -3113,7 +3113,7 @@ which violates the namespace UID range enforced by restricted-v2 SCC.
 Expected: change the PVC's StorageClass to a valid one or create
 the missing StorageClass, and use a UID allowed by the SCC.
 
-**Tags**: `alert`, `difficulty_medium`, `classic`, `core`
+**Tags**: `alert`, `difficulty_medium`, `chat`, `core`
 
 ### Query
 
@@ -4203,7 +4203,7 @@ blocked.
 Expected: update the NetworkPolicy ingress rule to allow
 tier=frontend.
 
-**Tags**: `classic`, `core`, `difficulty_normal`
+**Tags**: `chat`, `core`, `difficulty_normal`
 
 ### Query
 
@@ -5533,7 +5533,7 @@ pods from 6 additional workloads).
 Expected: identify the discrepancy and report which extra
 workloads exist in fleet-alpha1.
 
-**Tags**: `classic`, `core`, `difficulty_normal`
+**Tags**: `chat`, `core`, `difficulty_normal`
 
 ### Query
 
@@ -6488,7 +6488,7 @@ container is a simple echo/sleep loop with no HTTP server.
 Expected: remove the readiness probe or replace it with an exec
 probe appropriate for the container.
 
-**Tags**: `difficulty_normal`, `alert`, `classic`, `core`
+**Tags**: `difficulty_normal`, `alert`, `chat`, `core`
 
 ### Query
 
@@ -7374,7 +7374,7 @@ This would make the pod pass readiness, but only makes sense if the container is
 <a id="system-config"></a>
 ## Appendix: System config
 
-Saved input file: `system-ols-classic.yaml`. Run mode can override agent, repeat, and parallel settings.
+Saved input file: `system-ols-chat.yaml`. Run mode can override agent, repeat, and parallel settings.
 
 ```yaml
 logging:

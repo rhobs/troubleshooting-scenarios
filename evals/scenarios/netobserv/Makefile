@@ -70,5 +70,5 @@ help:
 	@echo "  make clean-netobserv-openshift  Remove FlowCollector and operator"
 	@echo ""
 	@echo "To run evals, from the parent agentic directory:"
-	@echo "  make setup-ols-classic"
-	@echo "  make eval-ols-classic SCENARIO=netobserv/dns_latency"
+	@echo "  make setup-ols-chat"
+	@echo "  make eval-ols-chat SCENARIO=netobserv/dns_latency"

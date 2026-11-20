@@ -1,6 +1,6 @@
 # Evaluation Summary
 
-2026-09-29 09:39:54 UTC | **OLS Classic** | 1 scenario, 8 agents, 10 repeats (parallel) | Judge: gpt-5.4 | [System config](#system-config)
+2026-09-29 09:39:54 UTC | **OLS Chat** | 1 scenario, 8 agents, 10 repeats (parallel) | Judge: gpt-5.4 | [System config](#system-config)
 
 | | openai-gpt-5-4 | openai-gpt-5-6-luna | openai-gpt-5-6-terra | openai-gpt-5-6-sol | google-gemini-3-5-flash-lite | google-gemini-3-7-flash | google-gemini-3-8-flash | anthropic-opus-4-6 |
 |---|---|---|---|---|---|---|---|---|
@@ -52,7 +52,7 @@ Expected: identify shared-services/reporting-service as the root cause;
 shared-services/reconciliation-service CrashLooping is a separate issue,
 not the cause.
 
-**Tags**: `core`, `difficulty_hard`, `alert`, `classic`
+**Tags**: `core`, `difficulty_hard`, `alert`, `chat`
 
 ### Query
 
@@ -5420,7 +5420,7 @@ The `reporting-service` deployment in `shared-services` was **recently updated f
 
 1. It opens a new DB connection every **10 seconds** (`"Open db connection"`)
 2. Every attempt fails with: `"Failed to process pending reports: division by zero"`
-3. The application **never closes/releases the connection** after the error — classic connection leak pattern
+3. The application **never closes/releases the connection** after the error — chat connection leak pattern
 
 The `division by zero` bug in v1.0.2 causes the application to error out without properly closing the transaction, leaving connections in `idle in transaction` state. Over time, these leaked connections filled all 17 available slots.
 
@@ -5970,7 +5970,7 @@ The deployment uses the wrong image (`registry.redhat.io/rhel9/httpd-24:latest`)
 <a id="system-config"></a>
 ## Appendix: System config
 
-Saved input file: `system-ols-classic.yaml`. Run mode can override agent, repeat, and parallel settings.
+Saved input file: `system-ols-chat.yaml`. Run mode can override agent, repeat, and parallel settings.
 
 ```yaml
 logging:

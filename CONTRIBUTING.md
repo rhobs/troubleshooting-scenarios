@@ -18,7 +18,7 @@ my_scenario/
     manifest.yaml              Kubernetes manifests (Deployments, Services, etc.)
     prometheusrule.yaml        PrometheusRules for alert-based scenarios
   evals-ols-agentic.yaml       Eval definitions for OLS Agentic
-  evals-ols-classic.yaml       Eval definitions for OLS Classic (optional)
+  evals-ols-chat.yaml          Eval definitions for OLS Chat
 ```
 
 ### setup.sh
@@ -42,9 +42,9 @@ Eval definitions for OLS Agentic. Each entry defines:
 - `tag`: workflow, difficulty, and optional selection tags (see below)
 - `turns`: the AgenticRun spec, expected status, and scoring metrics
 
-### evals-ols-classic.yaml
+### evals-ols-chat.yaml
 
-Eval definitions for OLS Classic. Same structure but with `query`/`expected_response` instead of AgenticRun specs. Only add this file if the scenario is meaningful as a text Q&A.
+Eval definitions for OLS Chat. Same structure but with `query`/`expected_response` instead of AgenticRun specs. Only add this file if the scenario is meaningful as a text Q&A.
 
 ### Tags
 
@@ -57,7 +57,7 @@ Add one difficulty tag: `difficulty_normal`, `difficulty_medium`, or
 `difficulty_high`. Use `core` only for cases selected for the baseline suite.
 Grouped cases also use their group tag: `kiali-ossm`, `kubevirt`, or `netobserv`.
 
-The file name selects the eval mode, so do not add `agentic` or `classic` tags.
+The file name selects the eval mode, so do not add `agentic` or `chat` tags.
 For example, an alert investigation case may use:
 
 ```yaml
@@ -84,7 +84,7 @@ group_name/
   scenario2/
 ```
 
-The Classic eval runner runs group `setup.sh` before the first scenario in
+The Chat eval runner runs group `setup.sh` before the first scenario in
 the group and group `cleanup.sh` after the full scenario loop.
 `SETUP_MODE=skip` skips both. The manual setup and cleanup targets also handle
 group resources.
@@ -95,7 +95,7 @@ Grouped scenario names use the `group/scenario` format (e.g., `kubevirt/vm_crash
 
 After creating the scenario directory:
 
-1. Add the scenario name to the appropriate variable (`_ALL_OLS_AGENTIC` and/or `_ALL_OLS_CLASSIC`) in the root `Makefile`
+1. Add the scenario name to the appropriate variable (`_ALL_OLS_AGENTIC` and/or `_ALL_OLS_CHAT`) in the root `Makefile`
 2. Add a row to the scenario table in `evals/scenarios/README.md`
 3. Run the `review-scenario` skill (`.agents/skills/review-scenario/SKILL.md`, symlinked as `.claude/skills/review-scenario/`) to check for naming leaks, revealing comments, and unrealistic fault setups. In Claude Code: `/review-scenario my_scenario`
 

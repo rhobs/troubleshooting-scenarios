@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Download Classic app-server logs at evaluation checkpoints."""
+"""Download Chat app-server logs at evaluation checkpoints."""
 
 import argparse
 from collections import Counter
@@ -17,7 +17,7 @@ from report_progress import write_atomic
 NAMESPACE = "openshift-lightspeed"
 CONTAINER = "lightspeed-service-api"
 SELECTOR = "app.kubernetes.io/name=lightspeed-service-api"
-STATE_FILE = ".classic-log-state.json"
+STATE_FILE = ".chat-log-state.json"
 
 
 def timestamp_ns(value):

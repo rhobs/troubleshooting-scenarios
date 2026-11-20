@@ -10,7 +10,7 @@ if ! oc delete clusterrolebinding -l troubleshooting-scenarios/rbac=agentic --ig
 fi
 
 oc delete olsconfig cluster --ignore-not-found 2>/dev/null || true
-oc delete secret creds-classic-openai -n openshift-lightspeed --ignore-not-found 2>/dev/null || true
+oc delete secret creds-chat-openai -n openshift-lightspeed --ignore-not-found 2>/dev/null || true
 
 # Remove Subscription + CSV
 CSV=$(oc get subscription lightspeed-operator -n openshift-lightspeed \

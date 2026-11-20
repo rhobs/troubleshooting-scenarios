@@ -1,4 +1,4 @@
-"""Tests for generate-report-classic.py."""
+"""Tests for generate-report-chat.py."""
 
 import json
 import textwrap
@@ -10,8 +10,8 @@ import yaml
 import importlib.util
 
 spec = importlib.util.spec_from_file_location(
-    "generate_report_classic",
-    Path(__file__).resolve().parent.parent / "generate-report-classic.py",
+    "generate_report_chat",
+    Path(__file__).resolve().parent.parent / "generate-report-chat.py",
 )
 mod = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(mod)
@@ -88,7 +88,7 @@ def _write_run(
     summary = _make_summary_json(results, config)
     (run_dir / f"evaluation_{timestamp}_summary.json").write_text(json.dumps(summary))
     amended = _make_amended_yaml(amended_entries)
-    (run_dir / f"evals-ols-classic_amended_{timestamp}.yaml").write_text(yaml.dump(amended))
+    (run_dir / f"evals-ols-chat_amended_{timestamp}.yaml").write_text(yaml.dump(amended))
 
 
 class TestDiscoverAgents:
@@ -201,7 +201,7 @@ class TestGenerateReport:
             json.dumps(_make_summary_json(r2))
         )
         amended_b = _make_amended_yaml([{"conversation_id": "scenario_b"}])
-        (run_dir / "evals-ols-classic_amended_20260904_100100.yaml").write_text(yaml.dump(amended_b))
+        (run_dir / "evals-ols-chat_amended_20260904_100100.yaml").write_text(yaml.dump(amended_b))
 
         report = mod.generate_report(tmp_path)
         assert "scenario_a" in report
@@ -353,7 +353,7 @@ class TestGenerateReport:
         )
         report = mod.generate_report(tmp_path)
         assert "Judge: gpt-5.4" in report
-        assert "2026-09-04 10:00:00 UTC | **OLS Classic** | 1 scenario, 1 agent, 1 repeat | Judge: gpt-5.4" in report
+        assert "2026-09-04 10:00:00 UTC | **OLS Chat** | 1 scenario, 1 agent, 1 repeat | Judge: gpt-5.4" in report
 
     def test_no_judge_by_default(self, tmp_path):
         _write_run(
@@ -463,7 +463,7 @@ class TestGenerateReport:
         assert "**Tokens**: in 1,200,000 out 50,000" in report
 
     def test_no_completed_metric(self, tmp_path):
-        """Classic evals only have answer_correctness, no status metric."""
+        """Chat evals only have answer_correctness, no status metric."""
         _write_run(
             tmp_path / "gpt-5.4" / "run_1",
             results=[_make_result("s1")],
@@ -474,7 +474,7 @@ class TestGenerateReport:
         assert "openshift_agentic_run_status" not in report
 
     def test_response_not_stripped(self, tmp_path):
-        """Classic responses are shown in full, no section stripping."""
+        """Chat responses are shown in full, no section stripping."""
         response_text = "## Evidence\n\nThe pods are running.\n\n## Root cause\n\nConfig mismatch."
         _write_run(
             tmp_path / "gpt-5.4" / "run_1",

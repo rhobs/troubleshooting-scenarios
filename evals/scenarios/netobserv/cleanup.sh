@@ -2,7 +2,6 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-SCRIPTS_DIR="$(cd "$SCRIPT_DIR/../../../scripts" && pwd)"
 
 NETOBSERV_INSTALL_SCRIPT="$SCRIPT_DIR/scripts/install-netobserv-release.sh"
 NETOBSERV_FLOWCOLLECTOR_FILE="${NETOBSERV_FLOWCOLLECTOR_FILE:-$SCRIPT_DIR/scripts/flowcollector.yaml}"
@@ -12,9 +11,6 @@ KUBERNETES_CLI="${KUBERNETES_CLI:-oc}"
 NETOBSERV_CATALOG_SOURCE="${NETOBSERV_CATALOG_SOURCE:-redhat}"
 NETOBSERV_CHANNEL="${NETOBSERV_CHANNEL:-}"
 NETOBSERV_DELETE_OPERATOR_NAMESPACE="${NETOBSERV_DELETE_OPERATOR_NAMESPACE:-yes}"
-
-MCP_NS="${MCP_NS:-openshift-mcp}"
-MCP_DEPLOYMENT="${MCP_DEPLOYMENT:-openshift-mcp-server}"
 
 NETOBSERV_INSTALL_FLAGS=(
   -c "$KUBERNETES_CLI"
@@ -26,13 +22,6 @@ NETOBSERV_INSTALL_FLAGS=(
 if [[ -n "$NETOBSERV_CHANNEL" ]]; then
   NETOBSERV_INSTALL_FLAGS+=( -ch "$NETOBSERV_CHANNEL" )
 fi
-
-echo "==> Disconnecting OLS from MCP server..."
-bash "$SCRIPTS_DIR/disconnect-ols-mcp.sh" || true
-
-echo "==> Removing MCP server..."
-MCP_NS="$MCP_NS" MCP_DEPLOYMENT="$MCP_DEPLOYMENT" \
-  bash "$SCRIPTS_DIR/cleanup-mcp.sh" || true
 
 echo "==> Removing NetObserv FlowCollector..."
 bash "$NETOBSERV_INSTALL_SCRIPT" "${NETOBSERV_INSTALL_FLAGS[@]}" delete-flowcollector || true

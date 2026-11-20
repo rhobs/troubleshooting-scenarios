@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: report-generator
+  namespace: batch-processor
+  labels:
+    app: report-generator
+spec:
+  progressDeadlineSeconds: 28800
+  replicas: 0
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: report-generator
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: report-generator
+        deployment: report-generator
+    spec:
+      # nodeSelector will be added dynamically by setup.sh to target smallest worker node
+      volumes:
+        - name: cache-vol
+          emptyDir:
+            sizeLimit: 10Mi
+        - name: temp-vol
+          emptyDir:
+            sizeLimit: 10Mi
+        - name: work-vol
+          emptyDir:
+            sizeLimit: 10Mi
+      containers:
+      - command:
+        - /bin/sh
+        - -c
+        - |
+          # Continuous disk I/O across 3 volumes
+          while true; do
+            dd if=/dev/zero of=/cache/data.bin bs=1M count=8 2>/dev/null &
+            dd if=/dev/zero of=/temp/data.bin bs=1M count=8 2>/dev/null &
+            dd if=/dev/zero of=/work/data.bin bs=1M count=8 2>/dev/null &
+            wait
+            rm -f /cache/data.bin /temp/data.bin /work/data.bin
+            sleep 1
+          done
+        image: registry.access.redhat.com/ubi9/ubi-minimal:latest
+        name: report-generator
+        volumeMounts:
+        - name: cache-vol
+          mountPath: /cache
+        - name: temp-vol
+          mountPath: /temp
+        - name: work-vol
+          mountPath: /work
+        resources:
+          limits:
+            memory: 20Mi
+          requests:
+            cpu: 10m
+            memory: 10Mi
+        securityContext:
+          runAsNonRoot: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+              - ALL
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      terminationGracePeriodSeconds: 28800

@@ -5420,7 +5420,7 @@ The `reporting-service` deployment in `shared-services` was **recently updated f
 
 1. It opens a new DB connection every **10 seconds** (`"Open db connection"`)
 2. Every attempt fails with: `"Failed to process pending reports: division by zero"`
-3. The application **never closes/releases the connection** after the error — chat connection leak pattern
+3. The application **never closes/releases the connection** after the error — classic connection leak pattern
 
 The `division by zero` bug in v1.0.2 causes the application to error out without properly closing the transaction, leaving connections in `idle in transaction` state. Over time, these leaked connections filled all 17 available slots.
 

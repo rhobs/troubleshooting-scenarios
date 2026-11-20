@@ -1,18 +1,18 @@
 #!/usr/bin/env python3
-"""Generate a Markdown report from NxM OLS Classic evaluation output.
+"""Generate a Markdown report from NxM OLS Chat evaluation output.
 
 Reads the eval session directory produced by lightspeed-eval and
 generates a comparative report across agents and runs.
 
-Unlike agentic evals, classic evals use a single metric
+Unlike agentic evals, chat evals use a single metric
 (custom:answer_correctness) and derive duration from agent_latency
 in the results JSON.
 
 Usage:
-    python3 generate-report-classic.py EVAL_DIR [--output FILE] [--parallel-runs yes|no]
+    python3 generate-report-chat.py EVAL_DIR [--output FILE] [--parallel-runs yes|no]
 
 EVAL_DIR is the eval session directory
-(e.g., results/ols-classic/20260904_124503/).
+(e.g., results/ols-chat/20260904_124503/).
 """
 
 import json
@@ -443,9 +443,9 @@ def generate_report(eval_dir: Path, parallel_runs: str | None = None) -> str:
     progress = load_progress(eval_dir)
     agent_names = discover_agents(
         eval_dir,
-        eval_dir / "system-ols-classic.yaml"
-        if (eval_dir / "system-ols-classic.yaml").is_file()
-        else Path(_SCRIPT_DIR).parent / "evals" / "system-ols-classic.yaml"
+        eval_dir / "system-ols-chat.yaml"
+        if (eval_dir / "system-ols-chat.yaml").is_file()
+        else Path(_SCRIPT_DIR).parent / "evals" / "system-ols-chat.yaml"
     )
 
     agent_runs: dict[str, list] = {}
@@ -461,9 +461,9 @@ def generate_report(eval_dir: Path, parallel_runs: str | None = None) -> str:
         agent_amended[agent] = amended
 
     conversations, saved_names, repeat = prepare_planned_runs(
-        eval_dir, "evals-ols-classic.yaml", agent_names, agent_runs, agent_amended,
+        eval_dir, "evals-ols-chat.yaml", agent_names, agent_runs, agent_amended,
     )
-    scenario_names = load_scenario_names("evals-ols-classic.yaml")
+    scenario_names = load_scenario_names("evals-ols-chat.yaml")
     scenario_names.update(saved_names)
 
     timestamp_str = extract_report_timestamp(eval_dir, agent_names)
@@ -472,7 +472,7 @@ def generate_report(eval_dir: Path, parallel_runs: str | None = None) -> str:
     lines = ["# Evaluation Summary"]
     lines.append("")
     lines.append(format_report_metadata(
-        "OLS Classic",
+        "OLS Chat",
         timestamp_str,
         len(conversations),
         len(agent_names),
@@ -531,7 +531,7 @@ def generate_report(eval_dir: Path, parallel_runs: str | None = None) -> str:
         )
     )
 
-    lines.append(system_config_appendix(eval_dir, "system-ols-classic.yaml"))
+    lines.append(system_config_appendix(eval_dir, "system-ols-chat.yaml"))
 
     return "\n".join(lines)
 
@@ -674,7 +674,7 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="Generate Markdown report from NxM OLS Classic evaluation output",
+        description="Generate Markdown report from NxM OLS Chat evaluation output",
     )
     parser.add_argument(
         "eval_dir",
@@ -706,9 +706,9 @@ def main():
 
     agent_names = discover_agents(
         eval_dir,
-        eval_dir / "system-ols-classic.yaml"
-        if (eval_dir / "system-ols-classic.yaml").is_file()
-        else Path(_SCRIPT_DIR).parent / "evals" / "system-ols-classic.yaml"
+        eval_dir / "system-ols-chat.yaml"
+        if (eval_dir / "system-ols-chat.yaml").is_file()
+        else Path(_SCRIPT_DIR).parent / "evals" / "system-ols-chat.yaml"
     )
     agent_runs = {}
     agent_amended = {}
@@ -717,14 +717,14 @@ def main():
         agent_runs[agent] = [load_run_summary(rd) for rd in run_dirs]
         agent_amended[agent] = [load_amended_entries(rd) for rd in run_dirs]
     conversations, saved_names, repeat = prepare_planned_runs(
-        eval_dir, "evals-ols-classic.yaml", agent_names, agent_runs, agent_amended,
+        eval_dir, "evals-ols-chat.yaml", agent_names, agent_runs, agent_amended,
     )
-    scenario_names = load_scenario_names("evals-ols-classic.yaml")
+    scenario_names = load_scenario_names("evals-ols-chat.yaml")
     scenario_names.update(saved_names)
 
     print()
     print(format_report_metadata(
-        "OLS Classic",
+        "OLS Chat",
         extract_report_timestamp(eval_dir, agent_names),
         len(conversations),
         len(agent_names),

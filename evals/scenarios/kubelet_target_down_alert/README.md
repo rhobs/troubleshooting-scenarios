@@ -60,7 +60,7 @@ Force-deletes all pods (ignoring grace period) and removes namespace.
 - `fixtures/namespace.yaml` - batch-processor namespace definition
 - `scripts/find-smallest-node.sh` - Selects target worker node
 - `evals-ols-agentic.yaml` - OLS Agentic eval definition
-- `evals-ols-classic.yaml` - OLS Classic eval definition
+- `evals-ols-chat.yaml` - OLS Chat eval definition
 
 ## Alerts
 

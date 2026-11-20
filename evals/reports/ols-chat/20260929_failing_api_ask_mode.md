@@ -1,6 +1,6 @@
 # Evaluation Summary
 
-2026-09-29 10:13:50 UTC | **OLS Classic** | 1 scenario, 8 agents, 10 repeats (parallel) | Judge: gpt-5.4 | [System config](#system-config)
+2026-09-29 10:13:50 UTC | **OLS Chat** | 1 scenario, 8 agents, 10 repeats (parallel) | Judge: gpt-5.4 | [System config](#system-config)
 
 | | openai-gpt-5-4 | openai-gpt-5-6-luna | openai-gpt-5-6-terra | openai-gpt-5-6-sol | google-gemini-3-5-flash-lite | google-gemini-3-7-flash | google-gemini-3-8-flash | anthropic-opus-4-6 |
 |---|---|---|---|---|---|---|---|---|
@@ -52,7 +52,7 @@ Expected: identify shared-services/reporting-service as the root cause;
 shared-services/reconciliation-service CrashLooping is a separate issue,
 not the cause.
 
-**Tags**: `difficulty_hard`, `classic`, `core`, `alert`
+**Tags**: `difficulty_hard`, `chat`, `core`, `alert`
 
 ### Query
 
@@ -4343,7 +4343,7 @@ Would you like me to help terminate the leaked connections or apply any of these
 <a id="system-config"></a>
 ## Appendix: System config
 
-Saved input file: `system-ols-classic.yaml`. Run mode can override agent, repeat, and parallel settings.
+Saved input file: `system-ols-chat.yaml`. Run mode can override agent, repeat, and parallel settings.
 
 ```yaml
 logging:

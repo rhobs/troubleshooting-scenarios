@@ -58,7 +58,7 @@ export NOTE
 
 # System config files (can be overridden via environment variable)
 SYSTEM_CONFIG_AGENTIC ?= $(EVALS_DIR)/system-ols-agentic.yaml
-SYSTEM_CONFIG_CLASSIC ?= $(EVALS_DIR)/system-ols-classic.yaml
+SYSTEM_CONFIG_CHAT ?= $(EVALS_DIR)/system-ols-chat.yaml
 
 _ALL_OLS_AGENTIC := \
 	blocked_deployment \
@@ -115,7 +115,7 @@ _ALL_OLS_AGENTIC := \
 	unready_pod_alert \
 	unready_pod_alert_remediation \
 	unscheduled_pod
-_ALL_OLS_CLASSIC := \
+_ALL_OLS_CHAT := \
 	batch_submission_timeouts \
 	crashlooping_pod_alert \
 	failing_api_alert \
@@ -148,16 +148,16 @@ PREVIEW ?= 0
 COMMA := ,
 EMPTY :=
 SPACE := $(EMPTY) $(EMPTY)
-_ALL_SCENARIOS := $(sort $(_ALL_OLS_AGENTIC) $(_ALL_OLS_CLASSIC))
+_ALL_SCENARIOS := $(sort $(_ALL_OLS_AGENTIC) $(_ALL_OLS_CHAT))
 _SCENARIO_LIST := $(strip $(subst $(COMMA), ,$(SCENARIO)))
 _UNKNOWN_SCENARIOS := $(filter-out $(_ALL_SCENARIOS),$(_SCENARIO_LIST))
 
 ifdef SCENARIO
   _OLS_AGENTIC_CANDIDATES := $(filter $(_ALL_OLS_AGENTIC),$(_SCENARIO_LIST))
-  _OLS_CLASSIC_CANDIDATES := $(filter $(_ALL_OLS_CLASSIC),$(_SCENARIO_LIST))
+  _OLS_CHAT_CANDIDATES := $(filter $(_ALL_OLS_CHAT),$(_SCENARIO_LIST))
 else
   _OLS_AGENTIC_CANDIDATES := $(_ALL_OLS_AGENTIC)
-  _OLS_CLASSIC_CANDIDATES := $(_ALL_OLS_CLASSIC)
+  _OLS_CHAT_CANDIDATES := $(_ALL_OLS_CHAT)
 endif
 
 ifdef TAG
@@ -166,24 +166,24 @@ ifdef TAG
       grep -q '^    - '"$$t"'$$' $(SCENARIOS_DIR)/$$d/evals-ols-agentic.yaml 2>/dev/null && echo $$d && break; \
     done; \
   done)
-  OLS_CLASSIC_SCENARIOS := $(shell for d in $(_OLS_CLASSIC_CANDIDATES); do \
+  OLS_CHAT_SCENARIOS := $(shell for d in $(_OLS_CHAT_CANDIDATES); do \
     for t in $(subst $(COMMA), ,$(TAG)); do \
-      grep -q '^    - '"$$t"'$$' $(SCENARIOS_DIR)/$$d/evals-ols-classic.yaml 2>/dev/null && echo $$d && break; \
+      grep -q '^    - '"$$t"'$$' $(SCENARIOS_DIR)/$$d/evals-ols-chat.yaml 2>/dev/null && echo $$d && break; \
     done; \
   done)
 else
   OLS_AGENTIC_SCENARIOS := $(_OLS_AGENTIC_CANDIDATES)
-  OLS_CLASSIC_SCENARIOS := $(_OLS_CLASSIC_CANDIDATES)
+  OLS_CHAT_SCENARIOS := $(_OLS_CHAT_CANDIDATES)
 endif
 
-# A scenario can have eval definitions for either OLS Agentic, OLS Classic, or
+# A scenario can have eval definitions for either OLS Agentic, OLS Chat, or
 # both. Standalone setup and cleanup targets use each selected scenario once.
-MATCHED_SCENARIOS := $(sort $(OLS_AGENTIC_SCENARIOS) $(OLS_CLASSIC_SCENARIOS))
+MATCHED_SCENARIOS := $(sort $(OLS_AGENTIC_SCENARIOS) $(OLS_CHAT_SCENARIOS))
 
 OLS_AGENTIC_SETUP_MODE = $(shell bash $(SCRIPTS_DIR)/resolve-setup-mode.sh $(SETUP_MODE) evals-ols-agentic.yaml $(addprefix $(SCENARIOS_DIR)/,$(OLS_AGENTIC_SCENARIOS)))
-OLS_CLASSIC_SETUP_MODE = $(shell bash $(SCRIPTS_DIR)/resolve-setup-mode.sh $(SETUP_MODE) evals-ols-classic.yaml $(addprefix $(SCENARIOS_DIR)/,$(OLS_CLASSIC_SCENARIOS)))
+OLS_CHAT_SETUP_MODE = $(shell bash $(SCRIPTS_DIR)/resolve-setup-mode.sh $(SETUP_MODE) evals-ols-chat.yaml $(addprefix $(SCENARIOS_DIR)/,$(OLS_CHAT_SCENARIOS)))
 
-.PHONY: _validate-scenario-filters setup-scenario cleanup-scenario setup-venv cleanup-venv setup-ols-agentic setup-ols-classic eval-ols-agentic eval-ols-classic cleanup-ols-agentic cleanup-ols-classic help
+.PHONY: _validate-scenario-filters setup-scenario cleanup-scenario setup-venv cleanup-venv setup-ols-agentic setup-ols-chat eval-ols-agentic eval-ols-chat cleanup-ols-agentic cleanup-ols-chat help
 
 _validate-scenario-filters:
 ifeq ($(strip $(SCENARIO)$(TAG)),)
@@ -227,10 +227,10 @@ setup-ols-agentic: setup-venv
 setup-venv:
 	@$(SCRIPTS_DIR)/setup-venv.sh
 
-setup-ols-classic: setup-venv
-	@echo "==> Using config: $(SYSTEM_CONFIG_CLASSIC)"
+setup-ols-chat: setup-venv
+	@echo "==> Using config: $(SYSTEM_CONFIG_CHAT)"
 	@bash $(SCRIPTS_DIR)/preflight.sh
-	@SYSTEM_CONFIG_CLASSIC="$(SYSTEM_CONFIG_CLASSIC)" bash $(SCRIPTS_DIR)/setup-ols-classic.sh
+	@SYSTEM_CONFIG_CHAT="$(SYSTEM_CONFIG_CHAT)" bash $(SCRIPTS_DIR)/setup-ols-chat.sh
 
 eval-ols-agentic: _validate-scenario-filters
 ifeq ($(PREVIEW),1)
@@ -252,32 +252,32 @@ else
 	  || { status=$$?; if [ "$$status" -ne 64 ]; then exit "$$status"; fi; }
 endif
 
-eval-ols-classic: _validate-scenario-filters
+eval-ols-chat: _validate-scenario-filters
 ifeq ($(PREVIEW),1)
 	@echo "Preview only: no setup, evaluation, or cleanup will run."
 	@bash $(SCRIPTS_DIR)/show-eval-summary.sh \
-	  --system-config "$(SYSTEM_CONFIG_CLASSIC)" \
-	  --setup-mode $(OLS_CLASSIC_SETUP_MODE) \
-	  --scenarios $(OLS_CLASSIC_SCENARIOS)
-else ifeq ($(OLS_CLASSIC_SCENARIOS),)
+	  --system-config "$(SYSTEM_CONFIG_CHAT)" \
+	  --setup-mode $(OLS_CHAT_SETUP_MODE) \
+	  --scenarios $(OLS_CHAT_SCENARIOS)
+else ifeq ($(OLS_CHAT_SCENARIOS),)
 	@echo "No scenarios match the given filters."
 else
-	@echo "==> Using config: $(SYSTEM_CONFIG_CLASSIC)"
-	@config=$$(cd . && realpath "$(SYSTEM_CONFIG_CLASSIC)") && \
-	  cd $(EVALS_DIR) && bash ../$(SCRIPTS_DIR)/eval-ols-classic.sh \
+	@echo "==> Using config: $(SYSTEM_CONFIG_CHAT)"
+	@config=$$(cd . && realpath "$(SYSTEM_CONFIG_CHAT)") && \
+	  cd $(EVALS_DIR) && bash ../$(SCRIPTS_DIR)/eval-ols-chat.sh \
 	  --system-config "$$config" \
-	  --setup-mode $(OLS_CLASSIC_SETUP_MODE) \
+	  --setup-mode $(OLS_CHAT_SETUP_MODE) \
 	  $(if $(TAG),--tags $(subst $(COMMA), ,$(TAG))) \
-	  --scenarios $(addprefix scenarios/,$(OLS_CLASSIC_SCENARIOS))
+	  --scenarios $(addprefix scenarios/,$(OLS_CHAT_SCENARIOS))
 endif
 
 cleanup-venv:
 	@rm -rf venv
 	@echo "venv removed."
 
-cleanup-ols-agentic: cleanup-ols-classic
+cleanup-ols-agentic: cleanup-ols-chat
 
-cleanup-ols-classic: cleanup-venv
+cleanup-ols-chat: cleanup-venv
 	@bash $(SCRIPTS_DIR)/cleanup-ols.sh
 
 help: ## Show available targets
@@ -290,17 +290,17 @@ help: ## Show available targets
 	@echo "Setup:"
 	@echo "  setup-scenario       Deploy selected scenario(s) in the cluster"
 	@echo "  setup-ols-agentic    Install venv and OLS, configure agentic"
-	@echo "  setup-ols-classic    Install venv and OLS, configure classic"
+	@echo "  setup-ols-chat    Install venv and OLS, configure chat"
 	@echo ""
 	@echo "Evals:"
 	@echo "  eval-ols-agentic     Run OLS agentic scenarios"
-	@echo "  eval-ols-classic     Run OLS classic scenarios"
+	@echo "  eval-ols-chat     Run OLS chat scenarios"
 	@echo ""
 	@echo "Cleanup:"
 	@echo "  cleanup-scenario     Remove selected scenario(s)"
 	@echo "  cleanup-venv         Remove only venv"
 	@echo "  cleanup-ols-agentic  Remove venv and the shared OLS installation"
-	@echo "  cleanup-ols-classic  Remove venv and the shared OLS installation"
+	@echo "  cleanup-ols-chat  Remove venv and the shared OLS installation"
 	@echo ""
 	@echo "Options:"
 	@echo "  SCENARIO=...              Comma-separated scenarios (required unless TAG is set)"
@@ -323,11 +323,11 @@ help: ## Show available targets
 	@echo "  make eval-ols-agentic TAG=core SETUP_MODE=scenario"
 	@echo "  make eval-ols-agentic TAG=core PREVIEW=1"
 	@echo "  make eval-ols-agentic SCENARIO=blocked_deployment SETUP_MODE=skip"
-	@echo "  make eval-ols-classic SCENARIO=crashlooping_pod_alert"
-	@echo "  make eval-ols-classic SCENARIO=crashlooping_pod_alert SETUP_MODE=skip"
+	@echo "  make eval-ols-chat SCENARIO=crashlooping_pod_alert"
+	@echo "  make eval-ols-chat SCENARIO=crashlooping_pod_alert SETUP_MODE=skip"
 	@echo ""
 	@echo "OLS agentic scenarios ($(words $(OLS_AGENTIC_SCENARIOS))):"
 	@echo "$(OLS_AGENTIC_SCENARIOS)" | tr ' ' '\n' | column -x -c $$(tput cols) | expand | sed 's/^/  /'
 	@echo ""
-	@echo "OLS classic scenarios ($(words $(OLS_CLASSIC_SCENARIOS))):"
-	@echo "$(OLS_CLASSIC_SCENARIOS)" | tr ' ' '\n' | column -x -c $$(tput cols) | expand | sed 's/^/  /'
+	@echo "OLS chat scenarios ($(words $(OLS_CHAT_SCENARIOS))):"
+	@echo "$(OLS_CHAT_SCENARIOS)" | tr ' ' '\n' | column -x -c $$(tput cols) | expand | sed 's/^/  /'

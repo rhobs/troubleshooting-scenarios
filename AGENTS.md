@@ -17,7 +17,7 @@ evals/            Fault scenarios for automated evals
   results/        Generated output (gitignored): eval logs and reports
 labs/             Fault scenarios for demos and manual troubleshooting
 scripts/          Shared shell and Python tooling (venv, OLS, eval runners, reports, log capture)
-Makefile          Orchestrates eval runs for OLS Agentic and OLS Classic
+Makefile          Orchestrates eval runs for OLS Agentic and OLS Chat
 ```
 
 ### Scenario structure
@@ -27,7 +27,7 @@ Most scenarios under `evals/scenarios/` are self-contained directories:
 - `setup.sh` deploys fixtures to the cluster (creates namespaces, resources, faults)
 - `cleanup.sh` removes everything the scenario created
 - `fixtures/` contains the Kubernetes manifests applied by `setup.sh`
-- `evals-*.yaml` contains eval definitions, one per tool under test (e.g. `evals-ols-agentic.yaml`, `evals-ols-classic.yaml`)
+- `evals-*.yaml` contains eval definitions, one per tool under test (e.g. `evals-ols-agentic.yaml`, `evals-ols-chat.yaml`)
 
 `kiali-ossm/`, `kubevirt/` and `netobserv/` are scenario *groups*: the parent directory holds `setup.sh`, `cleanup.sh`, a `Makefile`, `scripts/` and a `README.md` for the shared operator install and teardown, and each case lives in a nested directory with its own `setup.sh`, `cleanup.sh` and `evals-*.yaml`. `_disabled/` holds scenarios parked out of the run.
 
@@ -45,10 +45,10 @@ The root Makefile has all targets. Run `make help` for the full list.
 make tools              # Install local lint tools in .tools/
 make lint               # Install tools if needed, then run all linters
 make setup-ols-agentic  # Install venv + OLS + Agentic RBAC + sync Agent CRs
-make setup-ols-classic  # Install venv + OLS classic
+make setup-ols-chat  # Install venv + OLS chat
 make eval-ols-agentic TAG=investigation # Run OLS agentic investigation cases
-make eval-ols-classic TAG=investigation # Run OLS classic investigation cases
-make cleanup-ols-classic # Remove venv + OLS classic
+make eval-ols-chat TAG=investigation # Run OLS chat investigation cases
+make cleanup-ols-chat # Remove venv + OLS chat
 ```
 
 Agentic setup grants `cluster-reader` and `cluster-monitoring-view` to
@@ -76,15 +76,15 @@ Paths below are relative to the session directory:
 |------|--------------|
 | `report.md` | Overview of scenarios, agents, scores, responses, and errors. Updated during the session. |
 | `progress.json` | Selected scenarios, agents, repeat count, setup mode, run states, failure details, and session exit code. |
-| `system-ols-agentic.yaml` or `system-ols-classic.yaml` | Config saved for this session: models, judges, repeats, parallel setting, and metric thresholds. |
+| `system-ols-agentic.yaml` or `system-ols-chat.yaml` | Config saved for this session: models, judges, repeats, parallel setting, and metric thresholds. |
 | `scenarios/<scenario>/evals-ols-*.yaml` | Saved eval definitions used by the session, including expected behavior and status checks. Group paths are kept. |
 | `<agent>/run_N/*_summary.json` | Metric results and scores for repeat N. Match entries by `conversation_group_id` and `turn_id`. |
 | `<agent>/run_N/*_detailed.csv` | Detailed metric output, including judge reasons when available. |
 | `<agent>/run_N/*amended*.yaml` | Actual responses and recorded turn data. Agentic output also includes run status, phase results, and sandbox references. |
 | `eval_report.json` | Framework report, when produced. Read it with the run files and progress data. |
 | `logs/AGENTICRUN-PHASE.log` | Agentic sandbox container logs for `analysis`, `execution`, or `verification`. Duplicate filenames get `-1`, `-2`, etc. |
-| `logs/<scenario>/<agent>-run_N.log` | Classic app-server logs for the scenario, agent, and repeat. Calls with several agents or repeats share the same log window; read the file header. |
-| `logs/lightspeed-app-server-setup.log` | Classic app-server logs from session setup and cleanup. |
+| `logs/<scenario>/<agent>-run_N.log` | Chat app-server logs for the scenario, agent, and repeat. Calls with several agents or repeats share the same log window; read the file header. |
+| `logs/lightspeed-app-server-setup.log` | Chat app-server logs from session setup and cleanup. |
 | `crs/KIND-NAME.yaml` | Full CR snapshots. Both runners save OLSConfig at session start; Agentic also saves Agent and LLMProvider. Namespaced configuration CR filenames use `KIND-NAMESPACE__NAME.yaml`. AgenticRun and result CRs are saved during Agentic runs. Check result conditions and reasons for each phase, and parent UIDs to match the run. |
 | `capture-config-crs.log` | Configuration CR capture status and errors. Capture errors do not stop the evaluation. |
 | `capture-logs.log` | Log capture status and errors. Agentic includes the mapping from pod names to log paths. |
@@ -126,7 +126,7 @@ AgenticRuns. Both use `capture_logs()` in `scripts/sandbox_logs.py`. Capture
 errors are separate from the evaluation exit status; check `capture-logs.log`
 when logs are missing.
 
-`make eval-ols-classic` downloads app-server logs after each evaluation and
+`make eval-ols-chat` downloads app-server logs after each evaluation and
 before group setup or cleanup can replace the pod. It also captures on exit.
 It reads current and previous container logs without a watcher. Snapshots can
 miss logs lost through rotation, pod deletion, or repeated container restarts.
@@ -214,7 +214,7 @@ Agent-agnostic skills use the `.agents/skills/<skill-name>/SKILL.md` structure. 
 ## Tech Stack
 
 - **Eval framework**: [lightspeed-evaluation](https://github.com/lightspeed-core/lightspeed-evaluation), Python 3.11+
-- **System under test**: [OpenShift Lightspeed](https://github.com/openshift/lightspeed-service) (Agentic and Classic)
+- **System under test**: [OpenShift Lightspeed](https://github.com/openshift/lightspeed-service) (Agentic and Chat)
 - **Applications** (labs scenarios): Python 3.12, FastAPI and raw psycopg2 in `payments-api-failure`; Python 3.11 and Flask in `alert-storm`
 - **Infrastructure**: OpenShift 4.x/5.x, Prometheus user workload monitoring
 - **Deployment**: Raw Kubernetes YAML manifests via `oc apply`, no Helm/Kustomize

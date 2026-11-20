@@ -1,4 +1,4 @@
-"""Check Classic log snapshots, restart recovery, and log paths."""
+"""Check Chat log snapshots, restart recovery, and log paths."""
 
 import importlib.util
 import json
@@ -11,7 +11,7 @@ import pytest
 
 SCRIPTS = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(SCRIPTS))
-SPEC = importlib.util.spec_from_file_location("capture_classic_logs", SCRIPTS / "capture-classic-logs.py")
+SPEC = importlib.util.spec_from_file_location("capture_chat_logs", SCRIPTS / "capture-chat-logs.py")
 MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
 SINCE = "2026-10-26T12:00:00Z"
@@ -191,7 +191,7 @@ def test_cli_routes_setup_evaluation_and_cleanup_and_persists_cursors(collector,
     root, _, _, outputs, _ = collector
 
     def invoke(*args):
-        monkeypatch.setattr(sys, "argv", ["capture-classic-logs.py", str(root),
+        monkeypatch.setattr(sys, "argv", ["capture-chat-logs.py", str(root),
                                          "--since-time", SINCE, *args])
         return MODULE.main()
 

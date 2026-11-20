@@ -1,5 +1,5 @@
 #!/bin/bash
-# CI job: run OLS Classic evaluation scenarios.
+# CI job: run OLS Chat evaluation scenarios.
 #
 # Agents and providers are read from the system config file (SYSTEM_CONFIG).
 # The OLSConfig includes active agents and judges; the first agent sets the default.
@@ -9,7 +9,7 @@
 #   EVAL_VERTEX_CREDENTIALS - Path to GCP service account JSON (for google/anthropic, optional)
 #   EVAL_VERTEX_PROJECT_ID  - GCP project ID (auto-extracted from SA JSON if not set)
 #   ARTIFACT_DIR            - CI artifact directory (default: /tmp/artifacts)
-#   SYSTEM_CONFIG           - Path to system config file (default: ci-system-ols-classic.yaml for CI)
+#   SYSTEM_CONFIG           - Path to system config file (default: ci-system-ols-chat.yaml for CI)
 #
 # Scenario filtering (mutually exclusive - use one):
 #   SCENARIO                - Comma-separated scenario list (e.g., crashlooping_pod_alert,missing_configmap)
@@ -19,14 +19,14 @@
 #   PREVIEW                 - Set to 1 to preview matched scenarios without running
 #
 # Usage:
-#   scripts/ci-ols-classic-evals.sh --artifact-dir "${ARTIFACT_DIR}"
+#   scripts/ci-ols-chat-evals.sh --artifact-dir "${ARTIFACT_DIR}"
 
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 ARTIFACT_DIR="${ARTIFACT_DIR:-/tmp/artifacts}"
 TAG="${TAG:-core}"
-SYSTEM_CONFIG="${SYSTEM_CONFIG:-${REPO_ROOT}/evals/ci-system-ols-classic.yaml}"
+SYSTEM_CONFIG="${SYSTEM_CONFIG:-${REPO_ROOT}/evals/ci-system-ols-chat.yaml}"
 
 # Convert SYSTEM_CONFIG to absolute path if relative
 if [[ "${SYSTEM_CONFIG}" != /* ]]; then
@@ -40,7 +40,7 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-# Create venv first (needed for PyYAML and by build-ols-classic-config.py)
+# Create venv first (needed for PyYAML and by build-ols-chat-config.py)
 make -C "$REPO_ROOT" setup-venv
 
 # Auto-extract GCP project ID from Vertex credentials if available
@@ -77,11 +77,11 @@ function run_evals() {
         # Validate credentials before running evaluations
         : "${EVAL_OPENAI_API_KEY:?EVAL_OPENAI_API_KEY must be set (needed for judge LLM)}"
 
-        # setup-ols-classic.sh will create OLSConfig with all providers from system config
-        echo "==> Setting up OLS Classic..."
-        SYSTEM_CONFIG_CLASSIC="$SYSTEM_CONFIG" make setup-ols-classic
+        # setup-ols-chat.sh will create OLSConfig with all providers from system config
+        echo "==> Setting up OLS Chat..."
+        SYSTEM_CONFIG_CHAT="$SYSTEM_CONFIG" make setup-ols-chat
     else
-        echo "==> PREVIEW mode: skipping OLS Classic setup"
+        echo "==> PREVIEW mode: skipping OLS Chat setup"
     fi
 
     echo "==> Running evaluations..."
@@ -102,7 +102,7 @@ function run_evals() {
 
     # Capture eval exit status without triggering set -e
     local eval_status=0
-    SYSTEM_CONFIG_CLASSIC="$SYSTEM_CONFIG" make eval-ols-classic "${MAKE_ARGS[@]}" || eval_status=$?
+    SYSTEM_CONFIG_CHAT="$SYSTEM_CONFIG" make eval-ols-chat "${MAKE_ARGS[@]}" || eval_status=$?
 
     # Collect results even if eval failed
     collect_results
@@ -114,7 +114,7 @@ function collect_results() {
     # Skip collection in preview mode
     if [[ "${PREVIEW:-0}" == "1" ]]; then
         # Clean up any stale JUnit XML from previous runs
-        rm -f "${ARTIFACT_DIR}/junit-classic-${PROVIDER}.xml"
+        rm -f "${ARTIFACT_DIR}/junit-chat-${PROVIDER}.xml"
         return 0
     fi
 
@@ -131,34 +131,34 @@ function collect_results() {
         return 0
     fi
 
-    echo "==> Copying results from ${LATEST_RESULT_DIR} to ${ARTIFACT_DIR}/classic/..."
-    mkdir -p "${ARTIFACT_DIR}/classic"
-    cp -r "${REPO_ROOT}/evals/results/${LATEST_RESULT_DIR}" "${ARTIFACT_DIR}/classic/" 2>/dev/null || true
+    echo "==> Copying results from ${LATEST_RESULT_DIR} to ${ARTIFACT_DIR}/chat/..."
+    mkdir -p "${ARTIFACT_DIR}/chat"
+    cp -r "${REPO_ROOT}/evals/results/${LATEST_RESULT_DIR}" "${ARTIFACT_DIR}/chat/" 2>/dev/null || true
 
     # Generate JUnit XML for Sippy ingestion
     local SUMMARY_FILES=()
     while IFS= read -r -d '' file; do
         SUMMARY_FILES+=("$file")
-    done < <(find "${ARTIFACT_DIR}/classic/${LATEST_RESULT_DIR}" -name '*_summary.json' -print0 2>/dev/null | sort -z)
+    done < <(find "${ARTIFACT_DIR}/chat/${LATEST_RESULT_DIR}" -name '*_summary.json' -print0 2>/dev/null | sort -z)
 
     if [ ${#SUMMARY_FILES[@]} -gt 0 ]; then
         echo "==> Generating JUnit XML for Sippy..."
         if [ -f "${REPO_ROOT}/venv/bin/python3" ]; then
             "${REPO_ROOT}/venv/bin/python3" "${REPO_ROOT}/scripts/eval-to-junit.py" \
-                "${ARTIFACT_DIR}/junit-classic-${PROVIDER}.xml" \
+                "${ARTIFACT_DIR}/junit-chat-${PROVIDER}.xml" \
                 "${SUMMARY_FILES[@]}" || echo "Warning: JUnit generation failed"
         else
             python3 "${REPO_ROOT}/scripts/eval-to-junit.py" \
-                "${ARTIFACT_DIR}/junit-classic-${PROVIDER}.xml" \
+                "${ARTIFACT_DIR}/junit-chat-${PROVIDER}.xml" \
                 "${SUMMARY_FILES[@]}" || echo "Warning: JUnit generation failed"
         fi
     fi
 }
 
 function cleanup() {
-    echo "==> Cleaning up OLS Classic..."
+    echo "==> Cleaning up OLS Chat..."
     cd "$REPO_ROOT"
-    make cleanup-ols-classic || true
+    make cleanup-ols-chat || true
 }
 
 # Only register cleanup trap if we're actually setting up OLS
@@ -168,4 +168,4 @@ fi
 
 run_evals
 
-echo "==> OLS Classic evaluation complete"
+echo "==> OLS Chat evaluation complete"

@@ -65,7 +65,7 @@ else
 
     existing_config="$(oc get olsconfig cluster --ignore-not-found -o name)"
     if [ -n "$existing_config" ]; then
-        echo "==> Using existing OLSConfig; keeping Classic providers and other settings."
+        echo "==> Using existing OLSConfig; keeping Chat providers and other settings."
     else
         echo "==> Creating OLSConfig for Agentic..."
         oc apply -f - <<EOF

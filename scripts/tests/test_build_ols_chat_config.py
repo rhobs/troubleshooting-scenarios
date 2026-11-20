@@ -1,4 +1,4 @@
-"""Check OLS Classic defaults and provider selection without a cluster."""
+"""Check OLS Chat defaults and provider selection without a cluster."""
 
 import importlib.util
 from pathlib import Path
@@ -8,8 +8,8 @@ import yaml
 
 
 spec = importlib.util.spec_from_file_location(
-    "build_ols_classic_config",
-    Path(__file__).resolve().parents[1] / "build-ols-classic-config.py",
+    "build_ols_chat_config",
+    Path(__file__).resolve().parents[1] / "build-ols-chat-config.py",
 )
 builder = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(builder)

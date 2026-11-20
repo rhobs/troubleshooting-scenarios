@@ -26,7 +26,7 @@ my_scenario/
   fixtures/          Kubernetes manifests that reproduce the fault
   setup.sh           Deploys fixtures to the cluster
   cleanup.sh         Removes everything the scenario created
-  evals-*.yaml       One per tool under test (e.g. OLS Agentic, OLS Classic)
+  evals-*.yaml       One per tool under test (e.g. OLS Agentic, OLS Chat)
 ```
 
 **Scenarios are generic and not tied to OpenShift Lightspeed or any other
@@ -56,7 +56,7 @@ Run the commands below from the repository root. You need:
 
 | OLS mode | Required OpenShift version |
 |----------|----------------------------|
-| Classic | 4.22 or newer |
+| Chat | 4.22 or newer |
 | Agentic | 5.0 or newer |
 
 ```bash
@@ -75,12 +75,12 @@ Each scenario folder that supports OLS Agentic contains an
 test and how many repeats to run per scenario in
 [`evals/system-ols-agentic.yaml`](evals/system-ols-agentic.yaml).
 `make setup-ols-agentic` installs OLS through the same `stable` Subscription
-from `redhat-operators` as Classic setup. Agentic needs OpenShift 5.0 or newer;
+from `redhat-operators` as Chat setup. Agentic needs OpenShift 5.0 or newer;
 the catalog install also needs OLS 2.0 or newer with Agentic support.
 
 After installation, setup keeps an existing `OLSConfig/cluster`, including
-Classic providers, default model, and other settings. If the config is absent,
-it creates one with an empty Classic provider list and
+Chat providers, default model, and other settings. If the config is absent,
+it creates one with an empty Chat provider list and
 `agenticOLS.sandboxMode: bare-pod`. It waits for the Agentic operator and
 sandbox configuration. It then reads the config selected by
 `SYSTEM_CONFIG_AGENTIC`, creates credentials and providers for active agents
@@ -141,33 +141,33 @@ When any selected scenario has the `remediation` tag, `SETUP_MODE=auto` (the
 default) uses `run` to reset resources before each agent and repeat. Otherwise,
 it uses `scenario`. You can set the mode explicitly to override this choice.
 
-### OLS Classic
+### OLS Chat
 
-Classic needs OpenShift 4.22 or newer. OpenShift 5 is not required.
+Chat needs OpenShift 4.22 or newer. OpenShift 5 is not required.
 
-Each scenario folder that supports OLS Classic contains an
-`evals-ols-classic.yaml` with the eval definitions. Choose the agents to run
+Each scenario folder that supports OLS Chat contains an
+`evals-ols-chat.yaml` with the eval definitions. Choose the agents to run
 in the `agents.default.agent` list in
-[`evals/system-ols-classic.yaml`](evals/system-ols-classic.yaml).
+[`evals/system-ols-chat.yaml`](evals/system-ols-chat.yaml).
 Setup registers the active agents and judge models in OLS, using each entry's
 `provider` and `model`. The first active agent sets the default provider and
 model. OpenAI, Google, or Anthropic can be first. Remove Google and Anthropic
 entries for an OpenAI-only run.
 
-When `OLSConfig/cluster` exists, Classic setup patches only its providers and
+When `OLSConfig/cluster` exists, Chat setup patches only its providers and
 default provider and model. It keeps Agentic settings and other shared options.
-Classic setup does not change Agentic `Agent`, `LLMProvider`, or credential
-Secrets. Agentic setup keeps the existing Classic configuration. You can run
+Chat setup does not change Agentic `Agent`, `LLMProvider`, or credential
+Secrets. Agentic setup keeps the existing Chat configuration. You can run
 the two setup targets in either order.
 
 ```bash
-make setup-ols-classic
-make setup-ols-classic SKIP_OLS_INSTALL=1 # use an existing operator
-make eval-ols-classic TAG=investigation                       # run investigation cases
-make eval-ols-classic SCENARIO=crashlooping_pod_alert         # one scenario
-make eval-ols-classic TAG=alert                               # filter by tag
-make eval-ols-classic TAG=alert PREVIEW=1                     # preview matched scenarios
-make eval-ols-classic TAG=difficulty_medium PREVIEW=1         # preview medium cases
+make setup-ols-chat
+make setup-ols-chat SKIP_OLS_INSTALL=1 # use an existing operator
+make eval-ols-chat TAG=investigation                       # run investigation cases
+make eval-ols-chat SCENARIO=crashlooping_pod_alert         # one scenario
+make eval-ols-chat TAG=alert                               # filter by tag
+make eval-ols-chat TAG=alert PREVIEW=1                     # preview matched scenarios
+make eval-ols-chat TAG=difficulty_medium PREVIEW=1         # preview medium cases
 ```
 
 `SKIP_OLS_INSTALL=1` skips operator installation, including Namespace,
@@ -177,13 +177,13 @@ credential Secrets, creates or updates `OLSConfig`, and waits for the
 app-server to be ready. Without this flag, setup skips installation only when the existing
 app-server rollout is complete.
 
-`make cleanup-ols-agentic` and `make cleanup-ols-classic` run the same uninstall.
+`make cleanup-ols-agentic` and `make cleanup-ols-chat` run the same uninstall.
 Run both cleanup targets with cluster-admin access. Cleanup stops if it cannot
 remove the managed Agentic bindings, so an admin binding is not silently left
 behind. Fix the access problem and run cleanup again.
 Both remove the local `venv/`, `OLSConfig/cluster`, the OLM Subscription and CSV,
 the OperatorGroup, and the entire `openshift-lightspeed` namespace. This removes
-the deployments and namespaced resources for both Classic and Agentic,
+the deployments and namespaced resources for both Chat and Agentic,
 including a quickstart installation. `SKIP_OLS_INSTALL=1` does not skip cleanup.
 The uninstall keeps CRDs and does not remove cluster-scoped resources created
 by quickstart, such as its ClusterRoles and ClusterRoleBindings.
@@ -196,7 +196,7 @@ setup modes, and failure handling.
 
 Tags describe the workflow (`investigation` or `remediation`), difficulty, and
 optional selections such as `core`, `alert`, or a scenario group. The Make
-target selects Agentic or Classic; these mode names are no longer tags.
+target selects Agentic or Chat; these mode names are no longer tags.
 `TAG=alert` selects alert investigation cases. Use `TAG=remediation` for
 cases that apply fixes. Multiple tags use OR: `TAG=core,alert` selects cases
 with either tag. See the [tag guide](evals/README.md#tags) for all current tags.
@@ -225,9 +225,9 @@ Agentic evaluations also save sandbox pod logs to
 the first scenario and stops when the session ends. Existing result files are
 kept. See [sandbox logs](evals/README.md#sandbox-logs) for details and manual use.
 
-Classic evaluations download app-server logs at evaluation and setup/cleanup
+Chat evaluations download app-server logs at evaluation and setup/cleanup
 checkpoints. Files use `logs/<scenario>/<agent>-run_N.log`; calls with several
-agents or repeats share a log window. See [Classic app-server logs](evals/README.md#classic-app-server-logs)
+agents or repeats share a log window. See [Chat app-server logs](evals/README.md#chat-app-server-logs)
 for naming, restart handling, and capture limits.
 
 Copy reports worth keeping to `evals/reports/` to track them in Git.

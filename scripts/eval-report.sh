@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Shared report updates for the Classic and Agentic runners.
+# Shared report updates for the Chat and Agentic runners.
 
 report_update() {
   local quiet_args=()

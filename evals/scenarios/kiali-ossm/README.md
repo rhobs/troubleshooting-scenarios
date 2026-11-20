@@ -1,6 +1,6 @@
 # Kiali/OSSM Evaluation Scenarios
 
-Evaluation scenarios for AI-assisted diagnosis of OpenShift Service Mesh (OSSM) and Kiali problems. These scenarios deploy Bookinfo with Istio fault injections on a live cluster and evaluate OLS responses using the `ossm` MCP toolset. Currently OLS-classic only.
+Evaluation scenarios for AI-assisted diagnosis of OpenShift Service Mesh (OSSM) and Kiali problems. These scenarios deploy Bookinfo with Istio fault injections on a live cluster and evaluate OLS responses using the `ossm` MCP toolset. Currently OLS-chat only.
 
 ## Scenarios
 
@@ -20,16 +20,16 @@ All cases use `investigation` and `kiali-ossm` tags. The four `check_*` cases us
 `difficulty_normal`; the two `diagnose_*` cases and `troubleshoot_latency_trace`
 use `difficulty_medium`. See the [tag guide](../../README.md#tags) for filtering.
 
-OSSM, Kiali, Bookinfo, MCP, and scenario fixtures are set up automatically when `eval-ols-classic` runs a kiali-ossm scenario (via `setup.sh` in this directory). From the repository root:
+OSSM, Kiali, Bookinfo, MCP, and scenario fixtures are set up automatically when `eval-ols-chat` runs a kiali-ossm scenario (via `setup.sh` in this directory). From the repository root:
 
 ```bash
-make setup-ols-classic
+make setup-ols-chat
 
 # All kiali-ossm scenarios
-make eval-ols-classic TAG=kiali-ossm
+make eval-ols-chat TAG=kiali-ossm
 
 # Single scenario
-make eval-ols-classic SCENARIO=kiali-ossm/check_mesh_status
+make eval-ols-chat SCENARIO=kiali-ossm/check_mesh_status
 ```
 
 To manage OSSM independently, use its scenario Makefile:

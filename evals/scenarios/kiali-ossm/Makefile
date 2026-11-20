@@ -28,5 +28,5 @@ help:
 	@echo "  make setup-ossm        Install OSSM + Bookinfo"
 	@echo ""
 	@echo "To run evals, from the parent directory:"
-	@echo "  make setup-ols-classic"
-	@echo "  make eval-ols-classic SCENARIO=kiali-ossm/check_mesh_status"
+	@echo "  make setup-ols-chat"
+	@echo "  make eval-ols-chat SCENARIO=kiali-ossm/check_mesh_status"

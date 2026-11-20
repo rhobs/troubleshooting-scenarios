@@ -1,6 +1,6 @@
 # NetObserv Evaluation Scenarios
 
-Evaluation scenarios for AI-assisted diagnosis of OpenShift network observability problems. The scenarios use the `netobserv` MCP toolset and run with OLS-classic.
+Evaluation scenarios for AI-assisted diagnosis of OpenShift network observability problems. The scenarios use the `netobserv` MCP toolset and run with OLS-chat.
 
 ## Scenarios
 
@@ -19,16 +19,16 @@ All cases use `investigation` and `netobserv` tags. `packet_drops_kernel` and
 `tls_issues` use `difficulty_medium`; the other cases use `difficulty_normal`.
 See the [tag guide](../../README.md#tags) for filtering.
 
-The NetObserv operator, FlowCollector, MCP server, and OLS connection are set up automatically when an OLS-classic NetObserv evaluation runs. From the repository root:
+The NetObserv operator, FlowCollector, MCP server, and OLS connection are set up automatically when an OLS-chat NetObserv evaluation runs. From the repository root:
 
 ```bash
-make setup-ols-classic
+make setup-ols-chat
 
 # All NetObserv scenarios
-make eval-ols-classic TAG=netobserv
+make eval-ols-chat TAG=netobserv
 
 # One scenario
-make eval-ols-classic SCENARIO=netobserv/dns_latency
+make eval-ols-chat SCENARIO=netobserv/dns_latency
 ```
 
 The scenario setup scripts deploy synthetic traffic and wait for NetObserv data to reach Loki before the query runs. `NETOBSERV_WARMUP_SECS` controls the default 120-second warm-up.

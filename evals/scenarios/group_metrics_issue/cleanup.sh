@@ -3,7 +3,14 @@ set -euo pipefail
 
 "$(cd "$(dirname "$0")/../../../scripts" && pwd)/check-prerequisites.sh"
 
-echo "Cleaning up scenario..."
-oc delete group app-reviewers --ignore-not-found
+GROUP_NAME="app-reviewers"
+STATE_FILE="${TMPDIR:-/tmp}/troubleshooting-scenarios-group-metrics-issue-created"
 
-echo "Cleanup complete."
+if [[ -f "${STATE_FILE}" ]]; then
+  echo "Cleaning up scenario-created Group..."
+  oc delete group "${GROUP_NAME}" --ignore-not-found
+  rm -f "${STATE_FILE}"
+  echo "Cleanup complete."
+else
+  echo "No ownership marker found. Preserving any existing Group '${GROUP_NAME}'."
+fi

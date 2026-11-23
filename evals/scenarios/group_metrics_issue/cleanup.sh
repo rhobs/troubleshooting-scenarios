@@ -1,16 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-"$(cd "$(dirname "$0")/../../../scripts" && pwd)/check-prerequisites.sh"
+SCRIPTS_DIR="$(cd "$(dirname "$0")/../../../scripts" && pwd)"
+"$SCRIPTS_DIR/check-prerequisites.sh"
 
 GROUP_NAME="app-reviewers"
-STATE_FILE="${TMPDIR:-/tmp}/troubleshooting-scenarios-group-metrics-issue-created"
+SCENARIO_STATE_DIR="${SCENARIO_STATE_DIR:-$(cd "$SCRIPTS_DIR/../evals" && pwd)/results/.scenario-state}"
+STATE_FILE="$SCENARIO_STATE_DIR/${GROUP_NAME}.group"
 
-if [[ -f "${STATE_FILE}" ]]; then
+if [[ -f "$STATE_FILE" ]]; then
   echo "Cleaning up scenario-created Group..."
-  oc delete group "${GROUP_NAME}" --ignore-not-found
-  rm -f "${STATE_FILE}"
+  oc delete group "$GROUP_NAME" --ignore-not-found
+  rm -f "$STATE_FILE"
   echo "Cleanup complete."
 else
-  echo "No ownership marker found. Preserving any existing Group '${GROUP_NAME}'."
+  echo "No ownership marker found. Preserving any existing Group '$GROUP_NAME'."
 fi

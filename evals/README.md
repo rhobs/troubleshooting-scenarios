@@ -354,6 +354,7 @@ alert remediation variants use `remediation` instead.
 | `investigation` | Investigation cases that ask for a diagnosis or recommended fix. |
 | `core` | Representative baseline cases across eval modes and difficulty levels. |
 | `alert` | Alert investigation cases, also tagged `investigation`. |
+| `smoke` | Selects exactly one Agentic scenario (`crashlooping_pod_alert`) for the model compatibility smoke job. |
 | `remediation` | OLS Agentic cases that include analysis, a fix, and verification. |
 | `difficulty_normal` | One isolated problem with a direct link between symptom and cause. |
 | `difficulty_medium` | More reasoning is needed, such as several steps, a decoy, or domain knowledge. |

@@ -87,6 +87,7 @@ _ALL_OLS_AGENTIC := \
 	failing_probe \
 	failing_route \
 	forbidden_api \
+	group_metrics_issue \
 	imagepull_missing \
 	imagepull_private \
 	inactive_deployment \

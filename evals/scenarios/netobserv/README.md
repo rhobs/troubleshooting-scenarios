@@ -19,7 +19,11 @@ All cases use `investigation` and `netobserv` tags. `packet_drops_kernel` and
 `tls_issues` use `difficulty_medium`; the other cases use `difficulty_normal`.
 See the [tag guide](../../README.md#tags) for filtering.
 
-The NetObserv operator, FlowCollector, MCP server, and OLS connection are set up automatically when an OLS-chat NetObserv evaluation runs. From the repository root:
+The evaluation installs the NetObserv operator and FlowCollector. It uses the
+`netobserv` toolset in the built-in MCP server in OLS 2.0.1. The default
+FlowCollector network policy allows access from `openshift-lightspeed`.
+
+Run these commands from the repository root.
 
 ```bash
 make setup-ols-chat
@@ -51,4 +55,3 @@ make -C evals/scenarios/netobserv clean-netobserv-openshift
 | `NETOBSERV_CHANNEL` | _(automatic)_ | OLM channel |
 | `NETOBSERV_FLOWCOLLECTOR_WAIT_TIMEOUT` | `10m` | FlowCollector readiness timeout |
 | `NETOBSERV_DELETE_OPERATOR_NAMESPACE` | `yes` | Delete the operator namespace during cleanup |
-| `MCP_TOOLSETS` | `core,config,netobserv` | MCP toolsets enabled for the group |
